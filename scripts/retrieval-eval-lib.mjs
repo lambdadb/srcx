@@ -56,16 +56,18 @@ export function scoreQuery(evidence, hits, settings) {
       complete: coverage === 1,
       anyEvidence: coverage > 0,
       // Union coverage may reconstruct evidence from several returned chunks.
-      splitEvidence: evidence.some(
-        (e) =>
-          evidenceCoverage([e], selected) === 1 &&
-          !selected.some(
-            (h) =>
-              h.path === e.path &&
-              h.startByte <= e.startByte &&
-              h.endByte >= e.endByte,
-          ),
-      ),
+      splitEvidence:
+        coverage === 1 &&
+        evidence.some(
+          (e) =>
+            evidenceCoverage([e], selected) === 1 &&
+            !selected.some(
+              (h) =>
+                h.path === e.path &&
+                h.startByte <= e.startByte &&
+                h.endByte >= e.endByte,
+            ),
+        ),
     };
   };
   let used = 0;

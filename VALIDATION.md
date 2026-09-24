@@ -28,6 +28,12 @@ with reproduction instructions in [eval/README.md](https://github.com/lambdadb/s
 labels were authored from source before querying and are not independently
 human-reviewed judgments or a general retrieval-quality benchmark.
 
+Post-review, `splitEvidence` now requires complete coverage of all required ranges
+before classifying a result as split across chunks. The multi-range regression
+brings the local suite to **51 passing tests**. Offline rescoring of all 32 retained
+query/method pairs preserved every metric and category summary. The original live
+report, runtime fingerprint, and completion timestamp were not changed.
+
 ## Persistent Git branch tracking
 
 Local regression coverage exercises one writer across consecutive commits,

@@ -48,6 +48,41 @@ test("token budget charges duplicate chunks and stops at the first oversized res
   assert.deepEqual(score.budget.ids, ["0"]);
   assert.equal(score.budget.tokens, 700);
 });
+test("split evidence requires every target in each independently selected result set", () => {
+  const evidence = [range(0, 10), range(0, 10, "b.ts")];
+  const split = [range(0, 5), range(5, 10)].map((r, i) => ({
+    ...r,
+    id: String(i),
+    tokenCount: 5,
+  }));
+  const settings = { topK: 5, tokenBudget: 10 };
+  const partial = scoreQuery(evidence, split, settings);
+  for (const selected of [partial.topK, partial.budget]) {
+    assert.equal(selected.coverage, 0.5);
+    assert.equal(selected.complete, false);
+    assert.equal(selected.splitEvidence, false);
+  }
+  const full = scoreQuery(
+    evidence,
+    [...split, { ...range(0, 10, "b.ts"), id: "b", tokenCount: 10 }],
+    settings,
+  );
+  assert.equal(full.topK.complete, true);
+  assert.equal(full.topK.splitEvidence, true);
+  assert.equal(full.budget.complete, false);
+  assert.equal(full.budget.splitEvidence, false);
+  const unsplit = scoreQuery(
+    evidence,
+    evidence.map((r, i) => ({
+      ...r,
+      id: String(i),
+      tokenCount: 5,
+    })),
+    settings,
+  );
+  assert.equal(unsplit.budget.complete, true);
+  assert.equal(unsplit.budget.splitEvidence, false);
+});
 test("labels and live hits must match pinned source and complete artifact records", () => {
   const raw = Buffer.from("hello 😀 source");
   const evidence = [{ ...range(6, 10), sha256: hash(raw.subarray(6, 10)) }];

@@ -127,3 +127,17 @@ and the installed-package CLI contract. Live ranking evidence is the separate ru
 above; it does not come from the in-memory test store.
 
 Raw report SHA-256: `de2157ac398c1a694a47251f154f03e2c19790e778ae586953983cc83f574de3`.
+
+## Post-review metric correction
+
+`splitEvidence` now requires complete query-level coverage before reporting that
+required evidence is split across chunks. A regression covers a fully reconstructed
+first target with a missing second target, different top-K/budget outcomes, and
+complete unsplit evidence. All 51 local tests pass.
+
+The frozen suite has one evidence range per query. Offline rescoring of the saved
+32 query/method pairs with the corrected helper reproduced every per-query metric
+and aggregate/category summary exactly. No live retrieval was rerun, and the
+original report bytes, evaluator fingerprint, and completion timestamp remain
+unchanged. The local check is retained as
+`.srcx/retrieval-eval/split-evidence-fix-check.json`.
