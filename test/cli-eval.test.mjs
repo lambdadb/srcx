@@ -1,10 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile, writeFile, mkdtemp, rm } from "node:fs/promises";
+import {
+  readFile,
+  writeFile,
+  mkdtemp,
+  rm,
+  stat,
+  readdir,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { hash } from "../dist/common.js";
+import { fixture, git } from "./fixture.mjs";
 import { tokens } from "../dist/chunk.js";
 import {
   validateCliSuite,
@@ -185,4 +193,79 @@ test("CLI suite freezes both public repositories and rejects stale runtime befor
   );
   assert.equal(run.status, 1);
   assert.match(run.stderr, /Runtime\/harness changed/);
+});
+
+test("run before prepare leaves a reusable root and preserves incomplete preparation", async (t) => {
+  const parent = await mkdtemp(join(tmpdir(), "srcx-cli-eval-order-"));
+  t.after(() => rm(parent, { recursive: true, force: true }));
+  const root = join(parent, "run");
+  const invoke = (...args) =>
+    spawnSync(
+      process.execPath,
+      ["scripts/cli-eval.mjs", ...args, "--root", root],
+      {
+        encoding: "utf8",
+        env: { ...process.env, LAMBDADB_BASE_URL: "invalid" },
+      },
+    );
+  for (const args of [["run"], ["run", "--resume"]]) {
+    const result = invoke(...args);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Run offline prepare first/);
+    await assert.rejects(stat(root), { code: "ENOENT" });
+  }
+  const suite = JSON.parse(await readFile("eval/cli-workflow-v1.json", "utf8"));
+  const sources = {};
+  for (const id of Object.keys(suite.repositories)) {
+    const f = await fixture();
+    t.after(f.cleanup);
+    sources[id] = f.path;
+    git(
+      f.path,
+      "remote",
+      "set-url",
+      "origin",
+      `https://${suite.repositories[id]}.git`,
+    );
+    for (const q of suite.queries.filter((q) => q.repository === id)) {
+      q.commit = f.a;
+      q.evidenceSets = [
+        [
+          {
+            path: "code.ts",
+            startByte: 0,
+            endByte: Buffer.byteLength(f.original),
+            sha256: hash(Buffer.from(f.original)),
+            excerpt: f.original,
+          },
+        ],
+      ];
+    }
+  }
+  const suiteFile = join(parent, "suite.json");
+  await writeFile(suiteFile, JSON.stringify(suite));
+  const prepared = invoke(
+    "prepare",
+    "--suite",
+    suiteFile,
+    "--srcx",
+    sources.srcx,
+    "--lambdadb-cli",
+    sources["lambdadb-cli"],
+  );
+  assert.equal(prepared.status, 0, prepared.stderr);
+  const planFile = join(root, "plan.json");
+  const plan = JSON.parse(await readFile(planFile, "utf8"));
+  assert.equal(plan.status, "prepared");
+  // A retained partial preparation must also be rejected without locks, writes,
+  // or deleting artifacts that the user may need for recovery.
+  plan.status = "preparing";
+  const original = JSON.stringify(plan);
+  await writeFile(planFile, original);
+  const entries = await readdir(root);
+  const incomplete = invoke("run");
+  assert.equal(incomplete.status, 1);
+  assert.match(incomplete.stderr, /Run offline prepare first/);
+  assert.equal(await readFile(planFile, "utf8"), original);
+  assert.deepEqual(await readdir(root), entries);
 });

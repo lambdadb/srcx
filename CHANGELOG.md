@@ -27,6 +27,8 @@
 
 ### Fixed
 
+- Reject an unprepared CLI evaluation run before creating its root/lock so a
+  subsequent offline preparation can use the same path.
 - Pin branch control before enumerating versions so a concurrent publication
   cannot advance the selector beyond the version list being read.
 - Reject live checkpoint reuse across different code/harness inputs and preserve

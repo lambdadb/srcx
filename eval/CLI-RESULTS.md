@@ -107,3 +107,13 @@ SHA-256 remains `de2157ac398c1a694a47251f154f03e2c19790e778ae586953983cc83f574de
 
 This run's raw report SHA-256:
 `45117bc675b07d10a435e215fddb726a3a16cfd78f4455d136bfae19edd270eb`.
+
+## Post-review command-order correction
+
+The runner now rejects an absent or incomplete plan before acquiring its
+directory-based lock. Running before `prepare` leaves a nonexistent root untouched,
+so preparation can subsequently succeed at the same path. A local regression also
+checks `run --resume` and preservation of existing incomplete preparation artifacts.
+The local suite now has **55 passing tests**. This entry-point correction does not
+change retrieval/scoring; no live rerun was performed, and the original report,
+suite and runtime fingerprint remain unchanged.

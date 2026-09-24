@@ -422,6 +422,13 @@ try {
   if (positionals[0] === "prepare") await prepare();
   else {
     assert.equal(positionals[0], "run");
+    // The directory-based lock creates root; reject unprepared runs before it.
+    // run() rechecks the plan after acquiring the lock.
+    assert.equal(
+      (await optionalJson(planFile))?.status,
+      "prepared",
+      "Run offline prepare first.",
+    );
     await exclusive(root, run);
   }
 } catch (e) {
