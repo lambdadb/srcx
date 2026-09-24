@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Internal reproducible lexical chunking evaluation with pinned source labels,
+  equal path-only enrichment, isolated live indexes, and token-budget metrics.
+
+## Unreleased
+
 ### Added
 
 - Persistent one-to-one Git branch / Collection Branch mapping, branch-local

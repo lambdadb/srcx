@@ -18,14 +18,13 @@ supporting each result. The project name is `srcx`.
 | --- | --- |
 | Project and display name | `srcx` |
 | Local directory | `srcx` |
-| Intended GitHub repository | `lambdadb/srcx` |
+| GitHub repository | `lambdadb/srcx` |
 | CLI executable | `srcx` |
-| Intended npm package | `@functional-systems/srcx` |
+| npm package | `@functional-systems/srcx` |
 | Short description | Version-aware code search on LambdaDB |
 
-The name is selected; the GitHub repository and npm package have not been created
-or published in this project. The package manifest and executable entry point are
-present in the initial CLI. Keep display/configuration naming centralized and
+The public GitHub repository and npm development channel are available. Current
+publication evidence and stable-release status are recorded in RELEASING.md. Keep display/configuration naming centralized and
 distribution identity in `package.json`. Database IDs and the existing
 `code-*` Collection naming and `purpose=code-search-v1` protocol marker remain
 independent of the product name.

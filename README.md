@@ -77,6 +77,13 @@ Chunks cover the exact source bytes, carry one-based line ranges, target 800 tok
 and stay below 1,500 tokens including path/symbol context. The internal window
 baseline is available to the test/build API, not as a public storage backend.
 
+## Evaluate retrieval quality
+
+The internal [lexical chunking pilot](eval/README.md) compares syntax-aware and
+window chunks on a fixed public corpus and 16 pinned investigation queries.
+`npm run eval:prepare` builds and validates the comparison offline. Live evaluation
+is an explicit separate operation and retains isolated evaluation Collections.
+
 ## Explicit live acceptance run
 
 The live harness accepts `LAMBDADB_BASE_URL`, `LAMBDADB_PROJECT_NAME`, and

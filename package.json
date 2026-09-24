@@ -28,12 +28,14 @@
     "start": "node dist/cli.js",
     "demo": "npm run build && node scripts/demo.mjs",
     "prepack": "npm run build",
-    "format": "prettier --write src test scripts README.md VALIDATION.md CONTRIBUTING.md RELEASING.md CHANGELOG.md .github package.json tsconfig.json",
-    "format:check": "prettier --check src test scripts README.md VALIDATION.md CONTRIBUTING.md RELEASING.md CHANGELOG.md .github package.json tsconfig.json",
+    "format": "prettier --write src test scripts eval README.md VALIDATION.md CONTRIBUTING.md RELEASING.md CHANGELOG.md .github package.json tsconfig.json",
+    "format:check": "prettier --check src test scripts eval README.md VALIDATION.md CONTRIBUTING.md RELEASING.md CHANGELOG.md .github package.json tsconfig.json",
     "test:live": "npm run build && node --env-file=.env.local scripts/live.mjs",
     "check:version": "node scripts/check-release.mjs",
     "test:package": "node scripts/test-package.mjs",
-    "test:live:branches": "npm run build && node --env-file=.env.local scripts/live-branches.mjs"
+    "test:live:branches": "npm run build && node --env-file=.env.local scripts/live-branches.mjs",
+    "eval:prepare": "npm run build && node scripts/retrieval-eval.mjs prepare",
+    "eval:run": "node scripts/retrieval-eval.mjs run"
   },
   "dependencies": {
     "@functional-systems/lambdadb": "0.5.1",
