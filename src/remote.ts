@@ -7,7 +7,7 @@ import {
   tagTarget,
   type IndexConfigsUnion,
 } from "@functional-systems/lambdadb";
-import { invariant, type Doc } from "./common.js";
+import { hash, invariant, type Doc } from "./common.js";
 import type { Settings } from "./settings.js";
 export type Ref = { kind: "branch" | "tag"; name: string };
 export type Snapshot = { name: string; snapshotId: string };
@@ -132,7 +132,48 @@ export class LambdaRemote {
               pageToken: cursor,
             }),
           );
-          for (const d of page.docs) yield d.doc as Doc;
+          // Some deployments omit managed vectors from list responses even with
+          // includeVectors. Fetch only those records from the same immutable Tag;
+          // require identical non-vector payloads rather than weakening validation.
+          const missing = page.docs
+            .map((d) => d.doc as Doc)
+            .filter(
+              (d) =>
+                d.embeddingStatus === "managed" && d.embedding === undefined,
+            );
+          const hydrated = new Map<string, Doc>();
+          if (missing.length) {
+            invariant(
+              r.kind === "tag",
+              "Managed vector hydration requires an immutable Tag.",
+            );
+            const fetched = await request("fetch listed vectors", () =>
+              c.docs.fetch({
+                ref: tagRef(r.name),
+                ids: missing.map((d) => d.id),
+                consistentRead: false,
+                includeVectors: true,
+              }),
+            );
+            const expected = new Map(missing.map((d) => [d.id, hash(d)]));
+            for (const item of fetched.docs) {
+              const doc = item.doc as Doc;
+              const { embedding: _, ...source } = doc;
+              invariant(
+                !hydrated.has(doc.id) && expected.get(doc.id) === hash(source),
+                "Listed/fetched managed payloads disagree.",
+              );
+              hydrated.set(doc.id, doc);
+            }
+            invariant(
+              hydrated.size === expected.size,
+              "Listed managed records are missing from fetch.",
+            );
+          }
+          for (const d of page.docs) {
+            const doc = d.doc as Doc;
+            yield hydrated.get(doc.id) ?? doc;
+          }
           cursor = page.nextPageToken || undefined;
           if (cursor) {
             invariant(

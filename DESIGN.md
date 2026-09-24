@@ -771,7 +771,9 @@ Search remains lexical by default. Explicit `--mode semantic` uses managed
 query using LambdaDB RRF. Both legs enforce `kind=chunk` and the same optional
 path/language filters; kNN uses a prefilter and `k=limit`. The lexical leg keeps
 nonembedded chunks eligible. Query/fetch/list request vectors explicitly so the
-same validation applies to pinned result handles. Source reads still use the
+same validation applies to pinned result handles. When a deployment omits managed
+vectors from list responses, fetch the affected IDs from that same immutable Tag
+and require identical non-vector payloads before vector validation. Source reads still use the
 original file bytes, never enriched text. No relevance gain is claimed yet.
 
 Managed source text and semantic/hybrid query text are sent through LambdaDB to

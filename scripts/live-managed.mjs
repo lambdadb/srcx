@@ -245,7 +245,14 @@ if (previous) {
       report.status = "failed";
       report.error = e.message;
       await atomic(reportFile, report);
-      throw e;
+      console.error(
+        JSON.stringify({
+          status: "failed",
+          error: e.message,
+          report: reportFile,
+        }),
+      );
+      process.exitCode = 1;
     }
   });
 }
