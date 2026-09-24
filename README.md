@@ -4,8 +4,8 @@ Version-aware code search on LambdaDB. Import a committed Git tree, search its
 chunks, and read exact source pinned to a validated immutable version.
 
 This is an experimental development CLI. Local fixture, fault-injection, SDK transport,
-and opt-in live acceptance checks are available. The package is private and
-unpublished. See [VALIDATION.md](VALIDATION.md) for the latest observed results and
+and opt-in live acceptance checks are available. The npm package is prepared for
+publication but remains unpublished. See [VALIDATION.md](VALIDATION.md) for the latest observed results and
 remaining scope, and [DESIGN.md](DESIGN.md) for the full design.
 
 ## Run locally
@@ -28,6 +28,11 @@ convenience, not a Lucene implementation or a relevance benchmark.
 
 All commands return JSON, except help and errors. Use `node dist/cli.js` in this
 checkout; `srcx` is the configured executable name for future distribution.
+
+For development branches, CI, and installed-package checks, see
+[CONTRIBUTING.md](CONTRIBUTING.md). Version channels, first-publication steps, and
+the initially disabled npm automation are documented in [RELEASING.md](RELEASING.md).
+The project is licensed under [Apache-2.0](LICENSE).
 
 ## Preview a committed version without credentials
 

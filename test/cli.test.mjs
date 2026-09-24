@@ -10,6 +10,10 @@ import { MemoryStore } from "./memory-store.mjs";
 import { publish, published } from "../dist/publish.js";
 import { PRESET, INDEX_CONFIGS } from "../dist/build.js";
 import { atomic, hash } from "../dist/common.js";
+const cliPath = process.env.SRCX_TEST_CLI ?? resolve("dist/cli.js");
+const packageVersion = JSON.parse(
+  await readFile("package.json", "utf8"),
+).version;
 
 test("CLI resumes without the previous artifact and searches/reads the selected version", async (t) => {
   const f = await fixture();
@@ -160,7 +164,7 @@ test("CLI resumes without the previous artifact and searches/reads the selected 
   assert.equal(journal.phase, "writing");
   await rm(f.buildA.directory, { recursive: true });
   const args = [
-    resolve("dist/cli.js"),
+    cliPath,
     "import",
     "--repo",
     "review",
@@ -201,13 +205,8 @@ test("CLI resumes without the previous artifact and searches/reads the selected 
   assert.equal(last.artifact, f.buildB.directory);
   const runCli = async (args) =>
     JSON.parse(
-      (
-        await promisify(execFile)(
-          process.execPath,
-          [resolve("dist/cli.js"), ...args],
-          options,
-        )
-      ).stdout,
+      (await promisify(execFile)(process.execPath, [cliPath, ...args], options))
+        .stdout,
     );
   const hits = await runCli([
     "search",
@@ -234,9 +233,27 @@ test("CLI resumes without the previous artifact and searches/reads the selected 
   assert.equal(oldSource.sourceText, f.original);
   const cliVersion = await promisify(execFile)(
     process.execPath,
-    [resolve("dist/cli.js"), "--version"],
+    [cliPath, "--version"],
     options,
   );
-  assert.equal(cliVersion.stdout.trim(), "0.1.0-dev.1");
+  assert.equal(cliVersion.stdout.trim(), packageVersion);
+  // In package verification this runs the installed parser and its WASM assets.
+  const preview = await runCli([
+    "import",
+    "--path",
+    f.path,
+    "--ref",
+    f.b,
+    "--dry-run",
+    "--output",
+    join(f.root, "cli-preview"),
+  ]);
+  assert.equal(preview.commitOid, f.b);
+  assert.equal(preview.uploaded, false);
+  assert.equal(preview.counts.chunks, f.buildB.counts.chunks);
+  assert.equal(
+    preview.coverage.find((entry) => entry.path === "code.ts").parseStatus,
+    "parsed",
+  );
   assert.deepEqual(httpErrors, []);
 });
