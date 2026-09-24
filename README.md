@@ -107,8 +107,12 @@ npm run build
 node --env-file=/absolute/path/to/srcx/.env.local scripts/live-branches.mjs
 ```
 
-The branch harness retains resources and resumes completed checkpoints on rerun.
-Its per-import deadline defaults to 300 seconds and accepts
+The branch harness retains resources and resumes saved checkpoints on rerun.
+It preserves the original source revision and completion time. Checkpoints from
+different runtime code, harness, fixture, lockfile, or Node version are rejected
+before connecting or overwriting evidence. To validate changed code, select a new
+`SRCX_LIVE_BRANCHES_DIR` (for example `.srcx/live-branches-next`); retain the old
+run and any pending journal. Its per-import deadline defaults to 300 seconds and accepts
 `SRCX_LIVE_TIMEOUT_MS` up to 600000. Do not delete pending journals to start over.
 
 ## Connected workflow

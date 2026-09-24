@@ -63,7 +63,6 @@ export async function resolveVersion(
   binding: Binding,
   selector: string,
 ): Promise<Published> {
-  const versions = await published(store, binding);
   const ref = selector.startsWith("refs/tags/")
     ? selector
     : `refs/tags/${selector}`;
@@ -81,6 +80,9 @@ export async function resolveVersion(
     !(head && control),
     "Ambiguous branch/tag name: use refs/heads/... or refs/tags/...",
   );
+  // Pin moving ref control before listing versions. Otherwise publication can
+  // advance the ref to a version absent from the earlier list.
+  const versions = await published(store, binding);
   if (head) {
     invariant(
       head.applied,

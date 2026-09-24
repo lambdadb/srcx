@@ -20,6 +20,13 @@
 - Ambiguous indexed branch/Git tag names require explicit `refs/heads/...` or
   `refs/tags/...` selectors.
 
+### Fixed
+
+- Pin branch control before enumerating versions so a concurrent publication
+  cannot advance the selector beyond the version list being read.
+- Reject live checkpoint reuse across different code/harness inputs and preserve
+  the original validation revision and completion time on same-input reruns.
+
 ## [0.1.0-dev.1] - 2026-09-25
 
 ### Added

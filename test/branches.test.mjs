@@ -318,3 +318,25 @@ test("restoring an old journal cannot overwrite a completed tracked branch", asy
     f.b,
   );
 });
+
+test("branch resolution pins its control record before a concurrent publication changes the version list", async (t) => {
+  const { f, store, binding, build, send } = await setup(t);
+  const a = await send(await build("develop", f.a));
+  const b = await build("develop", f.b);
+  const tags = store.tags.bind(store);
+  let advance = true;
+  store.tags = async () => {
+    const observed = await tags();
+    if (advance) {
+      advance = false;
+      await send(b);
+    }
+    return observed;
+  };
+  const resolved = await resolveVersion(store, binding, "develop");
+  assert.equal(resolved.tagName, a.tagName);
+  assert.equal(
+    (await resolveVersion(store, binding, "develop")).commitOid,
+    f.b,
+  );
+});

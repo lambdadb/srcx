@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { fixture, git } from "../test/fixture.mjs";
 import { atomic, hash, optionalJson } from "../dist/common.js";
@@ -22,10 +22,37 @@ import {
 import { search, loadHandle, readHandle } from "../dist/search.js";
 import { resolveVersion } from "../dist/releases.js";
 
-const root = resolve(".srcx/live-branches");
+const root = resolve(
+  process.env.SRCX_LIVE_BRANCHES_DIR ?? ".srcx/live-branches",
+);
 const reportFile = join(root, "report.json");
 const runFile = join(root, "run.json");
-const report = (await optionalJson(reportFile)) ?? {
+const provenance = {
+  harnessHash: hash(await readFile(new URL(import.meta.url))),
+  implementationHash: hash(
+    await Promise.all(
+      (await readdir("dist"))
+        .filter((name) => name.endsWith(".js"))
+        .sort()
+        .map(async (name) => [name, hash(await readFile(join("dist", name)))]),
+    ),
+  ),
+  fixtureHash: hash(await readFile("test/fixture.mjs")),
+  lockfileHash: hash(await readFile("package-lock.json")),
+  nodeVersion: process.version,
+};
+const saved = await optionalJson(reportFile);
+if (saved) {
+  for (const [key, value] of Object.entries(provenance))
+    assert.equal(
+      saved[key],
+      value,
+      `Saved live run has different ${key}; use a new SRCX_LIVE_BRANCHES_DIR. Keep the original evidence and pending journal.`,
+    );
+}
+const report = saved ?? {
+  ...provenance,
+  sourceCommit: git(process.cwd(), "rev-parse", "HEAD"),
   startedAt: new Date().toISOString(),
   evidence: "Live LambdaDB; synthetic Git source; persistent branch acceptance",
   checks: {},
@@ -125,8 +152,6 @@ try {
   report.resourceUrl = `${settings.endpoint}/projects/${encodeURIComponent(settings.project)}/collections/${repository.collection}`;
   report.fixture = run.fixture;
   report.artifacts = run.artifacts;
-  report.sourceCommit = git(process.cwd(), "rev-parse", "HEAD");
-  report.harnessHash = hash(await readFile(new URL(import.meta.url)));
   await atomic(reportFile, report);
   const send = async (build, options = {}) =>
     exclusive(state, async () =>
@@ -295,7 +320,7 @@ try {
     return { writer: result.writer, tag: result.tagName };
   });
   report.status = "passed";
-  report.finishedAt = new Date().toISOString();
+  report.finishedAt ??= new Date().toISOString();
   report.resourcesRetained = true;
   report.tags = await store.tags();
   report.branches = await store.branches();
