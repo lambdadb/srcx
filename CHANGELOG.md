@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Persistent one-to-one Git branch / Collection Branch mapping, branch-local
+  incremental updates, and branch-selected search, resolve, and read against the
+  last published commit Tag.
+- Remote pending import ownership and resumable in-place branch updates, including
+  shared commit Tags across branches and non-fast-forward Git branch changes.
+- `test:live:branches` for repeatable synthetic live acceptance with retained
+  checkpoint, retry, and resource evidence.
+
+### Changed
+
+- Git branch imports update their fixed `git-*` writer; SHA/tag imports retain
+  manual workspaces. Existing publications and pending manual journals remain
+  usable. See README for migration and artifact behavior.
+- Ambiguous indexed branch/Git tag names require explicit `refs/heads/...` or
+  `refs/tags/...` selectors.
+
+### Fixed
+
+- Pin branch control before enumerating versions so a concurrent publication
+  cannot advance the selector beyond the version list being read.
+- Reject live checkpoint reuse across different code/harness inputs and preserve
+  the original validation revision and completion time on same-input reruns.
+
 ## [0.1.0-dev.1] - 2026-09-25
 
 ### Added

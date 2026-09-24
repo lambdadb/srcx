@@ -4,12 +4,86 @@ Date: 2026-09-25 (Asia/Seoul).
 
 ## Evidence boundary
 
-This implementation has passed local fixtures/fault injection/SDK transport checks,
+The initial implementation passed local fixtures/fault injection/SDK transport checks,
 a live synthetic A/B acceptance run, and an exact-package self-index of the public
 srcx repository against the user-supplied LambdaDB connection. No private source
 or paid embeddings were used. These checks are not a throughput, general
 concurrency, or retrieval-quality benchmark. npm publication evidence is recorded
-separately below.
+separately below. The persistent Git branch changes have a separate synthetic
+live run recorded next; the earlier live runs do not validate this new path.
+
+## Persistent Git branch tracking
+
+Local regression coverage exercises one writer across consecutive commits,
+branch-local deletion/diff baselines, separate branches sharing canonical Tags,
+rewinds to already published commits, and imports from fresh local state. Fault
+injection verifies last-published branch resolution during partial writes, pending
+ownership protection when the local journal is missing, stale/corrupt candidate
+rejection, and retries after uncertain control writes. Branch/tag ambiguity and
+explicit full refs are covered.
+
+The CLI fixture also imports and updates a tracked branch through the real SDK
+transport and selects it for search, resolve, and read. The same fixture runs
+against the installed tarball. These checks use a loopback fault-injection model,
+not a live LambdaDB deployment.
+
+A separate **live LambdaDB run passed all 12 checkpoints** on September 25 using
+Node **24.15.0**, application source commit
+`f42a9141cef3bfc0b604e1b14a00c79607c7dd98`, and the original checkout's `.env.local`
+loaded explicitly through Node. The run took **414.195 seconds** and uploaded only
+synthetic Git source with no paid embeddings. It verified:
+
+- First-import timeout remains unpublished, followed by same-journal recovery.
+- A -> B uses one fixed Collection Branch; pending B still resolves/searches A,
+  and a fresh local state cannot overwrite that pending branch.
+- Added/modified/deleted code searches correctly after B; old A evidence still
+  reads the exact original source bytes.
+- A second Git branch shares canonical A/B Tags while maintaining its own writer
+  baseline, including B -> A -> B movement and an unchanged repeated import.
+- A SHA-only new commit uses a manual `work-*` writer.
+
+A separate invocation of the actual CLI against that live Collection passed
+branch `resolve`, branch-selected `search`, and a full-file `read` compared byte
+for byte with the pinned Git blob. It used the built CLI, not a registry-installed
+package. Local installed-package evidence remains separate above.
+
+The reproducible harness is `scripts/live-branches.mjs` (`npm run
+test:live:branches`). Its ignored evidence is `.srcx/live-branches/report.json`
+and `.srcx/live-branches/cli-report.json` in the validation worktree. The report
+records the exact source commit, harness SHA-256, per-check results, and resource
+URL. One synthetic Collection is retained with two tracked writers, one manual
+writer, the two control/checkpoint Branches, three canonical commit Tags, and seven
+candidate Tags. No application fix was needed during this live run.
+
+On Node **22.14.0** and **24.15.0**, typechecking, all **43 tests**, and installed
+package checks passed. Formatting, release-version validation, and `git diff
+--check` also passed locally. These results are not GitHub CI evidence.
+
+## Final branch review validation
+
+The final pre-PR review reproduced a read-order race: a concurrent publication
+could advance branch control beyond the version list already captured by the
+reader. Resolution now pins the control record first. The review also found that
+live reruns could skip saved checkpoints while replacing the reported source
+revision; checkpoints now require matching runtime, harness, fixture, lockfile,
+and Node fingerprints and preserve their original revision/completion time.
+Regression tests cover both cases, including rejecting stale evidence before any
+connection or report mutation.
+
+After these fixes, Node **22.14.0** and **24.15.0** each passed typechecking,
+all **45 tests**, and installed-package checks. Formatting, release-version
+validation, and diff checks passed locally.
+
+A fresh synthetic live run at application/harness commit
+`2988c7e1826a44cfed48381681d0125b28ae9086` passed all **12 checkpoints** in
+**432.836 seconds**. The built CLI also passed live branch resolution,
+search, and exact source reads. Final reports are retained separately under
+`.srcx/live-branches-review/report.json` and
+`.srcx/live-branches-review/cli-report.json`; the previous run remains intact.
+This final run retained one synthetic Collection with two tracked writers, one
+manual writer, two control/checkpoint Branches, three canonical commit Tags,
+and seven candidate Tags. CI evidence, once available on the PR, is separate
+from these local and live results.
 
 ## Initial npm package and live self-index
 
@@ -135,12 +209,14 @@ interface verifies eligibility/cache behavior only; production provider selectio
 semantic/hybrid querying, pricing, and evaluation remain open. Public imports
 reject a vector-enabled build to prevent fixture vectors from reaching LambdaDB.
 
-Each import gets a fresh `work-*` Branch, with incremental reuse only from an exact
-validated previous writer snapshot. Existing writers are not mutated after
-publication. Persistent `git-*` tracking, automatic failed-workspace recovery,
-Alias pruning, and garbage collection are not yet implemented. Failed/candidate
+Git branch imports reuse a fixed `git-*` Branch with its last validated immutable
+baseline; SHA/tag-only imports retain frozen `work-*` writers. Automatic Git
+observation, failed-workspace recovery, branch rename/deletion handling, Alias
+pruning, and garbage collection are not yet implemented. Failed/candidate
 resources and build artifacts are retained. A single importing host is required;
-the local lock is not a distributed lease.
+the local lock is not a distributed lease. Remote pending ownership prevents
+accidental adoption from fresh local state but is not a distributed compare-and-set
+or lease protocol.
 
 Parsing uses the pinned packaged grammars. Unsupported/new syntax can fall back
 and is recorded; no claim of complete language-version coverage is made. There is

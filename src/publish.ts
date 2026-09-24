@@ -36,6 +36,8 @@ export type Journal = {
   attemptId: string;
   writer: string;
   source: string;
+  gitRef?: string;
+  reuseWriter?: boolean;
   baseline?: Published;
   phase: "branch" | "writing" | "waiting" | "publishing";
   batches: {
@@ -45,6 +47,43 @@ export type Journal = {
   }[];
   candidate?: { name: string; snapshotId: string };
 };
+/** The applied snapshot may differ from the shared canonical commit Tag. */
+export type TrackedBranch = Doc & {
+  gitRef: string;
+  writer: string;
+  applied?: Published;
+  publishedTagName?: string;
+  pending?: { attemptId: string; buildId: string; commitOid: string };
+};
+export function gitBranchName(ref: string): string {
+  invariant(
+    ref.startsWith("refs/heads/") && ref.length > 11,
+    "Expected a full Git branch ref.",
+  );
+  return `git-${hash(ref).slice(0, 40)}`;
+}
+export const gitBranchId = (ref: string): string => `branch-${hash(ref)}`;
+export const lastBuildPath = (state: string, ref?: string): string =>
+  join(state, ref ? `last-build-${hash(ref)}.json` : "last-build.json");
+export async function trackedBranch(
+  store: CollectionStore,
+  binding: Binding,
+  ref: string,
+): Promise<TrackedBranch | undefined> {
+  const doc = await one(store, branch("main"), gitBranchId(ref), true);
+  if (!doc) return undefined;
+  invariant(
+    doc.kind === "manifest" &&
+      doc.role === "git-branch" &&
+      doc.gitRef === ref &&
+      doc.writer === gitBranchName(ref) &&
+      doc.repoId === binding.repoId &&
+      doc.indexId === binding.indexId &&
+      doc.configHash === binding.configHash,
+    "Tracked branch identity mismatch.",
+  );
+  return doc as TrackedBranch;
+}
 export function versionTag(oid: string): string {
   return `ver-${hash(oid).slice(0, 40)}`;
 }
@@ -255,7 +294,9 @@ export async function publish(args: {
     invariant(
       j.buildId === b.buildId &&
         j.recordsHash === b.recordsHash &&
-        j.inventoryHash === b.inventoryHash,
+        j.inventoryHash === b.inventoryHash &&
+        (j.gitRef === b.branchRef ||
+          (j.reuseWriter === undefined && j.writer.startsWith("work-"))),
       "Another build is pending. Resume the artifact recorded in pending.json before importing a new commit.",
     );
     invariant(
@@ -266,6 +307,22 @@ export async function publish(args: {
   const existing = (await published(store, binding)).find(
     (v) => v.commitOid === b.commitOid,
   );
+  const tracked = b.branchRef
+    ? await trackedBranch(store, binding, b.branchRef)
+    : undefined;
+  if (tracked?.pending)
+    invariant(
+      j?.attemptId === tracked.pending.attemptId,
+      "Git branch has a pending import; resume with its original retry journal.",
+    );
+  if (j?.gitRef && j.phase !== "branch")
+    invariant(
+      tracked?.pending?.attemptId === j.attemptId ||
+        (j.phase === "publishing" &&
+          !tracked?.pending &&
+          tracked?.applied?.attemptId === j.attemptId),
+      "Tracked branch import ownership changed; refusing to replay this journal.",
+    );
   if (existing) {
     invariant(
       await validateCandidate(
@@ -277,17 +334,79 @@ export async function publish(args: {
       ),
       "Existing published version differs from this build.",
     );
-    await atomic(join(state, "last-build.json"), {
-      artifact: b.directory,
-      version: existing,
-    });
-    if (j) await rm(journalPath);
-    return existing;
+    // A shared commit Tag does not mean this Git branch has applied that commit.
+    if (!j && (!b.branchRef || tracked?.applied?.commitOid === b.commitOid)) {
+      if (tracked?.applied) {
+        const writer = (await store.branches()).find(
+          (x) => x.name === tracked.writer,
+        );
+        invariant(
+          writer?.snapshotId === tracked.applied.snapshotId,
+          "Writer baseline has changed; refusing to update tracked branch.",
+        );
+        invariant(
+          await validateCandidate(
+            store,
+            tracked.applied.tagName,
+            b,
+            binding,
+            tracked.applied.attemptId,
+          ),
+          "Tracked branch baseline validation failed.",
+        );
+      }
+      await atomic(lastBuildPath(state, b.branchRef), {
+        artifact: b.directory,
+        version: existing,
+      });
+      return existing;
+    }
+    // Legacy manual imports can finish bookkeeping after publication on retry.
+    if (j && !j.gitRef) {
+      await atomic(lastBuildPath(state), {
+        artifact: b.directory,
+        version: existing,
+      });
+      await rm(journalPath);
+      return existing;
+    }
   }
   if (!j) {
     let source = "checkpoint-empty";
     let baseline: Published | undefined;
-    if (args.baseline) {
+    if (b.branchRef) {
+      const writer = (await store.branches()).find(
+        (x) => x.name === gitBranchName(b.branchRef!),
+      );
+      if (tracked?.applied) {
+        baseline = tracked.applied;
+        invariant(
+          writer?.snapshotId === baseline.snapshotId,
+          "Writer baseline has changed; refusing to update tracked branch.",
+        );
+        const pin = (await store.tags()).find(
+          (t) => t.name === baseline!.tagName,
+        );
+        const root = await one(store, tag(baseline.tagName), "__manifest__");
+        invariant(
+          pin?.snapshotId === baseline.snapshotId &&
+            root?.repoId === binding.repoId &&
+            root.indexId === binding.indexId &&
+            root.configHash === binding.configHash &&
+            root.buildId === baseline.buildId &&
+            root.attemptId === baseline.attemptId &&
+            root.recordsHash === baseline.recordsHash &&
+            root.inventoryHash === baseline.inventoryHash &&
+            root.commitOid === baseline.commitOid,
+          "Tracked branch baseline Tag is missing or changed.",
+        );
+      } else {
+        invariant(
+          !writer && !tracked,
+          "Unowned or unfinished tracked branch; retain its retry journal.",
+        );
+      }
+    } else if (args.baseline?.version.writer.startsWith("work-")) {
       const prev = args.baseline;
       await validateBuild(prev.build);
       invariant(
@@ -322,7 +441,9 @@ export async function publish(args: {
       inventoryHash: b.inventoryHash,
       artifact: b.directory,
       attemptId,
-      writer: `work-${attemptId}`,
+      writer: b.branchRef ? gitBranchName(b.branchRef) : `work-${attemptId}`,
+      gitRef: b.branchRef,
+      reuseWriter: !!tracked?.applied,
       source,
       baseline,
       phase: "branch",
@@ -332,15 +453,48 @@ export async function publish(args: {
   }
   const save = () => atomic(journalPath, j);
   if (j.phase === "branch") {
+    if (j.gitRef) {
+      // Record intent before any corpus mutation, including before branch creation.
+      // A fresh local state must not treat a lagging, partially written head as clean.
+      const current = await trackedBranch(store, binding, j.gitRef);
+      invariant(
+        (!current?.pending || current.pending.attemptId === j.attemptId) &&
+          current?.applied?.snapshotId === j.baseline?.snapshotId,
+        "Git branch ownership or baseline changed before import.",
+      );
+      await store.upsert("main", [
+        {
+          ...current,
+          id: gitBranchId(j.gitRef),
+          kind: "manifest",
+          role: "git-branch",
+          schemaVersion: 1,
+          repoId: binding.repoId,
+          indexId: binding.indexId,
+          configHash: binding.configHash,
+          gitRef: j.gitRef,
+          writer: j.writer,
+          pending: {
+            attemptId: j.attemptId,
+            buildId: j.buildId,
+            commitOid: b.commitOid,
+          },
+        },
+      ]);
+    }
     const branches = await store.branches();
     const found = branches.find((x) => x.name === j!.writer);
     if (found)
       invariant(
-        found.parent === j.source &&
+        (j.reuseWriter || found.parent === j.source) &&
           found.snapshotId === (j.baseline?.snapshotId ?? null),
         "Partially created writer has an unexpected baseline.",
       );
     else {
+      invariant(
+        !j.reuseWriter,
+        "Tracked writer is missing; refusing to recreate a nonempty baseline.",
+      );
       const source = branches.find((x) => x.name === j!.source);
       invariant(
         source &&
@@ -454,10 +608,12 @@ export async function publish(args: {
   const found = (await store.tags()).find((t) => t.name === name);
   const final = found ?? (await store.tag(name, tag(j.candidate.name)));
   invariant(
-    final.snapshotId === j.candidate.snapshotId,
+    existing
+      ? final.snapshotId === existing.snapshotId
+      : final.snapshotId === j.candidate.snapshotId,
     "Published Tag name already points to a different snapshot.",
   );
-  const result: Published = {
+  const result: Published = existing ?? {
     id: versionId(b.commitOid),
     kind: "manifest",
     role: "published",
@@ -477,8 +633,42 @@ export async function publish(args: {
     counts: b.counts,
     validation: { inventory: true, content: true, query: true },
   };
-  await store.upsert("main", [result]);
-  await atomic(join(state, "last-build.json"), {
+  if (!existing) await store.upsert("main", [result]);
+  if (j.gitRef) {
+    const current = await trackedBranch(store, binding, j.gitRef);
+    invariant(
+      current?.pending?.attemptId === j.attemptId ||
+        (!current?.pending && current?.applied?.attemptId === j.attemptId),
+      "Tracked branch publication ownership changed.",
+    );
+    // Pin the exact writer baseline even when another branch published this commit first.
+    const applied: Published = {
+      ...result,
+      writer: j.writer,
+      snapshotId: j.candidate.snapshotId,
+      tagName:
+        final.snapshotId === j.candidate.snapshotId
+          ? final.name
+          : j.candidate.name,
+      attemptId: j.attemptId,
+    };
+    await store.upsert("main", [
+      {
+        id: gitBranchId(j.gitRef),
+        kind: "manifest",
+        role: "git-branch",
+        schemaVersion: 1,
+        repoId: binding.repoId,
+        indexId: binding.indexId,
+        configHash: binding.configHash,
+        gitRef: j.gitRef,
+        writer: j.writer,
+        applied,
+        publishedTagName: result.tagName,
+      },
+    ]);
+  }
+  await atomic(lastBuildPath(state, j.gitRef), {
     artifact: b.directory,
     version: result,
   });

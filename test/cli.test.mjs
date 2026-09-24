@@ -5,9 +5,9 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { join, resolve } from "node:path";
 import { rm, readFile } from "node:fs/promises";
-import { fixture } from "./fixture.mjs";
+import { fixture, git } from "./fixture.mjs";
 import { MemoryStore } from "./memory-store.mjs";
-import { publish, published } from "../dist/publish.js";
+import { publish, published, gitBranchName } from "../dist/publish.js";
 import { PRESET, INDEX_CONFIGS } from "../dist/build.js";
 import { atomic, hash } from "../dist/common.js";
 const cliPath = process.env.SRCX_TEST_CLI ?? resolve("dist/cli.js");
@@ -98,6 +98,29 @@ test("CLI resumes without the previous artifact and searches/reads the selected 
           result = { tags: (await store.tags()).map(details) };
         else {
           result = { tag: details(await store.tag(body.tagName, body.source)) };
+          res.statusCode = 201;
+        }
+      } else if (path.endsWith("/branches")) {
+        const details = (b) => ({
+          name: b.name,
+          parentBranch: b.parent
+            ? { branchId: b.parent, name: b.parent }
+            : null,
+          headSnapshot: b.snapshotId
+            ? { snapshotId: b.snapshotId, snapshotCommittedAt: 1 }
+            : null,
+          parentSnapshot: null,
+          createdAt: 1,
+        });
+        if (req.method === "GET")
+          result = { branches: (await store.branches()).map(details) };
+        else {
+          await store.branch(body.branchName, body.source.name);
+          result = {
+            branch: details(
+              (await store.branches()).find((b) => b.name === body.branchName),
+            ),
+          };
           res.statusCode = 201;
         }
       } else if (path.endsWith("/docs/upsert")) {
@@ -255,5 +278,55 @@ test("CLI resumes without the previous artifact and searches/reads the selected 
     preview.coverage.find((entry) => entry.path === "code.ts").parseStatus,
     "parsed",
   );
+  // Exercise tracked imports through the actual CLI/SDK, also in the installed package.
+  await atomic(join(state, "attachment.json"), f.source);
+  git(f.path, "branch", "develop", f.a);
+  await runCli(["import", "--repo", "review", "--ref", "develop"]);
+  const writer = gitBranchName("refs/heads/develop");
+  assert.equal(
+    store.docs({ kind: "branch", name: writer }).get("__manifest__").commitOid,
+    f.a,
+  );
+  const branchCount = store.work.size;
+  git(f.path, "branch", "-f", "develop", f.b);
+  await runCli(["import", "--repo", "review", "--ref", "refs/heads/develop"]);
+  assert.equal(store.work.size, branchCount);
+  assert.equal(
+    store.docs({ kind: "branch", name: writer }).get("__manifest__").commitOid,
+    f.b,
+  );
+  const branchHits = await runCli([
+    "search",
+    "--repo",
+    "review",
+    "--version",
+    "develop",
+    "--query",
+    "newword",
+  ]);
+  assert.ok(branchHits.length);
+  assert.ok(branchHits.every((h) => h.commitOid === f.b));
+  assert.equal(
+    (
+      await runCli([
+        "resolve",
+        "--repo",
+        "review",
+        "--ref",
+        "refs/heads/develop",
+      ])
+    ).commitOid,
+    f.b,
+  );
+  const branchRead = await runCli([
+    "read",
+    "--repo",
+    "review",
+    "--version",
+    "develop",
+    "--path",
+    "code.ts",
+  ]);
+  assert.match(branchRead.sourceText, /newword/);
   assert.deepEqual(httpErrors, []);
 });

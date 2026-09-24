@@ -5,7 +5,7 @@ import { mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { configure, loadSettings, stateRoot } from "./settings.js";
-import { identity } from "./git.js";
+import { identity, resolveCommit } from "./git.js";
 import { loadBuild, materialize, validateBuild, type Build } from "./build.js";
 import { invariant, optionalJson } from "./common.js";
 import { LambdaRemote } from "./remote.js";
@@ -16,7 +16,13 @@ import {
   register,
   selectRepository,
 } from "./repository.js";
-import { exclusive, publish, published, type Published } from "./publish.js";
+import {
+  exclusive,
+  lastBuildPath,
+  publish,
+  published,
+  type Published,
+} from "./publish.js";
 import { resolveVersion, syncTags } from "./releases.js";
 import { directHandle, loadHandle, readHandle, search } from "./search.js";
 const cli = new Command()
@@ -147,14 +153,29 @@ cli
     const buildLocal = async (
       source: Awaited<ReturnType<typeof identity>>,
       previous?: Build,
+      state?: string,
     ) => {
       invariant(o.ref, "--ref is required to build a commit.");
+      const commit = await resolveCommit(source.path, o.ref);
+      if (state) {
+        const last = await optionalJson<{ artifact: string }>(
+          lastBuildPath(state, commit.branch),
+        );
+        if (last) {
+          try {
+            previous = await loadBuild(last.artifact);
+          } catch (error) {
+            if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+          }
+        }
+      }
       const parent = join(stateRoot(), "builds");
       await mkdir(parent, { recursive: true, mode: 0o700 });
       const path = o.output ? resolve(o.output) : join(parent, randomUUID());
       return materialize({
         identity: source,
         ref: o.ref,
+        resolvedCommit: commit,
         output: path,
         previous,
       });
@@ -212,20 +233,33 @@ cli
         // Pending attempts reconcile against the journal's immutable remote
         // baseline; they do not need the previous build's local files.
         const pending = await optionalJson(join(state, "pending.json"));
+        const b = o.artifact
+          ? await loadBuild(o.artifact)
+          : await buildLocal(
+              await attachment(settings, r),
+              undefined,
+              pending ? undefined : state,
+            );
         let baseline: { version: Published; build: Build } | undefined;
-        if (!pending) {
+        // Tracked branches discover their own immutable baseline remotely.
+        // Manual SHA/tag imports retain the previous frozen workspace optimization.
+        if (!pending && !b.branchRef) {
           const last = await optionalJson<{
             artifact: string;
             version: Published;
-          }>(join(state, "last-build.json"));
+          }>(lastBuildPath(state));
           if (last) {
-            const b = await loadBuild(last.artifact);
-            baseline = { version: last.version, build: b };
+            try {
+              baseline = {
+                version: last.version,
+                build: await loadBuild(last.artifact),
+              };
+            } catch (error) {
+              if ((error as NodeJS.ErrnoException).code !== "ENOENT")
+                throw error;
+            }
           }
         }
-        const b = o.artifact
-          ? await loadBuild(o.artifact)
-          : await buildLocal(await attachment(settings, r), baseline?.build);
         return publish({
           store,
           binding: r,
@@ -249,7 +283,7 @@ cli
 cli
   .command("resolve")
   .requiredOption("--repo <name>")
-  .requiredOption("--ref <commit-or-release>")
+  .requiredOption("--ref <commit-branch-or-release>")
   .action(async (o) => {
     const { remote } = await connected();
     const r = await selectRepository(remote, o.repo);
@@ -258,7 +292,7 @@ cli
 cli
   .command("search")
   .requiredOption("--repo <name>")
-  .requiredOption("--version <commit-or-release>")
+  .requiredOption("--version <commit-branch-or-release>")
   .requiredOption("--query <text>")
   .option("--limit <count>", "Maximum hits", integer, 10)
   .option("--path <path>", "Exact path filter")
@@ -279,7 +313,7 @@ cli
   .command("read")
   .option("--result <id>")
   .option("--repo <name>")
-  .option("--version <commit-or-release>")
+  .option("--version <commit-branch-or-release>")
   .option("--path <path>")
   .option("--lines <start:end>")
   .option("--context <lines>", "Expand an evidence span", integer, 0)
