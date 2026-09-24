@@ -4,9 +4,20 @@ Version-aware code search on LambdaDB. Import a committed Git tree, search its
 chunks, and read exact source pinned to a validated immutable version.
 
 This is an experimental development CLI. Local fixture, fault-injection, SDK transport,
-and opt-in live acceptance checks are available. The npm package is prepared for
-publication but remains unpublished. See [VALIDATION.md](VALIDATION.md) for the latest observed results and
+and opt-in live acceptance checks are available. Development builds are available
+on npm under `@functional-systems/srcx@dev`. See [VALIDATION.md](VALIDATION.md) for the latest observed results and
 remaining scope, and [DESIGN.md](DESIGN.md) for the full design.
+
+## Install a development build
+
+Requires Node.js 22.14+ and Git. These are experimental prereleases; there is no
+stable release yet. Select the `dev` channel explicitly:
+
+```sh
+npm install -g @functional-systems/srcx@dev
+srcx --version
+srcx --help
+```
 
 ## Run locally
 
@@ -27,11 +38,11 @@ artifacts. It does not contact LambdaDB. The model's lexical matching is a test
 convenience, not a Lucene implementation or a relevance benchmark.
 
 All commands return JSON, except help and errors. Use `node dist/cli.js` in this
-checkout; `srcx` is the configured executable name for future distribution.
+checkout, or `srcx` after installing the npm package.
 
 For development branches, CI, and installed-package checks, see
 [CONTRIBUTING.md](CONTRIBUTING.md). Version channels, first-publication steps, and
-the initially disabled npm automation are documented in [RELEASING.md](RELEASING.md).
+npm automation are documented in [RELEASING.md](RELEASING.md).
 The project is licensed under [Apache-2.0](LICENSE).
 
 ## Preview a committed version without credentials

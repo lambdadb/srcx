@@ -4,12 +4,55 @@ Date: 2026-09-25 (Asia/Seoul).
 
 ## Evidence boundary
 
-This implementation has passed local fixtures/fault injection/SDK transport checks
-and a live synthetic A/B acceptance run against the user-supplied LambdaDB
-connection. Only generated test source was uploaded. No production repository
-source or paid embeddings were used, and no Git repository/npm package was
-published. Live evidence below is limited to this small fixture; it is not a
-throughput, general concurrency, or retrieval-quality benchmark.
+This implementation has passed local fixtures/fault injection/SDK transport checks,
+a live synthetic A/B acceptance run, and an exact-package self-index of the public
+srcx repository against the user-supplied LambdaDB connection. No private source
+or paid embeddings were used. These checks are not a throughput, general
+concurrency, or retrieval-quality benchmark. npm publication evidence is recorded
+separately below.
+
+## Initial npm package and live self-index
+
+The exact `0.1.0-dev.1` tarball from merged commit
+`f94f947bf593b2f8498c07e130933b0ab444f868` passed clean installation, CLI execution,
+WASM parsing, and the loopback import/search/read contract. Its installed CLI then
+imported that same Git commit into LambdaDB: **37 files, 260 chunks**, with
+inventory, content, and query validation passing. A `validateBuild` query returned
+three results from `src/build.ts`; the full-file read matched the pinned Git blob
+byte for byte. This was a lexical-only import (`embedding=none`).
+
+The first npm publication used this tested tarball with the `dev` dist-tag. The
+registry tarball's SHA-512 matched the candidate, and a clean installation of the
+downloaded registry tarball passed the same CLI contract. Registry signatures are
+present. The local bootstrap has no GitHub Actions provenance. npm also created
+`latest=0.1.0-dev.1`; that tag does not represent a stable release.
+
+Local evidence is retained under `.srcx/releases/0.1.0-dev.1-f94f947/` (ignored),
+including `candidate.json`, `live-publication.json`, `live-verification.json`,
+`registry-version.json`, and the exact candidate and downloaded tarballs.
+The source commit's [Node 22/24 CI](https://github.com/lambdadb/srcx/actions/runs/36035063463)
+also passed. Current distribution and automation status is in
+[RELEASING.md](RELEASING.md).
+
+## First automatic development publication
+
+[CI attempt 3](https://github.com/lambdadb/srcx/actions/runs/36035063463/attempts/3)
+published `0.1.0-dev.3` using npm Trusted Publishing from the same reviewed commit.
+The version suffix is the first-parent commit count. The registry's `gitHead`
+and SLSA provenance both identify `f94f947bf593b2f8498c07e130933b0ab444f868`;
+provenance also identifies `lambdadb/srcx`, `.github/workflows/publish.yaml`, and
+the GitHub-hosted workflow run. The downloaded tarball's SHA-512 matches registry
+metadata. A clean install by package name/version passed CLI execution and the
+loopback import/search/read contract. `npm audit signatures` verified all eight
+installed registry signatures and three attestations, including srcx provenance.
+`dev=0.1.0-dev.3`; `latest=0.1.0-dev.1` remains the bootstrap prerelease.
+
+The initial automatic attempt stopped during the pre-write metadata lookup while
+npm's full package listing still returned 404. After the listing became visible,
+only the failed publishing job was rerun. No publication write was retried to
+work around propagation. Local evidence is retained in `registry-dev3.json`,
+`attestations-dev3.json`, and `provenance-dev3.json` under the release directory
+above. No stable release, GitHub Release, or Homebrew formula was created.
 
 ## Local checks
 
@@ -76,11 +119,9 @@ The test suite covers:
   reruns. Simulated registry delays/failures verify bounded post-write reads and
   no automatic publication retry; no test writes to npm.
 
-Release infrastructure is prepared in `.github/workflows/publish.yaml` for Node
-22/24. Local validation does not establish GitHub Actions or npm publication
-success. Initial npm registration, package-specific Trusted Publisher setup, and
-enabling `NPM_DEV_PUBLISH_ENABLED` remain separate release steps. See
-[RELEASING.md](RELEASING.md); no npm or Homebrew release was performed in this setup.
+Release infrastructure is in `.github/workflows/publish.yaml` for Node 22/24.
+The local checks above are distinct from the CI, npm, and live-service evidence
+recorded separately. No stable/rc or Homebrew release has been performed.
 
 The demo writes [.srcx/demo-report.json](.srcx/demo-report.json). That generated
 report identifies the retained synthetic repository, A/B build artifacts, counts,
