@@ -11,7 +11,11 @@ from two full Git commits, before running retrieval. Four questions each cover
 identifiers, behavior, documentation/configuration, and version-dependent facts.
 Labels were authored by the coding assistant from inspected Git source; they have
 not received independent human relevance review. Matching an expected file alone
-is insufficient: the metrics measure the specified evidence ranges.
+is insufficient: the metrics measure the specified evidence ranges. These are
+source-derived diagnostic questions, not a sample of user search logs. Alternative
+valid answers outside the labeled ranges earn no credit; this measures recovery
+of known evidence, not exhaustive relevance. The version questions include paired
+queries across commits and are not independent samples.
 
 Both methods include the same files, use `cl100k_base`, the same LambdaDB index
 schema and literal analyzed lexical query, and path-only enrichment. No path or
@@ -34,6 +38,7 @@ Retrieve 20 chunks. Report top-5 evidence coverage and the longest ranked
 whole-chunk prefix that fits **3,000 enriched tokens**. Stop at the first chunk
 that would exceed the budget, without skipping it to select smaller later hits.
 Every chunk consumes its full token count, including repeated paths and overlaps.
+This is a full-chunk evaluation payload, not the CLI's truncated search preview.
 Relevant source-byte ranges are unioned per file, so duplicate hits cannot inflate
 coverage. Report complete and partial coverage, returned tokens, duplicate source
 bytes, and whether full evidence is split across chunks. Byte coverage is a

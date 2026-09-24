@@ -79,7 +79,7 @@ baseline is available to the test/build API, not as a public storage backend.
 
 ## Evaluate retrieval quality
 
-The internal [lexical chunking pilot](eval/README.md) compares syntax-aware and
+The internal [lexical chunking pilot](https://github.com/lambdadb/srcx/blob/develop/eval/README.md) compares syntax-aware and
 window chunks on a fixed public corpus and 16 pinned investigation queries.
 `npm run eval:prepare` builds and validates the comparison offline. Live evaluation
 is an explicit separate operation and retains isolated evaluation Collections.
