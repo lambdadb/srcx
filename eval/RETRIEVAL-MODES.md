@@ -6,6 +6,9 @@ chunker, read policy and ranking implementation are unchanged. A transport fix
 fetches managed vectors omitted from query responses using the same pinned Tag;
 hit order, scores and non-vector payloads are preserved.
 
+Observed results and the transport issue found during execution are recorded in
+[RETRIEVAL-MODE-RESULTS.md](RETRIEVAL-MODE-RESULTS.md).
+
 ## Frozen inputs and labels
 
 [retrieval-modes-v1.json](retrieval-modes-v1.json) reuses the 16 questions and pinned

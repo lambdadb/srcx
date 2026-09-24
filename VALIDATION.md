@@ -12,6 +12,28 @@ concurrency, or retrieval-quality benchmark. npm publication evidence is recorde
 separately below. The persistent Git branch changes have a separate synthetic
 live run recorded next; the earlier live runs do not validate this new path.
 
+## Retrieval mode comparison
+
+At application/harness commit `de5a23bbc2f0712d134066354b4313420d21fccd`, the
+actual CLI completed 48 searches across the same two managed corpora and fixed
+16-question suite. All **456 results/handles** and **236 reads** matched pinned
+source and version facts. Revised-label complete evidence was lexical **16/16**,
+semantic **8/16**, and hybrid **13/16**; unchanged original labels scored 14/16,
+8/16, and 11/16. These are diagnostic coverage measurements, not human answer grades.
+
+All three hybrid regressions contained the required evidence in search's top ten,
+but outside the first five reads. Keep lexical as the default pending fresh-task
+ranking evaluation. The run also exposed a query response omitting one managed
+vector; same-Tag fetch hydration now preserves non-vector payload equality and
+hit order/scores. The failed attempt remains separate from the complete fresh run.
+
+Node 22/24 passed **67 tests**, typechecking and installed-package CLI checks after
+the fix. The completed live report was revalidated without new service calls, and
+its bytes/timestamp were unchanged. See [full results](eval/RETRIEVAL-MODE-RESULTS.md)
+for per-mode metrics, inspected misses, input/usage accounting, source revisions,
+report hashes and evidence limits; [protocol](eval/RETRIEVAL-MODES.md) documents
+reproduction and effects.
+
 ## Managed OpenAI embedding acceptance
 
 The opt-in managed preset passed a separate synthetic live run at application and
