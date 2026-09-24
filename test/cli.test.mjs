@@ -11,7 +11,7 @@ import { publish, published } from "../dist/publish.js";
 import { PRESET, INDEX_CONFIGS } from "../dist/build.js";
 import { atomic, hash } from "../dist/common.js";
 
-test("CLI resumes a partial B import after the previous A artifact is removed", async (t) => {
+test("CLI resumes without the previous artifact and searches/reads the selected version", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
   const store = new MemoryStore();
@@ -199,4 +199,44 @@ test("CLI resumes a partial B import after the previous A artifact is removed", 
     await readFile(join(state, "last-build.json"), "utf8"),
   );
   assert.equal(last.artifact, f.buildB.directory);
+  const runCli = async (args) =>
+    JSON.parse(
+      (
+        await promisify(execFile)(
+          process.execPath,
+          [resolve("dist/cli.js"), ...args],
+          options,
+        )
+      ).stdout,
+    );
+  const hits = await runCli([
+    "search",
+    "--repo",
+    "review",
+    "--version",
+    f.b,
+    "--query",
+    "newword",
+    "--path",
+    "code.ts",
+  ]);
+  assert.ok(hits.length > 0);
+  assert.ok(hits.every((h) => h.commitOid === f.b));
+  const oldSource = await runCli([
+    "read",
+    "--repo",
+    "review",
+    "--version",
+    f.a,
+    "--path",
+    "code.ts",
+  ]);
+  assert.equal(oldSource.sourceText, f.original);
+  const cliVersion = await promisify(execFile)(
+    process.execPath,
+    [resolve("dist/cli.js"), "--version"],
+    options,
+  );
+  assert.equal(cliVersion.stdout.trim(), "0.1.0-dev.1");
+  assert.deepEqual(httpErrors, []);
 });

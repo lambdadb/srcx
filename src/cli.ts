@@ -21,6 +21,7 @@ import { directHandle, loadHandle, readHandle, search } from "./search.js";
 const cli = new Command()
   .name("srcx")
   .description("Version-aware code search on LambdaDB")
+  .enablePositionalOptions()
   .version("0.1.0-dev.1");
 const output = (value: unknown): void => {
   process.stdout.write(JSON.stringify(value, null, 2) + "\n");
