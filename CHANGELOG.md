@@ -9,6 +9,11 @@
 
 ### Added
 
+- Opt-in LambdaDB managed OpenAI `text-embedding-3-small` Collections, offline
+  embedding input previews, and explicit semantic/RRF hybrid search modes.
+- Candidate validation of generated vectors separately from exact source payloads,
+  unchanged-record reuse, and a bounded synthetic managed acceptance harness.
+
 - Persistent one-to-one Git branch / Collection Branch mapping, branch-local
   incremental updates, and branch-selected search, resolve, and read against the
   last published commit Tag.

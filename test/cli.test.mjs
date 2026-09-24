@@ -7,18 +7,40 @@ import { join, resolve } from "node:path";
 import { rm, readFile } from "node:fs/promises";
 import { fixture, git } from "./fixture.mjs";
 import { MemoryStore } from "./memory-store.mjs";
+import { ManagedStore } from "./managed-store.mjs";
 import { publish, published, gitBranchName } from "../dist/publish.js";
-import { PRESET, INDEX_CONFIGS } from "../dist/build.js";
+import {
+  PRESET,
+  MANAGED_PRESET,
+  indexConfigs,
+  materialize,
+} from "../dist/build.js";
 import { atomic, hash } from "../dist/common.js";
 const cliPath = process.env.SRCX_TEST_CLI ?? resolve("dist/cli.js");
 const packageVersion = JSON.parse(
   await readFile("package.json", "utf8"),
 ).version;
 
-test("CLI resumes without the previous artifact and searches/reads the selected version", async (t) => {
+async function cliContract(t, preset) {
   const f = await fixture();
   t.after(f.cleanup);
-  const store = new MemoryStore();
+  const managed = !!preset.embedding;
+  if (managed) {
+    f.buildA = await materialize({
+      identity: f.source,
+      ref: f.a,
+      output: join(f.root, "managed-a"),
+      preset,
+    });
+    f.buildB = await materialize({
+      identity: f.source,
+      ref: f.b,
+      output: join(f.root, "managed-b"),
+      preset,
+      previous: f.buildA,
+    });
+  }
+  const store = managed ? new ManagedStore() : new MemoryStore();
   const collection = "code-review";
   const binding = {
     repoId: "review-repo",
@@ -34,7 +56,7 @@ test("CLI resumes without the previous artifact and searches/reads the selected 
       schemaVersion: 1,
       ...binding,
       name: "review",
-      preset: PRESET,
+      preset,
       initialization: "ready",
     },
   ]);
@@ -65,7 +87,7 @@ test("CLI resumes without the previous artifact and searches/reads the selected 
               updatedAt: 1,
               createdAt: 1,
               description: "Synthetic CLI fixture",
-              indexConfigs: INDEX_CONFIGS,
+              indexConfigs: indexConfigs(preset),
               tags: {
                 purpose: "code-search-v1",
                 "index-id": binding.indexId,
@@ -97,7 +119,9 @@ test("CLI resumes without the previous artifact and searches/reads the selected 
         if (req.method === "GET")
           result = { tags: (await store.tags()).map(details) };
         else {
-          result = { tag: details(await store.tag(body.tagName, body.source)) };
+          result = {
+            tag: details(await store.tag(body.tagName, body.source)),
+          };
           res.statusCode = 201;
         }
       } else if (path.endsWith("/branches")) {
@@ -132,6 +156,11 @@ test("CLI resumes without the previous artifact and searches/reads the selected 
         res.statusCode = 202;
         result = { message: "accepted" };
       } else if (path.endsWith("/query")) {
+        assert.equal(body.includeVectors, true);
+        if (body.query.rrf) {
+          assert.equal(body.query.rrf[1].knn.queryText, "newword");
+          assert.equal(body.query.rrf[1].knn.queryVector, undefined);
+        }
         const hits = await store.query(body.ref.name, body.query, body.size);
         result = {
           ...page(hits.map((h) => h.doc)),
@@ -237,6 +266,8 @@ test("CLI resumes without the previous artifact and searches/reads the selected 
     "review",
     "--version",
     f.b,
+    "--mode",
+    managed ? "hybrid" : "lexical",
     "--query",
     "newword",
     "--path",
@@ -268,12 +299,16 @@ test("CLI resumes without the previous artifact and searches/reads the selected 
     "--ref",
     f.b,
     "--dry-run",
+    "--embedding",
+    managed ? "text-embedding-3-small" : "none",
     "--output",
     join(f.root, "cli-preview"),
   ]);
   assert.equal(preview.commitOid, f.b);
   assert.equal(preview.uploaded, false);
   assert.equal(preview.counts.chunks, f.buildB.counts.chunks);
+  assert.equal(preview.configHash, f.buildB.configHash);
+  if (managed) assert.ok(preview.counts.managed > 0);
   assert.equal(
     preview.coverage.find((entry) => entry.path === "code.ts").parseStatus,
     "parsed",
@@ -301,6 +336,8 @@ test("CLI resumes without the previous artifact and searches/reads the selected 
     "review",
     "--version",
     "develop",
+    "--mode",
+    managed ? "hybrid" : "lexical",
     "--query",
     "newword",
   ]);
@@ -329,4 +366,8 @@ test("CLI resumes without the previous artifact and searches/reads the selected 
   ]);
   assert.match(branchRead.sourceText, /newword/);
   assert.deepEqual(httpErrors, []);
-});
+}
+
+for (const preset of [PRESET, MANAGED_PRESET])
+  test(`CLI ${preset.embedding ? "managed" : "lexical"} resumes, imports, searches and reads pinned versions`, (t) =>
+    cliContract(t, preset));

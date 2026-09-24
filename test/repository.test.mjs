@@ -9,7 +9,12 @@ import {
   matchesIndexSchema,
 } from "../dist/repository.js";
 import { hash } from "../dist/common.js";
-import { PRESET, INDEX_CONFIGS } from "../dist/build.js";
+import {
+  PRESET,
+  MANAGED_PRESET,
+  INDEX_CONFIGS,
+  indexConfigs,
+} from "../dist/build.js";
 import { fixture } from "./fixture.mjs";
 import { MemoryStore } from "./memory-store.mjs";
 class ProvisionRemote {
@@ -128,4 +133,59 @@ test("server-managed keyword id is compatible; extra or changed user fields are 
     }),
     false,
   );
+});
+
+test("managed preset provisions a separate discoverable Collection and rejects embedding schema drift", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  const old = process.env.SRCX_STATE_DIR;
+  process.env.SRCX_STATE_DIR = join(f.root, "managed-state");
+  t.after(() => {
+    if (old === undefined) delete process.env.SRCX_STATE_DIR;
+    else process.env.SRCX_STATE_DIR = old;
+  });
+  const remote = new ProvisionRemote();
+  const lexical = await register(remote, { path: f.path });
+  remote.failCreate = true;
+  await assert.rejects(
+    register(remote, { path: f.path, preset: MANAGED_PRESET }),
+    /acknowledgement lost/,
+  );
+  const managed = await register(remote, {
+    path: f.path,
+    preset: MANAGED_PRESET,
+  });
+  assert.notEqual(managed.collection, lexical.collection);
+  assert.deepEqual(managed.preset, MANAGED_PRESET);
+  assert.equal((await discover(remote)).repositories.length, 2);
+  await assert.rejects(
+    selectRepository(remote, f.source.key),
+    /exact Collection name/,
+  );
+  assert.equal(
+    (await selectRepository(remote, managed.collection)).configHash,
+    hash(MANAGED_PRESET),
+  );
+  assert.ok(
+    matchesIndexSchema(
+      { ...indexConfigs(MANAGED_PRESET), id: { type: "keyword" } },
+      MANAGED_PRESET,
+    ),
+  );
+  for (const change of [
+    { dimensions: 3072 },
+    { similarity: "euclidean" },
+    { model: "text-embedding-3-large" },
+    { sourceField: "searchText" },
+    { provider: "different" },
+  ]) {
+    const schema = structuredClone(indexConfigs(MANAGED_PRESET));
+    Object.assign(schema.embedding.embedding, change);
+    assert.equal(matchesIndexSchema(schema, MANAGED_PRESET), false);
+  }
+  const schema = structuredClone(indexConfigs(MANAGED_PRESET));
+  schema.embedding.managedEmbedding = false;
+  assert.equal(matchesIndexSchema(schema, MANAGED_PRESET), false);
+  remote.metadata.get(managed.collection).indexConfigs = schema;
+  assert.equal((await discover(remote)).partial.length, 1);
 });

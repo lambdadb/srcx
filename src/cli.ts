@@ -1,12 +1,20 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
-import { Command, InvalidArgumentError } from "commander";
+import { Command, InvalidArgumentError, Option } from "commander";
 import { mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { configure, loadSettings, stateRoot } from "./settings.js";
 import { identity, resolveCommit } from "./git.js";
-import { loadBuild, materialize, validateBuild, type Build } from "./build.js";
+import {
+  loadBuild,
+  materialize,
+  validateBuild,
+  type Build,
+  type Preset,
+  PRESET,
+  presetFor,
+} from "./build.js";
 import { invariant, optionalJson } from "./common.js";
 import { LambdaRemote } from "./remote.js";
 import {
@@ -87,6 +95,14 @@ repo
   .option("--remote <name>")
   .option("--description <text>")
   .option("--tag <key=value>", "One optional Collection metadata tag")
+  .addOption(
+    new Option(
+      "--embedding <model>",
+      "Managed model (source text is sent to the provider on import)",
+    )
+      .choices(["none", "text-embedding-3-small"])
+      .default("none"),
+  )
   .action(async (o) => {
     const { remote } = await connected();
     let labels: Record<string, string> | undefined;
@@ -101,6 +117,7 @@ repo
         remote: o.remote,
         description: o.description,
         labels,
+        preset: presetFor(o.embedding),
       }),
     );
   });
@@ -128,6 +145,12 @@ cli
   .option("--repo <name>", "Registered remote repository")
   .option("--ref <ref>", "Local branch, Git tag, or commit OID")
   .option("--dry-run", "Only materialize and validate a local build")
+  .addOption(
+    new Option(
+      "--embedding <model>",
+      "Preset for --dry-run --path; connected imports use the repository preset",
+    ).choices(["none", "text-embedding-3-small"]),
+  )
   .option("--output <directory>", "New artifact directory")
   .option(
     "--previous <directory>",
@@ -140,6 +163,10 @@ cli
   )
   .option("--timeout <seconds>", "Validation wait deadline", integer, 120)
   .action(async (o) => {
+    invariant(
+      !o.embedding || (o.dryRun && o.path),
+      "--embedding is only accepted with --dry-run --path; connected imports use the repository preset.",
+    );
     invariant(!(o.path && o.repo), "Choose --path or --repo.");
     invariant(
       !o.previous || o.dryRun,
@@ -154,6 +181,7 @@ cli
       source: Awaited<ReturnType<typeof identity>>,
       previous?: Build,
       state?: string,
+      preset: Preset = PRESET,
     ) => {
       invariant(o.ref, "--ref is required to build a commit.");
       const commit = await resolveCommit(source.path, o.ref);
@@ -178,6 +206,7 @@ cli
         resolvedCommit: commit,
         output: path,
         previous,
+        preset,
       });
     };
     if (o.dryRun) {
@@ -187,18 +216,20 @@ cli
         await validateBuild(b);
       } else {
         let source;
+        let preset = presetFor(o.embedding);
         if (o.path) source = await identity(o.path, o.remote);
         else {
           invariant(o.repo, "Use --path for a credential-free dry run.");
           const { remote, settings } = await connected();
-          source = await attachment(
-            settings,
-            await selectRepository(remote, o.repo),
-          );
+          const selected = await selectRepository(remote, o.repo);
+          preset = selected.preset ?? PRESET;
+          source = await attachment(settings, selected);
         }
         b = await buildLocal(
           source,
           o.previous ? await loadBuild(o.previous) : undefined,
+          undefined,
+          preset,
         );
       }
       output({
@@ -239,6 +270,7 @@ cli
               await attachment(settings, r),
               undefined,
               pending ? undefined : state,
+              r.preset ?? PRESET,
             );
         let baseline: { version: Published; build: Build } | undefined;
         // Tracked branches discover their own immutable baseline remotely.
@@ -295,6 +327,14 @@ cli
   .requiredOption("--version <commit-branch-or-release>")
   .requiredOption("--query <text>")
   .option("--limit <count>", "Maximum hits", integer, 10)
+  .addOption(
+    new Option(
+      "--mode <mode>",
+      "Retrieval method; semantic/hybrid incur managed query embedding usage",
+    )
+      .choices(["lexical", "semantic", "hybrid"])
+      .default("lexical"),
+  )
   .option("--path <path>", "Exact path filter")
   .option("--language <name>")
   .action(async (o) => {
@@ -303,10 +343,19 @@ cli
       store = remote.store(r.collection),
       v = await resolveVersion(store, r, o.version);
     output(
-      await search(store, settings, r, v, o.query, o.limit, {
-        path: o.path,
-        language: o.language,
-      }),
+      await search(
+        store,
+        settings,
+        r,
+        v,
+        o.query,
+        o.limit,
+        {
+          path: o.path,
+          language: o.language,
+        },
+        o.mode,
+      ),
     );
   });
 cli

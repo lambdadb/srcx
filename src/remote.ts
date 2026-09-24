@@ -207,6 +207,7 @@ export class LambdaRemote {
               consistentRead: false,
               query,
               size,
+              includeVectors: true,
             })
           ).docs.map((h) => ({ doc: h.doc as Doc, score: h.score })),
         ),
