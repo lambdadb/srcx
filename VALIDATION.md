@@ -4,12 +4,33 @@ Date: 2026-09-25 (Asia/Seoul).
 
 ## Evidence boundary
 
-This implementation has passed local fixtures/fault injection/SDK transport checks,
+The initial implementation passed local fixtures/fault injection/SDK transport checks,
 a live synthetic A/B acceptance run, and an exact-package self-index of the public
 srcx repository against the user-supplied LambdaDB connection. No private source
 or paid embeddings were used. These checks are not a throughput, general
 concurrency, or retrieval-quality benchmark. npm publication evidence is recorded
-separately below.
+separately below. The persistent Git branch changes described next have local
+fixture and SDK transport evidence only; the earlier live runs do not validate
+this new path.
+
+## Persistent Git branch tracking
+
+Local regression coverage exercises one writer across consecutive commits,
+branch-local deletion/diff baselines, separate branches sharing canonical Tags,
+rewinds to already published commits, and imports from fresh local state. Fault
+injection verifies last-published branch resolution during partial writes, pending
+ownership protection when the local journal is missing, stale/corrupt candidate
+rejection, and retries after uncertain control writes. Branch/tag ambiguity and
+explicit full refs are covered.
+
+The CLI fixture also imports and updates a tracked branch through the real SDK
+transport and selects it for search, resolve, and read. The same fixture runs
+against the installed tarball. These checks use a loopback fault-injection model,
+not a live LambdaDB deployment. Live tracked-branch acceptance remains unverified.
+
+On Node **22.14.0** and **24.15.0**, typechecking, all **43 tests**, and installed
+package checks passed. Formatting, release-version validation, and `git diff
+--check` also passed locally. These results are not GitHub CI evidence.
 
 ## Initial npm package and live self-index
 
@@ -135,12 +156,14 @@ interface verifies eligibility/cache behavior only; production provider selectio
 semantic/hybrid querying, pricing, and evaluation remain open. Public imports
 reject a vector-enabled build to prevent fixture vectors from reaching LambdaDB.
 
-Each import gets a fresh `work-*` Branch, with incremental reuse only from an exact
-validated previous writer snapshot. Existing writers are not mutated after
-publication. Persistent `git-*` tracking, automatic failed-workspace recovery,
-Alias pruning, and garbage collection are not yet implemented. Failed/candidate
+Git branch imports reuse a fixed `git-*` Branch with its last validated immutable
+baseline; SHA/tag-only imports retain frozen `work-*` writers. Automatic Git
+observation, failed-workspace recovery, branch rename/deletion handling, Alias
+pruning, and garbage collection are not yet implemented. Failed/candidate
 resources and build artifacts are retained. A single importing host is required;
-the local lock is not a distributed lease.
+the local lock is not a distributed lease. Remote pending ownership prevents
+accidental adoption from fresh local state but is not a distributed compare-and-set
+or lease protocol.
 
 Parsing uses the pinned packaged grammars. Unsupported/new syntax can fall back
 and is recorded; no claim of complete language-version coverage is made. There is

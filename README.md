@@ -115,6 +115,11 @@ node dist/cli.js repo show --repo <name>
 # Import the exact artifact reviewed in the credential-free preview.
 node dist/cli.js import --repo <name> --artifact /tmp/srcx-build-a
 node dist/cli.js versions --repo <name>
+
+# Keep a Git branch connected to its Collection Branch.
+node dist/cli.js import --repo <name> --ref develop
+node dist/cli.js search --repo <name> --version develop --query retry
+node dist/cli.js resolve --repo <name> --ref refs/heads/develop
 node dist/cli.js search --repo <name> --version <full-commit-A> --query retry
 node dist/cli.js read --result <result-id> --context 20
 node dist/cli.js read --result <result-id> --full-file
@@ -152,10 +157,28 @@ are one-based and inclusive.
 ## Publication and recovery
 
 The control Branch `main` holds descriptors/version summaries. `checkpoint-empty`
-is forked before any control write. Each import uses a new `work-*` Branch,
-optionally forked from the last locally retained, remotely validated writer
-baseline. Writers are frozen after publication. A fresh local state can start a
-full import from `checkpoint-empty`; source data is never forked from a Tag.
+is forked before any control write. Importing a Git branch creates or updates its
+stable `git-*` Collection Branch, derived from the full `refs/heads/...` name.
+Git `main` also uses a `git-*` Branch; Collection `main` remains control-only.
+Each later import reconciles against that branch's last validated snapshot,
+including deletions and non-fast-forward changes. Branches sharing a commit share
+one canonical `ver-*` Tag while retaining their own writer snapshots.
+
+`search/read --version develop` and `resolve --ref develop` select the branch's
+last successfully published commit Tag. During an import or after a failed update,
+they keep serving the previous published commit; the first import is unavailable
+until publication. This is the last indexed state, not a live Git HEAD lookup.
+Nothing polls or fetches Git automatically: run import again to advance the branch.
+If an indexed branch and synchronized Git tag share a short name, use
+`refs/heads/<name>` or `refs/tags/<name>` explicitly. Known Git names take precedence
+over commit prefixes.
+
+A commit SHA or Git tag import does not infer a containing branch. An unpublished
+commit uses a fresh `work-*` Branch, optionally forked from a validated previous
+manual writer; an already published commit reuses its Tag. Manual writers remain
+frozen. Source data is never forked from a Tag. A clean tracked branch can be
+updated from fresh local state using its remote baseline. Local build reuse is
+cached separately for each Git branch and for manual imports.
 
 The importer deletes obsolete IDs, upserts changed records and inventory parts in
 bounded sequential requests, then sends `__manifest__` **alone** after every prior
@@ -167,7 +190,10 @@ an early/stale snapshot even after the marker is observed.
 
 A per-Collection local lock and durable `pending.json` journal prevent another
 commit from overwriting a partial attempt. Only one importing host is supported.
-After a timeout or unknown write result, retain the artifacts and journal:
+A tracked branch also records pending import ownership in control `main` before
+writing code. If the local journal is lost, new local state refuses to overwrite
+that pending branch even when its committed head has not advanced yet. After a
+timeout or unknown write result, retain the artifacts and journal:
 
 ```sh
 node dist/cli.js import --repo <name> --artifact /path/from/pending.json \
@@ -195,8 +221,17 @@ For search and resolve, a synchronized Git tag name takes precedence over a comm
 prefix, matching Git import's tag-before-OID rule. A pending tag fails explicitly
 instead of falling back to a matching commit prefix. Use `refs/tags/<name>` to
 select a Git tag explicitly.
-Explicit authoritative pruning and persistent tracked-branch synchronization are
-follow-up work; no full history import is required.
+Automatic Git observation, authoritative pruning, branch rename/deletion handling,
+and garbage collection remain follow-up work; no full history import is required.
+
+Existing commit Tags and frozen `work-*` Branches remain valid. The next import
+using a Git branch name establishes its fixed mapping, even if that commit was
+already published. A pending journal from the previous implementation resumes on
+its original `work-*` writer; import the branch again after recovery to establish
+tracking. `--artifact` uses the Git branch recorded when the artifact was built,
+with its pinned commit; it does not reread the branch's current tip. The publication
+JSON continues to describe the canonical commit Tag: its `writer` can be the
+original publishing branch when multiple Git branches share that commit.
 
 ## State and implementation map
 

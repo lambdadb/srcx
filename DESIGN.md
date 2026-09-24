@@ -72,9 +72,10 @@ This document is not a deployed-revision audit or evidence of a passing live run
 
 The initial command set below is implemented; run it as `node dist/cli.js` from
 this checkout after `npm run build`. See README for exact options and recovery.
-The first implementation uses fresh `work-*` Branches and observed-local-tag Alias
-synchronization; persistent tracked branches and authoritative pruning remain
-follow-up work. Immutable manifest `requestedRef` is normalized to the resolved
+Git branch imports now reuse persistent `git-*` Branches; explicit commit/tag
+imports use frozen `work-*` writers. Observed-local-tag Alias synchronization is
+implemented; automatic Git observation and authoritative pruning remain follow-up
+work. Immutable manifest `requestedRef` is normalized to the resolved
 commit OID; the
 original user spelling remains in the local build artifact. The broader contract
 below remains the target design.
@@ -814,10 +815,16 @@ they do not authorize the next commit on that workspace.
    attempt identity and verifier version. Use an ID derived from the full commit
    OID and candidate Snapshot ID so attempts cannot overwrite another Snapshot's
    evidence. Confirm its readback before publication.
-5. Create the deterministic published Tag **from the validated candidate Tag**,
-   not from the mutable Branch. Verify both Tags have the same Snapshot ID and
-   matching manifest. Publication changes naming, not corpus content.
-6. Update optional branch-progress/control records and return the published version.
+5. For a first publication, create the deterministic published Tag **from the
+   validated candidate Tag**, not from the mutable Branch. Verify both Tags have
+   the same Snapshot ID and matching manifest. If the commit is already published,
+   validate and reuse its canonical Tag; retain this writer's validated candidate
+   separately when its Snapshot ID differs. Publication never overwrites a commit
+   Tag with another writer's snapshot.
+6. For a tracked Git branch, update its control record with the validated writer
+   snapshot and published commit Tag, clear pending ownership, and return the
+   published version. Branch selectors keep using the preceding published Tag
+   until this control update succeeds.
    A delayed bookkeeping write does not erase an already published immutable Tag.
 
 An empty Snapshot or incomplete candidate never becomes published. A stale Tag
@@ -826,6 +833,33 @@ progress, and probe a fresh candidate. Head changes only trigger another check;
 avoid repeatedly validating known stale Snapshot IDs. A payload/build defect
 requires explicit same-build recovery, not endless polling. Publication must
 finish before the same code Branch starts a later commit.
+
+### Persistent Git branch state
+
+Each full `refs/heads/...` name maps to one `git-<ref-digest>` writer and one
+`branch-<full-ref-digest>` control document on main (`role=git-branch`). The control
+record holds the last applied immutable baseline, canonical published Tag name,
+and pending attempt/build/commit identity. Record pending ownership before branch
+creation or corpus writes. A missing local journal cannot authorize a second
+import over pending remote state, even if the committed head still matches the
+old baseline. Only the same journal may resume; automatic abandoned-attempt
+recovery remains unimplemented.
+
+Compare the writer head with the recorded baseline snapshot before the next
+import, then reconcile old IDs and hashes through its immutable Tag. This works
+without the prior local artifact and supports a branch moving backward or across
+history. Every target commit still comes from one full committed Git tree.
+
+An already published commit does not skip updating a different tracked branch.
+Validate that branch's own candidate, reuse the existing canonical commit Tag,
+and retain the candidate as the writer's exact baseline when the snapshot IDs
+differ. Never overwrite the canonical commit publication with another writer's
+snapshot. This also applies when a branch returns to a previously indexed commit.
+
+Branch search/resolve/read selects the last published Tag from the control record,
+including while the next import is pending. This promises the last indexed state,
+not the current Git tip. A first pending import has no searchable branch version.
+An ambiguous tracked branch/Git tag short name requires an explicit heads/tags ref.
 
 ### `versions` reads LambdaDB
 

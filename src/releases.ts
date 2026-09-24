@@ -1,7 +1,12 @@
 import { hash, invariant, type Doc } from "./common.js";
 import { gitTags } from "./git.js";
 import { one, branch, type CollectionStore } from "./remote.js";
-import { published, type Binding, type Published } from "./publish.js";
+import {
+  published,
+  trackedBranch,
+  type Binding,
+  type Published,
+} from "./publish.js";
 export const releaseAlias = (ref: string) => `rel-${hash(ref).slice(0, 40)}`;
 export const releaseId = (ref: string) => `ref-${hash(ref)}`;
 /** Only observed local tags. Absence is not deletion authority; this command never prunes. */
@@ -62,7 +67,33 @@ export async function resolveVersion(
   const ref = selector.startsWith("refs/tags/")
     ? selector
     : `refs/tags/${selector}`;
-  const control = await one(store, branch("main"), releaseId(ref), true);
+  const control = selector.startsWith("refs/heads/")
+    ? undefined
+    : await one(store, branch("main"), releaseId(ref), true);
+  const headRef = selector.startsWith("refs/heads/")
+    ? selector
+    : `refs/heads/${selector}`;
+  const head =
+    !selector.startsWith("refs/") || selector.startsWith("refs/heads/")
+      ? await trackedBranch(store, binding, headRef)
+      : undefined;
+  invariant(
+    !(head && control),
+    "Ambiguous branch/tag name: use refs/heads/... or refs/tags/...",
+  );
+  if (head) {
+    invariant(
+      head.applied,
+      "Git branch has no published version yet; finish its import.",
+    );
+    const result = versions.find(
+      (v) =>
+        v.commitOid === head.applied!.commitOid &&
+        v.tagName === head.publishedTagName,
+    );
+    invariant(result, "Git branch target is not a published version.");
+    return result;
+  }
   // Like Git import, a known tag name takes precedence over an OID spelling.
   // Its pending or invalid state must not fall back to an unrelated commit.
   if (!control && !selector.startsWith("refs/")) {

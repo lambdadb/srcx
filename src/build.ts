@@ -123,6 +123,7 @@ function exclude(path: string): string | undefined {
 export async function materialize(args: {
   identity: Identity;
   ref: string;
+  resolvedCommit?: Awaited<ReturnType<typeof resolveCommit>>;
   output: string;
   previous?: Build;
   preset?: Preset;
@@ -151,7 +152,8 @@ export async function materialize(args: {
         args.embedder.dimensions === preset.embedding.dimensions),
     "Embedding provider must match the pinned preset.",
   );
-  const commit = await resolveCommit(args.identity.path, args.ref);
+  const commit =
+    args.resolvedCommit ?? (await resolveCommit(args.identity.path, args.ref));
   const directory = resolve(args.output);
   await mkdir(directory, { recursive: false, mode: 0o700 });
   const output = await open(join(directory, "records.jsonl"), "wx", 0o600);
