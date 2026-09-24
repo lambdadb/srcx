@@ -35,7 +35,9 @@
     "test:package": "node scripts/test-package.mjs",
     "test:live:branches": "npm run build && node --env-file=.env.local scripts/live-branches.mjs",
     "eval:prepare": "npm run build && node scripts/retrieval-eval.mjs prepare",
-    "eval:run": "node scripts/retrieval-eval.mjs run"
+    "eval:run": "node scripts/retrieval-eval.mjs run",
+    "eval:cli:prepare": "npm run build && node scripts/cli-eval.mjs prepare",
+    "eval:cli:run": "node scripts/cli-eval.mjs run"
   },
   "dependencies": {
     "@functional-systems/lambdadb": "0.5.1",

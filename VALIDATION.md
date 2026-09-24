@@ -12,6 +12,33 @@ concurrency, or retrieval-quality benchmark. npm publication evidence is recorde
 separately below. The persistent Git branch changes have a separate synthetic
 live run recorded next; the earlier live runs do not validate this new path.
 
+## Default CLI search/read evaluation
+
+The follow-up uses actual built CLI subprocesses with the unchanged default
+syntax/path-scope-symbol preset across pinned public `srcx` and `lambdadb-cli`
+commits. At harness commit `57b63e1cdbf7ec722b95bb0f40ac0ef5039af3e8`, both
+publications validated and all **136 search results/handles** and **76 read
+responses** matched their pinned source, version and citation. No embeddings
+were used. The run completed at `2026-09-24T20:01:58.865Z`.
+
+The frozen 16-question suite recovered complete labeled evidence for **14/16**.
+The two remaining cases reflect a one-byte blank-line boundary and an omitted
+alternative document/code answer, not demonstrated source-integrity failures.
+Mean full CLI stdout was **7,383 tokens** per query. This fixed-five-read protocol
+is distinct from the earlier full-chunk/token-budget comparison; neither measures
+general task success. Labels remain assistant-authored without independent human
+review. See [eval/CLI-RESULTS.md](https://github.com/lambdadb/srcx/blob/develop/eval/CLI-RESULTS.md)
+for per-repository scores, inspected misses and evidence boundaries, and
+[eval/CLI-WORKFLOW.md](https://github.com/lambdadb/srcx/blob/develop/eval/CLI-WORKFLOW.md)
+for reproduction and normal Collection effects.
+
+Local Node 24.15.0 passed **54 tests**, typechecking, formatting/version checks and
+the installed-package CLI contract. Node 22/24 CI passed at the harness commit.
+Live execution used built CLI subprocesses; package validation used a loopback
+fixture. A completed rerun preserved the original report bytes and timestamp.
+Raw evidence and recovery journals remain under `.srcx/cli-eval/` in the validation
+worktree; the older pilot's original report remains unchanged.
+
 ## Retrieval evaluation harness
 
 The internal pilot adds five checks for unique source-range scoring, token-budget

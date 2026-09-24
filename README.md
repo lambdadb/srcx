@@ -84,6 +84,11 @@ window chunks on a fixed public corpus and 16 pinned investigation queries.
 `npm run eval:prepare` builds and validates the comparison offline. Live evaluation
 is an explicit separate operation and retains isolated evaluation Collections.
 
+The [default CLI workflow evaluation](https://github.com/lambdadb/srcx/blob/develop/eval/CLI-WORKFLOW.md)
+adds a second public repository and verifies real `search` → `read` results with
+the unchanged CLI preset. It uses normal repository Collections and separate local
+state; see its documented effects before opting into the live run.
+
 ## Explicit live acceptance run
 
 The live harness accepts `LAMBDADB_BASE_URL`, `LAMBDADB_PROJECT_NAME`, and
