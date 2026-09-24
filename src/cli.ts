@@ -1,0 +1,360 @@
+#!/usr/bin/env node
+import { Command, InvalidArgumentError } from "commander";
+import { mkdir } from "node:fs/promises";
+import { join, resolve } from "node:path";
+import { randomUUID } from "node:crypto";
+import { configure, loadSettings, stateRoot } from "./settings.js";
+import { identity } from "./git.js";
+import { loadBuild, materialize, validateBuild, type Build } from "./build.js";
+import { invariant, optionalJson } from "./common.js";
+import { LambdaRemote } from "./remote.js";
+import {
+  attachment,
+  destination,
+  discover,
+  register,
+  selectRepository,
+} from "./repository.js";
+import { exclusive, publish, published, type Published } from "./publish.js";
+import { resolveVersion, syncTags } from "./releases.js";
+import { directHandle, loadHandle, readHandle, search } from "./search.js";
+const cli = new Command()
+  .name("srcx")
+  .description("Version-aware code search on LambdaDB")
+  .version("0.1.0-dev.1");
+const output = (value: unknown): void => {
+  process.stdout.write(JSON.stringify(value, null, 2) + "\n");
+};
+const integer = (value: string) => {
+  if (!/^\d+$/.test(value))
+    throw new InvalidArgumentError("Expected a nonnegative integer.");
+  const n = Number(value);
+  if (!Number.isSafeInteger(n))
+    throw new InvalidArgumentError("Integer is too large.");
+  return n;
+};
+async function connected() {
+  const settings = await loadSettings();
+  return { settings, remote: new LambdaRemote(settings) };
+}
+cli
+  .command("configure")
+  .requiredOption("--endpoint <origin>")
+  .requiredOption("--project <name>")
+  .option(
+    "--api-key-env <name>",
+    "Environment variable containing the API key",
+    "LAMBDADB_API_KEY",
+  )
+  .action(async (o) =>
+    output(await configure(o.endpoint, o.project, o.apiKeyEnv)),
+  );
+cli
+  .command("doctor")
+  .description(
+    "Check authentication/read access; does not establish write/query readiness",
+  )
+  .action(async () => {
+    const { remote, settings } = await connected();
+    const collections = await remote.collections();
+    output({
+      endpoint: settings.endpoint,
+      project: settings.project,
+      readAccess: true,
+      collections: collections.length,
+      writeAccess: "not checked",
+      queryReadiness: "not checked",
+    });
+  });
+const repo = cli
+  .command("repo")
+  .description("Discover and attach Git repositories");
+repo
+  .command("add")
+  .requiredOption("--path <directory>")
+  .option("--remote <name>")
+  .option("--description <text>")
+  .option("--tag <key=value>", "One optional Collection metadata tag")
+  .action(async (o) => {
+    const { remote } = await connected();
+    let labels: Record<string, string> | undefined;
+    if (o.tag) {
+      const at = o.tag.indexOf("=");
+      invariant(at > 0, "Use --tag key=value.");
+      labels = { [o.tag.slice(0, at)]: o.tag.slice(at + 1) };
+    }
+    output(
+      await register(remote, {
+        path: o.path,
+        remote: o.remote,
+        description: o.description,
+        labels,
+      }),
+    );
+  });
+repo.command("list").action(async () => {
+  const { remote } = await connected();
+  output(await discover(remote));
+});
+repo
+  .command("show")
+  .requiredOption("--repo <name>")
+  .action(async (o) => {
+    const { remote } = await connected();
+    output(await selectRepository(remote, o.repo));
+  });
+cli
+  .command("import")
+  .description(
+    "Build a pinned Git commit; --dry-run exports locally without credentials",
+  )
+  .option(
+    "--path <directory>",
+    "Local checkout (required with credential-free --dry-run)",
+  )
+  .option("--remote <name>")
+  .option("--repo <name>", "Registered remote repository")
+  .option("--ref <ref>", "Local branch, Git tag, or commit OID")
+  .option("--dry-run", "Only materialize and validate a local build")
+  .option("--output <directory>", "New artifact directory")
+  .option(
+    "--previous <directory>",
+    "Previous build artifact for a dry-run diff",
+  )
+  .option("--artifact <directory>", "Import a previously previewed artifact")
+  .option(
+    "--resume",
+    "Resume the same pending artifact after inspecting its journal",
+  )
+  .option("--timeout <seconds>", "Validation wait deadline", integer, 120)
+  .action(async (o) => {
+    invariant(!(o.path && o.repo), "Choose --path or --repo.");
+    invariant(
+      !o.previous || o.dryRun,
+      "--previous is only accepted with --dry-run.",
+    );
+    invariant(!o.resume || !o.dryRun, "--resume requires a connected import.");
+    invariant(
+      !(o.artifact && (o.ref || o.path || o.output || o.previous)),
+      "--artifact cannot be combined with --ref/--path/--output/--previous.",
+    );
+    const buildLocal = async (
+      source: Awaited<ReturnType<typeof identity>>,
+      previous?: Build,
+    ) => {
+      invariant(o.ref, "--ref is required to build a commit.");
+      const parent = join(stateRoot(), "builds");
+      await mkdir(parent, { recursive: true, mode: 0o700 });
+      const path = o.output ? resolve(o.output) : join(parent, randomUUID());
+      return materialize({
+        identity: source,
+        ref: o.ref,
+        output: path,
+        previous,
+      });
+    };
+    if (o.dryRun) {
+      let b: Build;
+      if (o.artifact) {
+        b = await loadBuild(o.artifact);
+        await validateBuild(b);
+      } else {
+        let source;
+        if (o.path) source = await identity(o.path, o.remote);
+        else {
+          invariant(o.repo, "Use --path for a credential-free dry run.");
+          const { remote, settings } = await connected();
+          source = await attachment(
+            settings,
+            await selectRepository(remote, o.repo),
+          );
+        }
+        b = await buildLocal(
+          source,
+          o.previous ? await loadBuild(o.previous) : undefined,
+        );
+      }
+      output({
+        status: "locally-validated",
+        artifact: b.directory,
+        commitOid: b.commitOid,
+        configHash: b.configHash,
+        counts: b.counts,
+        changes: b.changes,
+        obsoleteIds: b.obsoleteIds,
+        coverage: b.inventory.map((e) => ({
+          path: e.path,
+          status: e.status,
+          reason: e.reason,
+          parseStatus: e.parseStatus,
+        })),
+        uploaded: false,
+      });
+      return;
+    }
+    invariant(
+      o.repo,
+      "Connected import requires --repo. Register it with repo add first.",
+    );
+    invariant(o.timeout > 0, "Timeout must be positive.");
+    const { remote, settings } = await connected();
+    const r = await selectRepository(remote, o.repo),
+      state = destination(settings, r.collection),
+      store = remote.store(r.collection);
+    output(
+      await exclusive(state, async () => {
+        // Pending attempts reconcile against the journal's immutable remote
+        // baseline; they do not need the previous build's local files.
+        const pending = await optionalJson(join(state, "pending.json"));
+        let baseline: { version: Published; build: Build } | undefined;
+        if (!pending) {
+          const last = await optionalJson<{
+            artifact: string;
+            version: Published;
+          }>(join(state, "last-build.json"));
+          if (last) {
+            const b = await loadBuild(last.artifact);
+            baseline = { version: last.version, build: b };
+          }
+        }
+        const b = o.artifact
+          ? await loadBuild(o.artifact)
+          : await buildLocal(await attachment(settings, r), baseline?.build);
+        return publish({
+          store,
+          binding: r,
+          build: b,
+          state,
+          baseline,
+          resume: o.resume,
+          timeoutMs: o.timeout * 1000,
+        });
+      }),
+    );
+  });
+cli
+  .command("versions")
+  .requiredOption("--repo <name>")
+  .action(async (o) => {
+    const { remote } = await connected();
+    const r = await selectRepository(remote, o.repo);
+    output(await published(remote.store(r.collection), r));
+  });
+cli
+  .command("resolve")
+  .requiredOption("--repo <name>")
+  .requiredOption("--ref <commit-or-release>")
+  .action(async (o) => {
+    const { remote } = await connected();
+    const r = await selectRepository(remote, o.repo);
+    output(await resolveVersion(remote.store(r.collection), r, o.ref));
+  });
+cli
+  .command("search")
+  .requiredOption("--repo <name>")
+  .requiredOption("--version <commit-or-release>")
+  .requiredOption("--query <text>")
+  .option("--limit <count>", "Maximum hits", integer, 10)
+  .option("--path <path>", "Exact path filter")
+  .option("--language <name>")
+  .action(async (o) => {
+    const { remote, settings } = await connected();
+    const r = await selectRepository(remote, o.repo),
+      store = remote.store(r.collection),
+      v = await resolveVersion(store, r, o.version);
+    output(
+      await search(store, settings, r, v, o.query, o.limit, {
+        path: o.path,
+        language: o.language,
+      }),
+    );
+  });
+cli
+  .command("read")
+  .option("--result <id>")
+  .option("--repo <name>")
+  .option("--version <commit-or-release>")
+  .option("--path <path>")
+  .option("--lines <start:end>")
+  .option("--context <lines>", "Expand an evidence span", integer, 0)
+  .option("--full-file")
+  .action(async (o) => {
+    invariant(
+      !(o.fullFile && (o.lines || o.context)),
+      "--full-file cannot be combined with --lines or --context.",
+    );
+    invariant(
+      !(o.result && (o.repo || o.version || o.path || o.lines)),
+      "Use result mode or direct path mode.",
+    );
+    const { settings, remote } = await connected();
+    let handle;
+    if (o.result) {
+      handle = await loadHandle(o.result);
+      invariant(
+        handle.endpoint === settings.endpoint &&
+          handle.project === settings.project,
+        "Result belongs to another endpoint/project.",
+      );
+    } else {
+      invariant(
+        o.repo && o.version && o.path,
+        "Provide --result, or --repo/--version/--path.",
+      );
+      const r = await selectRepository(remote, o.repo),
+        store = remote.store(r.collection);
+      handle = await directHandle(
+        store,
+        settings,
+        r,
+        await resolveVersion(store, r, o.version),
+        o.path,
+      );
+    }
+    let lines: [number, number] | undefined;
+    if (o.lines) {
+      invariant(/^\d+:\d+$/.test(o.lines), "Use --lines start:end.");
+      lines = o.lines.split(":").map(Number) as [number, number];
+    }
+    output(
+      await readHandle(
+        remote.store(handle.repository.collection),
+        settings,
+        handle,
+        {
+          context: o.context,
+          fullFile: o.fullFile || (!o.result && !o.lines),
+          lines,
+        },
+      ),
+    );
+  });
+cli
+  .command("git")
+  .command("sync-tags")
+  .description(
+    "Synchronize currently observed local Git tags; no fetch/import/pruning",
+  )
+  .requiredOption("--repo <name>")
+  .action(async (o) => {
+    const { remote, settings } = await connected();
+    const r = await selectRepository(remote, o.repo),
+      source = await attachment(settings, r),
+      state = destination(settings, r.collection);
+    output(
+      await exclusive(state, async () => {
+        invariant(
+          !(await optionalJson(join(state, "pending.json"))),
+          "An import is pending; resume it before tag synchronization.",
+        );
+        return syncTags(remote.store(r.collection), r, source.path);
+      }),
+    );
+  });
+try {
+  await cli.parseAsync();
+} catch (e) {
+  const message = e instanceof Error ? e.message : "Operation failed.";
+  process.stderr.write(`srcx: ${message}\n`);
+  process.exitCode = 1;
+}

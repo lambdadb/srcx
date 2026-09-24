@@ -1,0 +1,328 @@
+import { createRequire } from "node:module";
+import { Parser, Language, type Node } from "web-tree-sitter";
+import { getEncoding } from "js-tiktoken";
+import { invariant, lineAt } from "./common.js";
+const require = createRequire(import.meta.url);
+const encoding = getEncoding("cl100k_base");
+export function tokens(text: string): number {
+  return encoding.encode(text, [], []).length;
+}
+export const CHUNKER = {
+  version: 1,
+  parser: "web-tree-sitter@0.25.10",
+  grammars: "tree-sitter-wasms@0.1.13",
+  tokenizer: "js-tiktoken@1.0.21/cl100k_base",
+  targetTokens: 800,
+  maxTokens: 1500,
+  fallbackOverlap: 0.1,
+  enrichment: "path-scope-symbol-v1",
+  policy: "source-v1",
+} as const;
+export type Span = {
+  startByte: number;
+  endByte: number;
+  startLine: number;
+  endLine: number;
+  chunkKind: string;
+  scope?: string;
+  symbol?: string;
+  signature?: string;
+  searchText: string;
+  tokenCount: number;
+};
+type Unit = {
+  start: number;
+  end: number;
+  kind: string;
+  scope?: string;
+  symbol?: string;
+  signature?: string;
+};
+const languages = new Map<string, Language>();
+let initialized: Promise<void> | undefined;
+async function language(name: string): Promise<Language> {
+  initialized ??= Parser.init();
+  await initialized;
+  let l = languages.get(name);
+  if (!l) {
+    l = await Language.load(
+      require.resolve(`tree-sitter-wasms/out/tree-sitter-${name}.wasm`),
+    );
+    languages.set(name, l);
+  }
+  return l;
+}
+export function detectLanguage(path: string): string {
+  const ext = path.split(".").at(-1)?.toLowerCase();
+  return (
+    (
+      {
+        java: "java",
+        ts: "typescript",
+        tsx: "tsx",
+        js: "javascript",
+        jsx: "javascript",
+        mjs: "javascript",
+        cjs: "javascript",
+        md: "markdown",
+        mdx: "markdown",
+        json: "json",
+        yaml: "yaml",
+        yml: "yaml",
+        toml: "toml",
+        ini: "ini",
+      } as Record<string, string>
+    )[ext ?? ""] ?? "text"
+  );
+}
+function enrichment(path: string, u: Unit): string {
+  return (
+    [path.slice(0, 240), u.scope?.slice(0, 160), u.symbol?.slice(0, 160)]
+      .filter(Boolean)
+      .join("\n") + "\n"
+  );
+}
+function classify(type: string): string {
+  if (/import|package/.test(type)) return "imports";
+  if (/comment/.test(type)) return "documentation";
+  if (/function|method|constructor/.test(type)) return "function";
+  return "declaration";
+}
+function scopeName(n: Node): string | undefined {
+  const names: string[] = [];
+  let p = n.parent;
+  while (p) {
+    if (/class|interface|function|method/.test(p.type)) {
+      const name = p.childForFieldName("name");
+      if (name) names.unshift(name.text);
+    }
+    p = p.parent;
+  }
+  return names.length ? names.join(".") : undefined;
+}
+/** Bound strings without slicing a surrogate pair; prefer line ends where possible. */
+function splitUnit(
+  source: string,
+  path: string,
+  u: Unit,
+  overlap: number,
+): Unit[] {
+  const result: Unit[] = [];
+  let start = u.start;
+  const prefix = enrichment(path, u);
+  invariant(
+    tokens(prefix) < CHUNKER.maxTokens,
+    "Path/scope enrichment exceeds token limit.",
+  );
+  while (start < u.end) {
+    let end = u.end;
+    if (tokens(prefix + source.slice(start, end)) > CHUNKER.maxTokens) {
+      let lo = start + 1,
+        hi = end,
+        best = start;
+      while (lo <= hi) {
+        const probe = Math.floor((lo + hi) / 2);
+        let mid = probe;
+        if (mid < u.end && /[\uDC00-\uDFFF]/.test(source[mid] ?? "")) mid--;
+        if (mid <= start) {
+          lo = probe + 1;
+          continue;
+        }
+        if (tokens(prefix + source.slice(start, mid)) <= CHUNKER.targetTokens) {
+          best = mid;
+          lo = probe + 1;
+        } else hi = probe - 1;
+      }
+      invariant(best > start, "Cannot fit source unit in token budget.");
+      end = best;
+      const newline = source.lastIndexOf("\n", end - 1);
+      if (newline >= start + (end - start) / 2) end = newline + 1;
+    }
+    result.push({ ...u, start, end });
+    if (end === u.end) break;
+    let next = end;
+    if (overlap) {
+      next = Math.max(start + 1, end - Math.floor((end - start) * overlap));
+      if (/[\uDC00-\uDFFF]/.test(source[next] ?? "")) next++;
+    }
+    invariant(next > start, "Chunker made no progress.");
+    start = next;
+  }
+  return result;
+}
+function textUnits(source: string, lang: string): Unit[] {
+  // Heading/paragraph/fence units for Markdown; config section/line units otherwise.
+  const units: Unit[] = [];
+  let start = 0,
+    pos = 0,
+    fenced = false;
+  for (const line of source.match(/[^\n]*\n|[^\n]+$/g) ?? []) {
+    const fence = /^\s*(```|~~~)/.test(line);
+    const boundary =
+      lang === "markdown"
+        ? !fenced && (/^#{1,6}\s/.test(line) || line.trim() === "")
+        : /^\s*(\[|[\w.-]+\s*[:=])/.test(line);
+    if (boundary && pos > start) {
+      units.push({
+        start,
+        end: pos,
+        kind: lang === "markdown" ? "documentation" : "configuration",
+      });
+      start = pos;
+    }
+    if (fence) fenced = !fenced;
+    pos += line.length;
+  }
+  if (pos > start)
+    units.push({
+      start,
+      end: pos,
+      kind: lang === "markdown" ? "documentation" : "configuration",
+    });
+  return units;
+}
+export async function chunk(
+  source: string,
+  path: string,
+  mode: "syntax" | "window" = "syntax",
+): Promise<{ spans: Span[]; parseStatus: string; language: string }> {
+  const lang = detectLanguage(path);
+  if (!source.length)
+    return { spans: [], parseStatus: "empty", language: lang };
+  let units: Unit[] = [];
+  let status = "parsed";
+  if (mode === "window") {
+    status = "window-baseline";
+    units = [{ start: 0, end: source.length, kind: "fallback" }];
+  } else if (["java", "typescript", "tsx", "javascript"].includes(lang)) {
+    const grammar = await language(lang);
+    const parser = new Parser();
+    let tree: ReturnType<Parser["parse"]> = null;
+    try {
+      parser.setLanguage(grammar);
+      tree = parser.parse(source);
+      invariant(tree, "Parser returned no tree.");
+      if (tree.rootNode.hasError) {
+        status = "parse-error-fallback";
+        units = [{ start: 0, end: source.length, kind: "fallback" }];
+      } else {
+        function visit(n: Node): void {
+          const container =
+            /^(program|source_file|class_body|interface_body|class_declaration|interface_declaration|export_statement)$/.test(
+              n.type,
+            );
+          const u: Unit = {
+            start: n.startIndex,
+            end: n.endIndex,
+            kind: classify(n.type),
+            scope: scopeName(n),
+          };
+          const name = n.childForFieldName("name");
+          if (name) u.symbol = name.text.slice(0, 200);
+          if (u.kind === "function")
+            u.signature = n.text.split(/[\n{]/, 1)[0]?.slice(0, 240);
+          if (
+            n.namedChildCount &&
+            (container ||
+              tokens(enrichment(path, u) + n.text) > CHUNKER.maxTokens)
+          ) {
+            for (const child of n.namedChildren) if (child) visit(child);
+          } else if (n.endIndex > n.startIndex) units.push(u);
+        }
+        visit(tree.rootNode);
+        // Attach every gap (punctuation, BOM, comments, whitespace) without altering source bytes.
+        let cursor = 0;
+        const covered: Unit[] = [];
+        for (const u of units.sort((a, b) => a.start - b.start)) {
+          if (covered.length) {
+            const whitespace =
+              source.slice(cursor, u.start).match(/^\s*/)?.[0].length ?? 0;
+            cursor += whitespace;
+            covered[covered.length - 1]!.end = cursor;
+          }
+          covered.push({ ...u, start: cursor });
+          cursor = u.end;
+        }
+        units = covered;
+        if (cursor < source.length) {
+          if (units.length) units[units.length - 1]!.end = source.length;
+          else units = [{ start: 0, end: source.length, kind: "declaration" }];
+        }
+      }
+    } finally {
+      tree?.delete();
+      parser.delete();
+    }
+  } else if (["markdown", "json", "yaml", "toml", "ini"].includes(lang)) {
+    status =
+      lang === "markdown" ? "markdown-boundaries" : "config-text-fallback";
+    units = textUnits(source, lang);
+  } else {
+    status = "unsupported-language-fallback";
+    units = [{ start: 0, end: source.length, kind: "fallback" }];
+  }
+  const fallback = mode === "window" || status.includes("fallback");
+  // Merge small neighboring non-function declarations only within the same scope/kind.
+  const merged: Unit[] = [];
+  for (const u of units) {
+    const prev = merged.at(-1);
+    if (
+      prev &&
+      prev.kind !== "function" &&
+      u.kind === prev.kind &&
+      u.scope === prev.scope &&
+      tokens(enrichment(path, prev) + source.slice(prev.start, u.end)) <=
+        CHUNKER.targetTokens
+    ) {
+      prev.end = u.end;
+      delete prev.symbol;
+      delete prev.signature;
+    } else merged.push({ ...u });
+  }
+  const bounded = merged.flatMap((u) =>
+    splitUnit(source, path, u, fallback ? CHUNKER.fallbackOverlap : 0),
+  );
+  const offsets = new Uint32Array(source.length + 1);
+  let byte = 0;
+  for (let i = 0; i < source.length;) {
+    const cp = source.codePointAt(i)!;
+    const chars = cp > 0xffff ? 2 : 1;
+    offsets[i] = byte;
+    if (chars === 2) offsets[i + 1] = byte;
+    byte += Buffer.byteLength(String.fromCodePoint(cp));
+    i += chars;
+    offsets[i] = byte;
+  }
+  const raw = Buffer.from(source);
+  const spans = bounded.map((u) => {
+    const startByte = offsets[u.start]!,
+      endByte = offsets[u.end]!;
+    const text = source.slice(u.start, u.end);
+    const searchText = enrichment(path, u) + text;
+    const kind = text.trim() === "" ? "structural" : u.kind;
+    return {
+      startByte,
+      endByte,
+      startLine: lineAt(raw, startByte),
+      endLine: lineAt(raw, Math.max(startByte, endByte - 1)),
+      chunkKind: kind,
+      scope: u.scope,
+      symbol: u.symbol,
+      signature: u.signature,
+      searchText,
+      tokenCount: tokens(searchText),
+    };
+  });
+  let covered = 0;
+  for (const s of spans) {
+    invariant(
+      s.startByte <= covered &&
+        s.endByte > s.startByte &&
+        s.tokenCount <= CHUNKER.maxTokens,
+      "Invalid chunk coverage or size.",
+    );
+    covered = Math.max(covered, s.endByte);
+  }
+  invariant(covered === raw.length, "Incomplete source coverage.");
+  return { spans, parseStatus: status, language: lang };
+}

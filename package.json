@@ -1,0 +1,42 @@
+{
+  "name": "@functional-systems/srcx",
+  "version": "0.1.0-dev.1",
+  "private": true,
+  "description": "Version-aware code search on LambdaDB",
+  "type": "module",
+  "bin": {
+    "srcx": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "DESIGN.md",
+    "VALIDATION.md"
+  ],
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "scripts": {
+    "build": "tsc && node -e \"require('node:fs').chmodSync('dist/cli.js', 0o755)\"",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test --test-timeout=60000 test/*.test.mjs",
+    "start": "node dist/cli.js",
+    "demo": "npm run build && node scripts/demo.mjs",
+    "prepack": "npm run build",
+    "format": "prettier --write src test scripts README.md VALIDATION.md package.json tsconfig.json",
+    "format:check": "prettier --check src test scripts README.md VALIDATION.md package.json tsconfig.json",
+    "test:live": "npm run build && node --env-file=.env.local scripts/live.mjs"
+  },
+  "dependencies": {
+    "@functional-systems/lambdadb": "0.5.1",
+    "commander": "14.0.3",
+    "js-tiktoken": "1.0.21",
+    "tree-sitter-wasms": "0.1.13",
+    "web-tree-sitter": "0.25.10"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.15",
+    "prettier": "3.9.9",
+    "typescript": "5.8.3"
+  }
+}
