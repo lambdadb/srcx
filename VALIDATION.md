@@ -51,6 +51,9 @@ The test suite covers:
 - Real CLI/SDK retry after deleting the previous published build's local artifact:
   the pending build and journal still complete publication against a loopback
   HTTP fixture, while retry without `--resume` remains blocked.
+- Real CLI search/read select the requested commit with subcommand `--version`;
+  top-level `srcx --version` still prints the CLI version. Positional option
+  parsing prevents the global version flag from intercepting corpus selection.
 - Rejection of changed commit/build identity before any remote writes.
 - Two release Aliases sharing a commit, moved targets pending until imported,
   pinned old reads, and no deletion inferred from absent local tags.
