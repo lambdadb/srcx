@@ -39,7 +39,7 @@ Confirmed boundaries from the discussion:
 - Map each Git tag to a LambdaDB Alias targeting its published commit Tag.
   Multiple Git tags for the same commit share one commit Tag and Snapshot.
 - Keep search results and subsequent source reads pinned to the selected version.
-- Replace a changed file's entire chunk set initially; cache embeddings by input.
+- Replace a changed file's entire chunk set initially; retain unchanged remote records.
 - Keep core LambdaDB work, GitHub App/webhooks, UI, MCP, and a public SaaS outside
   the first deliverable. sbrain reference documents remain unchanged.
 - No remote repository creation, application commit, push, publication, real
@@ -379,9 +379,10 @@ readers on multiple machines do not require local registration state.
    changed/deleted file, compute obsolete IDs as previous file/chunk IDs minus
    replacement IDs. A deleted file has an empty replacement set. Obtain previous
    IDs from the inventory, not mutable query-by-path results.
-6. Apply the pinned per-chunk embedding policy. If embeddings are enabled, batch
-   eligible cache misses across chunks/files within the provider's token/request
-   limits. Validate successful vectors before caching.
+6. Apply the pinned per-chunk embedding policy. The managed preset materializes
+   eligible `embeddingText` inputs without calling a provider locally. LambdaDB
+   generates vectors during ordinary upsert. Skip unchanged remote records and
+   validate generated vectors in the candidate Tag before publication.
    Bound queue memory; do not load an entire repository's content into RAM.
 7. Materialize deterministic records and deletion lists as local build artifacts.
    Produce size-bounded inventory parts and a root manifest template. Check all
@@ -389,8 +390,10 @@ readers on multiple machines do not require local registration state.
    journal supplies the separate attempt ID when sealing the final manifest.
 
 Dry-run executes the same inventory/chunking path but performs no database mutation
-or embedding call. For pending embedding misses, report tokens and projected vector
-size separately; do not claim a completed vector/records hash. Report every entry,
+or embedding call. Report `managed` eligible chunks and `managedTokens` (estimated
+input tokens for the complete corpus), with `embedded=0` in the local artifact.
+These are not billed usage or incremental upload counts. Record hashes bind the
+submitted payload; server-generated vectors are validated separately. Report every entry,
 exclusion reason, parse status, byte size, chunk/token counts, embedding eligibility
 and skip reasons, and change summary. Dry-run plans may show pending embedding work;
 published chunk records may not silently treat missing required vectors as skips.
@@ -473,7 +476,7 @@ fields are omitted when absent; records of different kinds need not share them.
 | Record | Additional stored fields |
 | --- | --- |
 | File (`kind=file`) | `path`, `blobOid`, `contentHash`, `byteLength`, `sourceText`, `language`, `parseStatus`, `chunkCount` |
-| Chunk (`kind=chunk`) | `fileId`, `path`, parent `contentHash`, `language`, `chunkKind`, `startByte`, `endByte`, `startLine`, `endLine`, `ordinal`, `searchText`, `embeddingStatus`; optional `symbol`, `scope`, `signature`, `embeddingSkipReason`, `embeddingInputHash`, `embedding` |
+| Chunk (`kind=chunk`) | `fileId`, `path`, parent `contentHash`, `language`, `chunkKind`, `startByte`, `endByte`, `startLine`, `endLine`, `ordinal`, `searchText`, `embeddingStatus`; optional `symbol`, `scope`, `signature`, `embeddingSkipReason`, `embeddingInputHash`, `embeddingText`, `embedding` |
 | Corpus root (`kind=manifest`, `role=corpus`, ID `__manifest__`) | `repoId`, `indexId`, full `commitOid`, `commitTime`, `requestedRef`, full `config`, `inventoryHash`, `recordsHash`, `counts`, `buildId`, `attemptId`, `inventoryPartIds` |
 | Inventory part (`kind=manifest`, `role=inventory`) | `partOrdinal`, `partHash`, ordered `entries` with path, file/chunk IDs, blob/content identities, inclusion/exclusion reasons, parse states, sizes, and embedding coverage |
 | Repository control (`kind=manifest`, `role=repository`, main ID `__repo__`) | Full source identity, repo/index IDs, immutable preset/config, initialization state |
@@ -487,8 +490,13 @@ content such as function, declaration, documentation, imports, or fallback; it i
 separate from the file/chunk/manifest discriminator. `counts` includes included and
 excluded files, chunks, and embedded/skipped chunks with reason totals.
 
-In a completed corpus, `embeddingStatus=embedded` requires a valid vector and
-`embeddingInputHash`, and omits the skip reason. `embeddingStatus=skipped` requires
+The managed preset uses `embeddingStatus=managed` to identify its generation policy,
+not local completion. Eligible chunks carry `embeddingText=searchText` and an
+`embeddingInputHash` over the exact input and embedding configuration; ordinary
+upserts omit `embedding`. A completed candidate must contain a nonzero, finite
+1536-number vector for every eligible chunk. Local artifacts contain no vectors.
+The internal fixture-only client embedder retains `embeddingStatus=embedded`;
+its arbitrary presets cannot be published through the CLI. `embeddingStatus=skipped` requires
 an explicit policy reason and omits the vector and input hash. The lexical-only
 preset records `embedding-disabled`; an embedding-enabled preset records its
 specific exclusion reason. Pending or failed required embedding work stays in the
@@ -549,10 +557,13 @@ baseline, not a proven code-specific ranking solution. An initial enrichment
 candidate preserves original identifiers while adding camelCase/snake_case terms;
 pin and evaluate that transformation before adopting it as the preset.
 
-An embedding-enabled preset adds an unmanaged `embedding` vector field with a
-concrete model-selected dimension and similarity metric, fixed before Collection
-creation. An indexed vector field does not require a vector on every chunk; file
-and manifest records also omit it. The `none` preset omits the vector index entirely.
+The opt-in managed preset adds indexed text `embeddingText` and a managed
+`embedding` vector field with provider `openai`, model `text-embedding-3-small`,
+1536 dimensions and cosine similarity. The source field, dimensions and similarity
+are nested under the vector field's `embedding` configuration; there are no
+top-level dimension/similarity properties. Collection discovery verifies the
+complete resolved schema and pinned preset. Missing `embeddingText` on skipped
+chunks, files and manifests means no vector is generated for those records. The `none` preset omits the vector index entirely.
 Changing presets creates a separate index; do not silently mutate an existing
 serving index. Do not write placeholder or test vectors into a real corpus.
 
@@ -741,13 +752,36 @@ choice and the finer skip rules remain evaluation decisions, not measured result
 
 ### Embedding reuse
 
-Cache embeddings by the exact full input and provider/model/revision/dimensions/
-preprocessing settings. Do not include commit, line numbers, file IDs, or build IDs
-in that input. A line shift can update positions while reusing the same vector;
-changed chunk boundaries or a renamed path in the input can legitimately miss.
-Cache only successful validated outputs atomically. Query embeddings use the same
-compatible contract and have their own cache/budget accounting. Provider aliases
-may drift if no immutable model revision exists; record that limitation.
+The managed implementation reuses unchanged records from the immutable baseline:
+compare all submitted payload fields after separately validating and removing only
+the server-generated vector. Do not upload those unchanged records again. Direct
+managed vector writes are forbidden, including copies fetched from an old Tag.
+Changed files receive new chunk IDs and may require re-embedding even if some text
+is identical. Replaying an uncertain write may also incur embedding usage. There
+is no srcx-managed document or query vector cache and no promised server cache.
+The older local cache remains only for internal client-embedder fixtures.
+
+The input includes path/symbol context and source text, not commit/line/build IDs.
+The preset pins provider/model/dimensions/similarity and input policy, but the
+provider model name is not an immutable model revision. Validation proves vector
+shape and payload integrity, not deterministic numerical reproduction by OpenAI.
+
+Search remains lexical by default. Explicit `--mode semantic` uses managed
+`knn.queryText`; `--mode hybrid` combines the existing lexical query and that kNN
+query using LambdaDB RRF. Both legs enforce `kind=chunk` and the same optional
+path/language filters; kNN uses a prefilter and `k=limit`. The lexical leg keeps
+nonembedded chunks eligible. Query/fetch/list request vectors explicitly so the
+same validation applies to pinned result handles. When a deployment omits managed
+vectors from list responses, fetch the affected IDs from that same immutable Tag
+and require identical non-vector payloads before vector validation. Source reads still use the
+original file bytes, never enriched text. No relevance gain is claimed yet.
+
+Managed source text and semantic/hybrid query text are sent through LambdaDB to
+OpenAI and incur embedding usage plus normal LambdaDB operations/storage. Dry-run
+and lexical queries do not request query embeddings. Use explicit opt-in and a
+bounded synthetic acceptance run before evaluating private or larger corpora.
+See [managed embeddings](https://docs.lambdadb.ai/guides/collections/managed-embeddings)
+and [hybrid query](https://docs.lambdadb.ai/guides/search/hybrid) for the API contract.
 
 ## 9. Candidate validation, publication, and `versions`
 
@@ -1005,7 +1039,7 @@ Required meaningful checks:
 - Byte coverage, Unicode/BOM/CRLF/trailing-newline/long-line spans are exact.
 - Parse failures and huge nodes stay bounded and visible in reports.
 - B contains additions/replacements/deletions while A reads remain unchanged.
-- A controlled line-shift fixture updates positions and reuses identical embeddings.
+- A controlled line-shift fixture updates positions; managed imports may re-embed changed IDs, while the internal client-cache fixture verifies input-based reuse.
 - Different paths remain distinct even with identical bytes; reuse follows input.
 - Fixed-config mismatches fail before writes; fake vectors never enter a real corpus.
 - Explicit obsolete-ID deletion preserves replacement IDs and removes surplus chunks.

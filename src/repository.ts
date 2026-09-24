@@ -8,13 +8,14 @@ import {
   PURPOSE,
   type Doc,
 } from "./common.js";
-import { PRESET, INDEX_CONFIGS } from "./build.js";
+import { PRESET, indexConfigs, supportedPreset, type Preset } from "./build.js";
 import { identity, type Identity } from "./git.js";
 import { LambdaRemote, one, branch } from "./remote.js";
 import { exclusive, type Binding } from "./publish.js";
 import { stateRoot, type Settings } from "./settings.js";
 import type { IndexConfigsUnion } from "@functional-systems/lambdadb";
 export type Repository = Binding & {
+  preset?: Preset;
   collection: string;
   name: string;
   description: string;
@@ -42,12 +43,15 @@ export function collectionName(
   return `code-${slug}-${hash(["collection-v1", key, configHash]).slice(0, 16)}`;
 }
 /** LambdaDB adds its built-in keyword id index to collection metadata. */
-export function matchesIndexSchema(actual: unknown): boolean {
+export function matchesIndexSchema(
+  actual: unknown,
+  preset: Preset = PRESET,
+): boolean {
   if (!actual || typeof actual !== "object" || Array.isArray(actual))
     return false;
   const { id, ...fields } = actual as Record<string, unknown>;
   if (id !== undefined && hash(id) !== hash({ type: "keyword" })) return false;
-  return hash(fields) === hash(INDEX_CONFIGS);
+  return hash(fields) === hash(indexConfigs(preset));
 }
 function descriptor(r: Repository): Doc {
   return {
@@ -60,7 +64,7 @@ function descriptor(r: Repository): Doc {
     repoId: r.repoId,
     indexId: r.indexId,
     name: r.name,
-    preset: PRESET,
+    preset: r.preset ?? PRESET,
     initialization: "ready",
   };
 }
@@ -76,8 +80,8 @@ function decode(
   invariant(
     doc?.role === "repository" &&
       doc.initialization === "ready" &&
-      doc.configHash === hash(PRESET) &&
-      hash(doc.preset) === hash(PRESET),
+      supportedPreset(doc.preset) &&
+      doc.configHash === hash(doc.preset),
     "Repository is partially initialized or uses an unsupported preset.",
   );
   invariant(
@@ -87,7 +91,7 @@ function decode(
     "Repository descriptor and Collection labels disagree.",
   );
   invariant(
-    matchesIndexSchema(c.indexConfigs),
+    matchesIndexSchema(c.indexConfigs, doc.preset as Preset),
     "Collection schema differs from the pinned preset.",
   );
   invariant(
@@ -98,6 +102,7 @@ function decode(
     "Malformed repository descriptor.",
   );
   return {
+    preset: doc.preset as Preset,
     collection: c.collectionName,
     repoKey: doc.repoKey,
     repoId: doc.repoId,
@@ -148,7 +153,7 @@ export async function selectRepository(
   invariant(
     selected.length === 1,
     selected.length
-      ? "Ambiguous repository; use its full source identity or Collection name."
+      ? "Ambiguous repository; use its exact Collection name (presets have separate Collections)."
       : `Repository not found${partial.length ? "; partially initialized collections exist (see repo list)" : ""}.`,
   );
   return selected[0]!;
@@ -160,10 +165,13 @@ export async function register(
     remote?: string;
     description?: string;
     labels?: Record<string, string>;
+    preset?: Preset;
   },
 ): Promise<Repository> {
   const source = await identity(args.path, args.remote);
-  const configHash = hash(PRESET),
+  const preset = args.preset ?? PRESET;
+  invariant(supportedPreset(preset), "Unsupported repository preset.");
+  const configHash = hash(preset),
     collection = collectionName(source.key, source.name, configHash),
     state = destination(remote.settings, collection);
   return exclusive(state, async () => {
@@ -218,6 +226,7 @@ export async function register(
       );
       const indexId = randomUUID();
       intent = {
+        preset,
         repoKey: source.key,
         name: source.name,
         repoId: randomUUID(),
@@ -244,13 +253,13 @@ export async function register(
     if (existing)
       invariant(
         hash(existing.tags) === hash(intent.tags) &&
-          matchesIndexSchema(existing.indexConfigs),
+          matchesIndexSchema(existing.indexConfigs, preset),
         "Existing Collection differs from provisioning journal.",
       );
     else
       await remote.create(
         collection,
-        JSON.parse(JSON.stringify(INDEX_CONFIGS)) as Record<
+        JSON.parse(JSON.stringify(indexConfigs(preset))) as Record<
           string,
           IndexConfigsUnion
         >,

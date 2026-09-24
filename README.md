@@ -21,7 +21,7 @@ srcx --help
 
 ## Run locally
 
-Requires Node.js 22.14+ and Git. The initial preset uses lexical search with
+Requires Node.js 22.14+ and Git. The default preset uses lexical search with
 `embedding=none`; no embedding account or paid API is needed.
 
 ```sh
@@ -76,6 +76,55 @@ boundaries. Parse errors and unsupported languages use recorded text fallback.
 Chunks cover the exact source bytes, carry one-based line ranges, target 800 tokens,
 and stay below 1,500 tokens including path/symbol context. The internal window
 baseline is available to the test/build API, not as a public storage backend.
+
+## Opt into managed embeddings
+
+LambdaDB can generate OpenAI `text-embedding-3-small` vectors (1536 dimensions,
+cosine) for meaningful code, tests and prose. Imports-only and structural chunks
+remain lexical. The CLI uses LambdaDB credentials; it does not need an OpenAI key.
+Source text sent for embedding and semantic/hybrid queries pass through LambdaDB
+to OpenAI and incur usage charges. See [LambdaDB managed embeddings](https://docs.lambdadb.ai/guides/collections/managed-embeddings).
+
+```sh
+# Offline preview: no upload or embedding request.
+srcx import --path /path/to/repo --ref main --dry-run \
+  --embedding text-embedding-3-small --output /tmp/srcx-managed-preview
+
+# Creates a separate Collection; existing lexical Collections stay usable.
+srcx repo add --path /path/to/repo --embedding text-embedding-3-small
+# Use the exact collection value returned above, especially with two presets.
+srcx import --repo <collection> --ref main
+srcx search --repo <collection> --version main --query "retry failed writes" --mode hybrid
+srcx search --repo <collection> --version main --query "retry failed writes" --mode semantic
+```
+
+Connected imports, including `--dry-run --repo`, use the selected repository's
+pinned preset. `--embedding` on import is only for `--dry-run --path`.
+`search` keeps `--mode lexical` as its default; semantic and hybrid require a
+managed Collection. Hybrid uses LambdaDB RRF with identical filters on both legs.
+Existing result handles, lexical config hashes and publication journals stay valid.
+
+Local artifacts contain eligible `embeddingText` and input hashes, not vectors.
+`counts.managed` and `counts.managedTokens` estimate the complete corpus's eligible
+chunks and input tokens; `embedded=0` does not mean the server will skip them.
+Publication requires valid generated vectors in the immutable candidate Tag,
+plus the same exact payload/source checks as lexical publication. Unchanged
+records are not uploaded again. Changed file chunks and uncertain write retries
+may be embedded again; no global or query embedding cache is promised.
+
+A small synthetic live check is available after building:
+
+```sh
+npm run build
+node --env-file=.env.local scripts/live-managed.mjs
+```
+
+It uploads two synthetic commits, bounds document inputs to 10,000 estimated
+tokens and issues four managed search queries plus lexical checks. It retains a
+Collection, local fixture, artifacts, result handles and `.srcx/live-managed/report.json`.
+Completed reruns preserve the original report and make no service calls; changed
+runtime inputs require a fresh directory. Failed runs retain journals and reject
+automatic replay. These are correctness checks, not retrieval-quality measurements.
 
 ## Evaluate retrieval quality
 

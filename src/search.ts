@@ -5,7 +5,7 @@ import { one, tag, type CollectionStore } from "./remote.js";
 import { stateRoot, type Settings } from "./settings.js";
 import type { Repository } from "./repository.js";
 import type { Published } from "./publish.js";
-import type { InventoryItem } from "./build.js";
+import { PRESET, recordHash, type InventoryItem } from "./build.js";
 export type Handle = {
   id: string;
   endpoint: string;
@@ -84,6 +84,33 @@ export function lexicalQuery(
     ],
   };
 }
+export type SearchMode = "lexical" | "semantic" | "hybrid";
+export function retrievalQuery(
+  query: string,
+  size: number,
+  filters: { path?: string; language?: string },
+  mode: SearchMode,
+): Record<string, unknown> {
+  invariant(
+    ["lexical", "semantic", "hybrid"].includes(mode),
+    "Unknown search mode.",
+  );
+  const lexical = lexicalQuery(query, filters);
+  if (mode === "lexical") return lexical;
+  const semantic = {
+    knn: {
+      field: "embedding",
+      queryText: query,
+      k: size,
+      filter: {
+        bool: (lexical.bool as { occur: string }[]).filter(
+          (c) => c.occur === "filter",
+        ),
+      },
+    },
+  };
+  return mode === "semantic" ? semantic : { rrf: [lexical, semantic] };
+}
 export async function search(
   store: CollectionStore,
   s: Settings,
@@ -92,21 +119,23 @@ export async function search(
   query: string,
   size = 10,
   filters: { path?: string; language?: string } = {},
+  mode: SearchMode = "lexical",
 ): Promise<unknown[]> {
   invariant(
     Number.isInteger(size) && size > 0 && size <= 100,
     "Limit must be an integer from 1 to 100.",
   );
+  invariant(
+    mode === "lexical" || r.preset?.embedding?.managed,
+    "Semantic/hybrid search requires a managed embedding Collection; register with --embedding text-embedding-3-small.",
+  );
+  const request = retrievalQuery(query, size, filters, mode);
   const entries = await inventoryAt(store, r, v);
   const files = new Map(
     entries.filter((e) => e.status === "included").map((e) => [e.fileId, e]),
   );
   const result = [];
-  for (const hit of await store.query(
-    v.tagName,
-    lexicalQuery(query, filters),
-    size,
-  )) {
+  for (const hit of await store.query(v.tagName, request, size)) {
     const d = hit.doc,
       e = files.get(d.fileId as string);
     invariant(
@@ -128,7 +157,7 @@ export async function search(
       path: String(d.path),
       contentHash: String(d.contentHash),
       chunkId: d.id,
-      chunkHash: hash(d),
+      chunkHash: recordHash(d, r.preset ?? PRESET),
       startLine: Number(d.startLine),
       endLine: Number(d.endLine),
     };
@@ -222,7 +251,7 @@ export async function readHandle(
     const d = await one(store, tag(v.tagName), h.chunkId);
     invariant(
       d &&
-        hash(d) === h.chunkHash &&
+        recordHash(d, h.repository.preset ?? PRESET) === h.chunkHash &&
         d.fileId === h.fileId &&
         d.contentHash === h.contentHash,
       "Pinned chunk has changed or is missing.",

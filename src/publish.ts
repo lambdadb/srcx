@@ -10,7 +10,14 @@ import {
   sleep,
   type Doc,
 } from "./common.js";
-import { corpusMetadata, records, validateBuild, type Build } from "./build.js";
+import {
+  corpusMetadata,
+  records,
+  recordHash,
+  supportedPreset,
+  validateBuild,
+  type Build,
+} from "./build.js";
 import { branch, tag, one, type CollectionStore } from "./remote.js";
 export type Binding = {
   repoId: string;
@@ -154,7 +161,11 @@ export async function validateCandidate(
   for (const d of corpusMetadata(b, binding.repoId, binding.indexId, attemptId))
     expected.set(d.id, hash(d));
   for await (const d of store.list(tag(name))) {
-    if (expected.get(d.id) !== hash(d)) return false;
+    try {
+      if (expected.get(d.id) !== recordHash(d, b.preset)) return false;
+    } catch {
+      return false;
+    }
     expected.delete(d.id);
   }
   if (expected.size) return false;
@@ -203,7 +214,8 @@ export async function validateCandidate(
       !found.length ||
       found.some(
         (h) =>
-          h.doc.kind !== "chunk" || b.recordHashes[h.doc.id] !== hash(h.doc),
+          h.doc.kind !== "chunk" ||
+          b.recordHashes[h.doc.id] !== recordHash(h.doc, b.preset),
       )
     )
       return false;
@@ -284,8 +296,8 @@ export async function publish(args: {
     "Build does not belong to this index.",
   );
   invariant(
-    !b.preset.embedding,
-    "CLI publication currently supports only the embedding=none preset.",
+    !b.preset.embedding || supportedPreset(b.preset),
+    "Publication requires a supported lexical or managed embedding preset.",
   );
   await validateBuild(b);
   const journalPath = join(state, "pending.json");
@@ -522,7 +534,7 @@ export async function publish(args: {
     if (j.baseline)
       for await (const d of store.list(tag(j.baseline.tagName))) {
         oldIds.add(d.id);
-        oldHashes.set(d.id, hash(d));
+        oldHashes.set(d.id, recordHash(d, b.preset));
       }
     const newIds = new Set([
       ...Object.keys(b.recordHashes),

@@ -118,3 +118,67 @@ test("real SDK uses explicit refs/ordinary writes, walks pages, copies Tags and 
   assert.equal(requests.filter((r) => r.url.endsWith("/query")).length, 1);
   assert.ok(requests.every((r) => r.url.startsWith("/projects/fixture/")));
 });
+
+test("managed list hydration fetches the same Tag and rejects missing or changed payloads", async (t) => {
+  let failure;
+  const requests = [];
+  const listed = {
+    id: "managed",
+    kind: "chunk",
+    embeddingStatus: "managed",
+    embeddingText: "public synthetic fixture",
+  };
+  const server = createServer(async (req, res) => {
+    let raw = "";
+    for await (const part of req) raw += part;
+    const body = raw ? JSON.parse(raw) : undefined;
+    const url = new URL(req.url, "http://localhost");
+    requests.push({ url, body });
+    let docs = [listed];
+    if (url.pathname.endsWith("/docs/fetch")) {
+      docs =
+        failure === "missing"
+          ? []
+          : [
+              {
+                ...listed,
+                embedding: [0.1, 0.2],
+                ...(failure === "changed" ? { embeddingText: "wrong" } : {}),
+              },
+            ];
+    }
+    res.setHeader("Content-Type", "application/json");
+    res.end(
+      JSON.stringify({
+        docs: docs.map((doc) => ({ collection: "managed", doc })),
+        total: docs.length,
+        took: 1,
+        isDocsInline: true,
+      }),
+    );
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  process.env.SRCX_SDK_MANAGED_KEY = "fixture";
+  t.after(() => delete process.env.SRCX_SDK_MANAGED_KEY);
+  const store = new LambdaRemote({
+    endpoint: `http://127.0.0.1:${server.address().port}`,
+    project: "fixture",
+    apiKeyEnv: "SRCX_SDK_MANAGED_KEY",
+  }).store("managed");
+  const collect = async () => {
+    const docs = [];
+    for await (const d of store.list(tag("pinned"))) docs.push(d);
+    return docs;
+  };
+  assert.deepEqual(await collect(), [{ ...listed, embedding: [0.1, 0.2] }]);
+  assert.equal(requests[0].url.searchParams.get("includeVectors"), "true");
+  assert.deepEqual(requests[1].body.ref, { kind: "tag", name: "pinned" });
+  assert.equal(requests[1].body.consistentRead, false);
+  assert.equal(requests[1].body.includeVectors, true);
+  assert.deepEqual(requests[1].body.ids, ["managed"]);
+  failure = "missing";
+  await assert.rejects(collect(), /missing from fetch/);
+  failure = "changed";
+  await assert.rejects(collect(), /payloads disagree/);
+});

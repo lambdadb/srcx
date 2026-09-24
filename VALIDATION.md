@@ -12,6 +12,51 @@ concurrency, or retrieval-quality benchmark. npm publication evidence is recorde
 separately below. The persistent Git branch changes have a separate synthetic
 live run recorded next; the earlier live runs do not validate this new path.
 
+## Managed OpenAI embedding acceptance
+
+The opt-in managed preset passed a separate synthetic live run at application and
+harness commit `177731386f76a13723a83aa8470d4e0715e29424` using Node 24.15.0 and
+the user-supplied development connection. It completed at
+`2026-09-24T20:46:46.305Z` in 111.706 seconds. Only synthetic source was uploaded.
+
+- Both commits published validated immutable Tags, with six generated 1536-number
+  vectors in each corpus. Mixed file/manifest records correctly omitted vectors.
+- Six filtered searches (lexical, semantic and hybrid for each version) returned
+  14 result handles; every full-file read matched the pinned Git blob byte for byte.
+- The second import skipped unchanged records, removed deleted content, and kept
+  the original version's handle readable. Fresh repository discovery preserved the
+  managed preset and schema.
+- Ordinary upserts submitted ten eligible chunk inputs across both imports. The
+  preflight upper bound was 167 estimated document input tokens; four searches
+  requested query embeddings. These counts are not provider-reported billed usage.
+
+The first run at `fb5b6d8` correctly remained unpublished: this deployment omitted
+vectors from list responses despite `includeVectors=true`, while fetch/query on
+that same Tag returned them. The transport now fetches those listed IDs from the
+same immutable Tag and requires exact non-vector payload equality before vector
+validation. Regression checks reject missing fetch records and changed payloads.
+The failed run and retry journal remain under `.srcx/live-managed/`; they were not
+relabelled as successful evidence. The successful run has a separate Collection
+and evidence directory, `.srcx/live-managed-verified/`, in the validation worktree.
+Both synthetic Collections are retained for inspection.
+
+The successful report SHA-256 is
+`6c96ac8af9b79c85e98c84f1f01851906f0b1b3e4d96b51d9417cb59380ac532`;
+its runtime fingerprint is
+`7d8a8006820ee523a88e80d6614327000ce305cffafe377d18fda5b50ba9c947`.
+A same-runtime rerun made no service calls and preserved the original report bytes.
+The harness rejects changed runtime/destination/Node inputs and incomplete runs
+before new requests; recovery after uncertain writes remains explicit.
+
+Node 22.14.0 and 24.15.0 each passed **61 tests**, typechecking, and installed-tarball
+CLI checks for both presets. Formatting, version validation and diff checks passed.
+Local tests cover generated-vector failures, exact payload validation, unchanged
+record reuse, uncertain-write recovery, preset/schema drift, query serialization,
+and credential-free managed previews. Live checks used the built application APIs;
+installed-package CLI checks used the loopback fault-injection store.
+These checks establish integration/source correctness, not semantic relevance gains
+or performance on real repositories. The earlier lexical evaluations remain separate.
+
 ## Default CLI search/read evaluation
 
 The follow-up uses actual built CLI subprocesses with the unchanged default

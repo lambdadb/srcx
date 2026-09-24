@@ -30,7 +30,14 @@ export type Preset = {
   /** Internal evaluation override; the CLI keeps its original enrichment. */
   enrichment?: "path-only-v1";
   maxFileBytes: number;
-  embedding: { model: string; dimensions: number } | null;
+  embedding: {
+    model: string;
+    dimensions: number;
+    managed?: true;
+    provider?: "openai";
+    similarity?: "cosine";
+    sourceField?: "embeddingText";
+  } | null;
 };
 export const PRESET: Preset = {
   schemaVersion: 1,
@@ -39,6 +46,63 @@ export const PRESET: Preset = {
   maxFileBytes: 1024 * 1024,
   embedding: null,
 };
+/** Opt-in managed preset; PRESET stays byte-for-byte compatible with lexical corpora. */
+export const MANAGED_PRESET: Preset = {
+  ...PRESET,
+  embedding: {
+    managed: true,
+    provider: "openai",
+    model: "text-embedding-3-small",
+    dimensions: 1536,
+    similarity: "cosine",
+    sourceField: "embeddingText",
+  },
+};
+export function presetFor(embedding = "none"): Preset {
+  invariant(
+    ["none", "text-embedding-3-small"].includes(embedding),
+    "Embedding must be none or text-embedding-3-small.",
+  );
+  return embedding === "none" ? PRESET : MANAGED_PRESET;
+}
+export function supportedPreset(preset: unknown): preset is Preset {
+  return (
+    preset !== undefined &&
+    [hash(PRESET), hash(MANAGED_PRESET)].includes(hash(preset))
+  );
+}
+export function indexConfigs(preset: Preset = PRESET) {
+  if (!preset.embedding?.managed) return INDEX_CONFIGS;
+  const { managed: _, ...embedding } = preset.embedding;
+  return {
+    ...INDEX_CONFIGS,
+    embeddingText: { type: "text", analyzers: ["standard"] },
+    embedding: { type: "vector", managedEmbedding: true, embedding },
+  };
+}
+/** Validate server enrichment separately; all other payload fields remain exact. */
+export function recordHash(doc: Doc, preset: Preset): string {
+  if (!preset.embedding?.managed) return hash(doc);
+  const { embedding, ...source } = doc;
+  if (doc.kind === "chunk" && doc.embeddingStatus === "managed") {
+    invariant(
+      typeof doc.embeddingText === "string" &&
+        doc.embeddingText === doc.searchText &&
+        doc.embeddingInputHash ===
+          hash([preset.embedding, doc.embeddingText]) &&
+        Array.isArray(embedding) &&
+        embedding.length === preset.embedding.dimensions &&
+        embedding.every((v) => typeof v === "number" && Number.isFinite(v)) &&
+        embedding.some((v) => v !== 0),
+      "Missing or invalid managed embedding.",
+    );
+  } else
+    invariant(
+      embedding === undefined && doc.embeddingText === undefined,
+      "Unexpected managed embedding on an ineligible record.",
+    );
+  return hash(source);
+}
 export type InventoryItem = {
   path: string;
   pathBase64: string;
@@ -54,6 +118,8 @@ export type InventoryItem = {
   parseStatus?: string;
   tokens?: number;
   embedded?: number;
+  managed?: number;
+  managedTokens?: number;
   skipped?: number;
 };
 export type Build = {
@@ -152,6 +218,7 @@ export async function materialize(args: {
   }
   invariant(
     !preset.embedding ||
+      (preset.embedding.managed && supportedPreset(preset)) ||
       (args.embedder?.model === preset.embedding.model &&
         args.embedder.dimensions === preset.embedding.dimensions),
     "Embedding provider must match the pinned preset.",
@@ -296,31 +363,40 @@ export async function materialize(args: {
         const eligible = !["imports", "structural"].includes(span.chunkKind);
         if (preset.embedding && eligible) {
           const inputHash = hash([preset.embedding, span.searchText]);
-          const cachePath = args.cache
-            ? join(args.cache, inputHash + ".json")
-            : undefined;
-          let vector = cachePath
-            ? await optionalJson<number[]>(cachePath)
-            : undefined;
-          if (!vector) {
-            vector = await args.embedder!.embed(span.searchText);
+          if (preset.embedding.managed) {
+            doc.embeddingText = span.searchText;
+            doc.embeddingInputHash = inputHash;
+            doc.embeddingStatus = "managed";
+            delete doc.embeddingSkipReason;
+            item.managed = (item.managed ?? 0) + 1;
+            item.managedTokens = (item.managedTokens ?? 0) + span.tokenCount;
+          } else {
+            const cachePath = args.cache
+              ? join(args.cache, inputHash + ".json")
+              : undefined;
+            let vector = cachePath
+              ? await optionalJson<number[]>(cachePath)
+              : undefined;
+            if (!vector) {
+              vector = await args.embedder!.embed(span.searchText);
+              invariant(
+                vector.length === preset.embedding.dimensions &&
+                  vector.every(Number.isFinite),
+                "Invalid embedding output.",
+              );
+              if (cachePath) await atomic(cachePath, vector);
+            }
             invariant(
               vector.length === preset.embedding.dimensions &&
                 vector.every(Number.isFinite),
-              "Invalid embedding output.",
+              "Invalid cached vector.",
             );
-            if (cachePath) await atomic(cachePath, vector);
+            doc.embedding = vector;
+            doc.embeddingInputHash = inputHash;
+            doc.embeddingStatus = "embedded";
+            delete doc.embeddingSkipReason;
+            item.embedded!++;
           }
-          invariant(
-            vector.length === preset.embedding.dimensions &&
-              vector.every(Number.isFinite),
-            "Invalid cached vector.",
-          );
-          doc.embedding = vector;
-          doc.embeddingInputHash = inputHash;
-          doc.embeddingStatus = "embedded";
-          delete doc.embeddingSkipReason;
-          item.embedded!++;
         } else {
           doc.embeddingSkipReason = preset.embedding
             ? span.chunkKind === "imports"
@@ -399,6 +475,15 @@ export async function materialize(args: {
       excluded: items.filter((e) => e.status === "excluded").length,
       chunks: items.reduce((n, e) => n + (e.chunkIds?.length ?? 0), 0),
       tokens: items.reduce((n, e) => n + (e.tokens ?? 0), 0),
+      ...(preset.embedding?.managed
+        ? {
+            managed: items.reduce((n, e) => n + (e.managed ?? 0), 0),
+            managedTokens: items.reduce(
+              (n, e) => n + (e.managedTokens ?? 0),
+              0,
+            ),
+          }
+        : {}),
       embedded: items.reduce((n, e) => n + (e.embedded ?? 0), 0),
       skipped: items.reduce((n, e) => n + (e.skipped ?? 0), 0),
     },
@@ -450,6 +535,17 @@ export async function validateBuild(b: Build): Promise<void> {
       doc.configHash === b.configHash && doc.schemaVersion === 1,
       "Mixed configuration.",
     );
+    if (b.preset.embedding?.managed) {
+      invariant(
+        doc.embedding === undefined,
+        "Managed artifacts must not contain vectors.",
+      );
+      if (doc.kind !== "chunk")
+        invariant(
+          doc.embeddingText === undefined,
+          "Only eligible chunks can contain embedding input.",
+        );
+    }
     if (doc.kind === "file") {
       finish();
       activeFile = doc;
@@ -505,7 +601,27 @@ export async function validateBuild(b: Build): Promise<void> {
           Number(doc.tokenCount) <= CHUNKER.maxTokens,
         "Invalid chunk source/position/token binding.",
       );
-      if (doc.embeddingStatus === "embedded")
+      if (b.preset.embedding?.managed) {
+        const eligible = !["imports", "structural"].includes(
+          String(doc.chunkKind),
+        );
+        invariant(
+          eligible
+            ? doc.embeddingStatus === "managed" &&
+                doc.embeddingText === doc.searchText &&
+                doc.embeddingInputHash ===
+                  hash([b.preset.embedding, doc.searchText]) &&
+                doc.embeddingSkipReason === undefined
+            : doc.embeddingStatus === "skipped" &&
+                doc.embeddingText === undefined &&
+                doc.embeddingInputHash === undefined &&
+                doc.embeddingSkipReason ===
+                  (doc.chunkKind === "imports"
+                    ? "imports-only"
+                    : "structural-only"),
+          "Invalid managed embedding input or eligibility.",
+        );
+      } else if (doc.embeddingStatus === "embedded")
         invariant(
           b.preset.embedding &&
             Array.isArray(doc.embedding) &&
