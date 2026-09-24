@@ -138,6 +138,12 @@ adds a second public repository and verifies real `search` → `read` results wi
 the unchanged CLI preset. It uses normal repository Collections and separate local
 state; see its documented effects before opting into the live run.
 
+The [retrieval mode comparison](https://github.com/lambdadb/srcx/blob/develop/eval/RETRIEVAL-MODES.md) runs lexical, semantic and
+hybrid against the same managed corpora. It retains original and reviewed labels,
+full stdout accounting, command timings and bounded embedding request estimates.
+`npm run eval:modes:prepare` is offline; live execution is explicit and incurs
+managed embedding and LambdaDB usage.
+
 ## Explicit live acceptance run
 
 The live harness accepts `LAMBDADB_BASE_URL`, `LAMBDADB_PROJECT_NAME`, and

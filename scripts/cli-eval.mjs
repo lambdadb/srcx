@@ -1,5 +1,5 @@
-// Checkout-only, default CLI evaluation. prepare is offline; run explicitly
-// imports pinned public source into normal CLI Collections in the chosen project.
+// Checkout-only CLI evaluation. prepare is offline; run imports pinned public
+// source into normal Collections. Format 3 adds paid managed embedding requests.
 import assert from "node:assert/strict";
 import { parseArgs, promisify } from "node:util";
 import { execFile } from "node:child_process";
@@ -7,7 +7,14 @@ import { readFile, readdir, mkdir, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { atomic, hash, optionalJson } from "../dist/common.js";
 import { identity, git } from "../dist/git.js";
-import { PRESET, loadBuild, records, validateBuild } from "../dist/build.js";
+import {
+  PRESET,
+  MANAGED_PRESET,
+  loadBuild,
+  records,
+  validateBuild,
+} from "../dist/build.js";
+import { tokens } from "../dist/chunk.js";
 import { collectionName } from "../dist/repository.js";
 import { validateSettings } from "../dist/settings.js";
 import { exclusive } from "../dist/publish.js";
@@ -18,6 +25,9 @@ import {
   verifyCliRead,
   scoreCliQuery,
   summarizeCli,
+  querySchedule,
+  reserveUsage,
+  summarizeModes,
 } from "./cli-eval-lib.mjs";
 
 const exec = promisify(execFile);
@@ -28,6 +38,7 @@ const { values, positionals } = parseArgs({
     srcx: { type: "string", default: "." },
     "lambdadb-cli": { type: "string", default: "../lambdadb-cli" },
     suite: { type: "string", default: "eval/cli-workflow-v1.json" },
+    "reference-suite": { type: "string", default: "eval/cli-workflow-v1.json" },
     resume: { type: "boolean", default: false },
   },
 });
@@ -43,12 +54,17 @@ const env = {
 delete env.LAMBDADB_DEBUG;
 async function cli(args) {
   try {
+    const started = performance.now();
     const { stdout } = await exec(
       process.execPath,
       [resolve("dist/cli.js"), ...args],
       { env, encoding: "utf8", maxBuffer: 32 * 1024 * 1024 },
     );
-    return { value: JSON.parse(stdout), stdout };
+    return {
+      value: JSON.parse(stdout),
+      stdout,
+      durationMs: performance.now() - started,
+    };
   } catch (e) {
     // Do not echo child-process argv, environment, raw SDK bodies or source.
     throw new Error(
@@ -85,9 +101,35 @@ async function corpus(build) {
   }
   return { docs, files };
 }
+function presetForSuite(suite) {
+  return suite.format === 3 ? MANAGED_PRESET : PRESET;
+}
+function compareReference(suite, reference) {
+  validateCliSuite(reference);
+  assert.equal(reference.format, 2);
+  const questions = (s) =>
+    s.queries.map(({ id, repository, commit, category, query }) => ({
+      id,
+      repository,
+      commit,
+      category,
+      query,
+    }));
+  assert.deepEqual(
+    questions(suite),
+    questions(reference),
+    "Comparison must keep the original questions and pinned sources.",
+  );
+}
 async function prepare() {
   const suite = JSON.parse(await readFile(values.suite, "utf8"));
   validateCliSuite(suite);
+  const preset = presetForSuite(suite);
+  const referenceSuite =
+    suite.format === 3
+      ? JSON.parse(await readFile(values["reference-suite"], "utf8"))
+      : undefined;
+  if (referenceSuite) compareReference(suite, referenceSuite);
   const sources = {};
   for (const [id, key] of Object.entries(suite.repositories)) {
     sources[id] = await identity(resolve(values[id]));
@@ -105,13 +147,16 @@ async function prepare() {
     runtime: await fingerprint(),
     suite,
     suiteHash: hash(suite),
+    ...(referenceSuite
+      ? { referenceSuite, referenceSuiteHash: hash(referenceSuite) }
+      : {}),
     sources,
     inputs: {},
   };
   await atomic(planFile, plan);
   for (const [id, source] of Object.entries(sources)) {
     const input = {
-      collection: collectionName(source.key, source.name, hash(PRESET)),
+      collection: collectionName(source.key, source.name, hash(preset)),
       artifacts: {},
     };
     plan.inputs[id] = input;
@@ -126,6 +171,9 @@ async function prepare() {
         "--ref",
         commit,
         "--dry-run",
+        ...(suite.format === 3
+          ? ["--embedding", "text-embedding-3-small"]
+          : []),
         "--output",
         output,
       ]);
@@ -133,11 +181,12 @@ async function prepare() {
       assert.equal(build.commitOid, commit);
       assert.equal(build.repoKey, source.key);
       assert.equal(build.branchRef, undefined);
-      assert.deepEqual(build.preset, PRESET);
+      assert.deepEqual(build.preset, preset);
       const { files } = await corpus(build);
-      for (const q of suite.queries.filter(
-        (q) => q.repository === id && q.commit === commit,
-      ))
+      for (const q of [
+        ...suite.queries,
+        ...(referenceSuite?.queries ?? []),
+      ].filter((q) => q.repository === id && q.commit === commit))
         verifyCliEvidence(q, files);
       input.artifacts[commit] = {
         path: build.directory,
@@ -150,6 +199,18 @@ async function prepare() {
       );
     }
   }
+  if (suite.format === 3) {
+    const documentInputTokens = Object.values(plan.inputs)
+      .flatMap((i) => Object.values(i.artifacts))
+      .reduce((n, a) => n + a.counts.managedTokens, 0);
+    const paid = querySchedule(suite).filter((s) => s.mode !== "lexical");
+    plan.preflight = reserveUsage({}, suite.settings.limits, {
+      documentInputTokens,
+      queryEmbeddingRequests: paid.length,
+      queryInputTokens: paid.reduce((n, s) => n + tokens(s.query.query), 0),
+      searchRequests: querySchedule(suite).length,
+    });
+  }
   plan.status = "prepared";
   await atomic(planFile, plan);
   console.log(
@@ -161,6 +222,7 @@ async function prepare() {
   );
 }
 function markdown(report, plan) {
+  if (plan.suite.format === 3) return modeMarkdown(report, plan);
   const lines = [
     "# Default CLI search/read evaluation",
     "",
@@ -190,10 +252,59 @@ function markdown(report, plan) {
     );
   return lines.join("\n") + "\n";
 }
+function modeMarkdown(report, plan) {
+  const lines = [
+    "# Retrieval mode comparison",
+    "",
+    `Completed: ${report.completedAt}`,
+    "",
+    `Harness commit: \`${plan.harnessCommit}\`; suite SHA-256: \`${plan.suiteHash}\`; runtime fingerprint: \`${hash(plan.runtime)}\`.`,
+    "",
+    "Same managed Collection and immutable commit Tag per repository; actual CLI search (10) then top five reads, no extra context. Output tokens count all stdout. Rotating mode order; one observation per query/mode, no latency significance claim. Revised diagnostic labels and original labels are both reported; no independent human or held-out benchmark.",
+    "",
+    "| Mode | Complete evidence | Original labels | Mean coverage | Mean stdout tokens | Median search ms | Median search + read command ms |",
+    "| --- | --- | --- | --- | --- | --- | --- |",
+  ];
+  for (const [mode, s] of Object.entries(report.summary.modes))
+    lines.push(
+      `| ${mode} | ${s.overall.complete}/${s.overall.queries} | ${s.originalLabels.overall.complete}/${s.overall.queries} | ${(s.overall.meanCoverage * 100).toFixed(1)}% | ${s.overall.meanOutputTokens.toFixed(0)} | ${s.medianSearchMs.toFixed(0)} | ${s.medianCommandMs.toFixed(0)} |`,
+    );
+  lines.push(
+    "",
+    "| Repository | Mode | Complete evidence | Mean stdout tokens |",
+    "| --- | --- | --- | --- |",
+  );
+  for (const [mode, s] of Object.entries(report.summary.modes))
+    for (const [repo, r] of Object.entries(s.repositories))
+      lines.push(
+        `| ${repo} | ${mode} | ${r.complete}/${r.queries} | ${r.meanOutputTokens.toFixed(0)} |`,
+      );
+  lines.push(
+    "",
+    "| Query | Mode | Complete | Coverage | Output tokens |",
+    "| --- | --- | --- | --- | --- |",
+  );
+  for (const r of report.rows)
+    lines.push(
+      `| ${r.id} | ${r.mode} | ${r.metrics.complete} | ${(r.metrics.coverage * 100).toFixed(1)}% | ${r.metrics.outputTokens} |`,
+    );
+  lines.push(
+    "",
+    `Reserved usage upper bounds (not provider billing): \`${JSON.stringify(report.usage)}\`.`,
+    "",
+  );
+  return lines.join("\n");
+}
 async function run() {
   const plan = await optionalJson(planFile);
   assert.equal(plan?.status, "prepared", "Run offline prepare first.");
   validateCliSuite(plan.suite);
+  const comparison = plan.suite.format === 3;
+  const preset = presetForSuite(plan.suite);
+  if (comparison) {
+    compareReference(plan.suite, plan.referenceSuite);
+    assert.equal(hash(plan.referenceSuite), plan.referenceSuiteHash);
+  }
   assert.equal(hash(plan.suite), plan.suiteHash);
   assert.deepEqual(
     await fingerprint(),
@@ -208,7 +319,7 @@ async function run() {
     const input = plan.inputs[id];
     assert.equal(
       input.collection,
-      collectionName(key, plan.sources[id].name, hash(PRESET)),
+      collectionName(key, plan.sources[id].name, hash(preset)),
     );
     inputs[id] = {};
     assert.deepEqual(
@@ -226,17 +337,36 @@ async function run() {
       assert.equal(build.repoKey, key);
       assert.equal(build.commitOid, commit);
       assert.equal(build.branchRef, undefined);
-      assert.equal(build.configHash, hash(PRESET));
-      assert.deepEqual(build.preset, PRESET);
+      assert.equal(build.configHash, hash(preset));
+      assert.deepEqual(build.preset, preset);
       assert.equal(build.recordsHash, artifact.recordsHash);
       assert.equal(build.inventoryHash, artifact.inventoryHash);
       const data = await corpus(build);
-      for (const q of plan.suite.queries.filter(
-        (q) => q.repository === id && q.commit === commit,
-      ))
+      for (const q of [
+        ...plan.suite.queries,
+        ...(plan.referenceSuite?.queries ?? []),
+      ].filter((q) => q.repository === id && q.commit === commit))
         verifyCliEvidence(q, data.files);
       inputs[id][commit] = { build, ...data };
     }
+  }
+  if (comparison) {
+    const paid = querySchedule(plan.suite).filter((s) => s.mode !== "lexical");
+    const documentInputTokens = Object.values(inputs)
+      .flatMap((i) => Object.values(i))
+      .flatMap((i) => [...i.docs.values()])
+      .filter((d) => d.embeddingStatus === "managed")
+      .reduce((n, d) => n + tokens(d.embeddingText), 0);
+    assert.deepEqual(
+      plan.preflight,
+      reserveUsage({}, plan.suite.settings.limits, {
+        documentInputTokens,
+        queryEmbeddingRequests: paid.length,
+        queryInputTokens: paid.reduce((n, s) => n + tokens(s.query.query), 0),
+        searchRequests: querySchedule(plan.suite).length,
+      }),
+      "Preflight usage differs from validated inputs.",
+    );
   }
   const settings = validateSettings({
     endpoint: process.env.LAMBDADB_BASE_URL,
@@ -248,7 +378,78 @@ async function run() {
   if (saved) {
     assert.equal(saved.destination, destination);
     assert.equal(saved.suiteHash, plan.suiteHash);
+    if (comparison)
+      assert.equal(saved.referenceSuiteHash, plan.referenceSuiteHash);
     assert.deepEqual(saved.runtime, plan.runtime);
+    if (comparison) {
+      assert.deepEqual(
+        saved.usage,
+        saved.attempts.reduce(
+          (usage, entry) =>
+            reserveUsage(usage, plan.suite.settings.limits, entry.amount),
+          {},
+        ),
+        "Usage ledger mismatch.",
+      );
+      const seen = new Set();
+      for (const row of saved.rows) {
+        const q = plan.suite.queries.find((q) => q.id === row.id);
+        const key = `${row.id}:${row.mode}`;
+        assert.ok(
+          q && plan.suite.settings.modes.includes(row.mode) && !seen.has(key),
+          "Unknown or duplicated saved row.",
+        );
+        seen.add(key);
+        assert.equal(row.query, q.query);
+        assert.equal(row.commit, q.commit);
+        assert.equal(row.repository, q.repository);
+        const r = saved.repositories[q.repository],
+          version = r.versions[q.commit],
+          data = inputs[q.repository][q.commit];
+        assert.deepEqual(JSON.parse(row.search.stdout), row.search.value);
+        verifyCliResults(
+          row.search.value,
+          row.handles,
+          data.docs,
+          r.repository.repoKey,
+          version,
+          plan.suite.settings.searchLimit,
+        );
+        const expected = row.search.value.slice(
+          0,
+          plan.suite.settings.readLimit,
+        );
+        assert.equal(row.reads.length, expected.length);
+        const spans = row.reads.map((read, i) => {
+          assert.deepEqual(JSON.parse(read.stdout), read.value);
+          assert.equal(read.resultId, expected[i].resultId);
+          return verifyCliRead(
+            read.value,
+            expected[i],
+            data.files.get(expected[i].path),
+            r.repository.repoKey,
+            version,
+          );
+        });
+        assert.deepEqual(row.spans, spans);
+        const stdout = row.reads.map((r) => r.stdout);
+        assert.deepEqual(
+          row.metrics,
+          scoreCliQuery(q, spans, row.search.stdout, stdout),
+        );
+        assert.deepEqual(
+          row.originalMetrics,
+          scoreCliQuery(
+            plan.referenceSuite.queries.find((o) => o.id === q.id),
+            spans,
+            row.search.stdout,
+            stdout,
+          ),
+        );
+      }
+      if (saved.status === "complete")
+        assert.deepEqual(saved.summary, summarizeModes(saved.rows, plan.suite));
+    }
   }
   if (saved?.status === "complete") {
     console.log(JSON.stringify({ status: "already-complete", reportFile }));
@@ -268,9 +469,26 @@ async function run() {
     startedAt: new Date().toISOString(),
     destination,
     suiteHash: plan.suiteHash,
+    ...(comparison
+      ? { referenceSuiteHash: plan.referenceSuiteHash, usage: {}, attempts: [] }
+      : {}),
     runtime: plan.runtime,
     repositories: {},
     rows: [],
+  };
+  const reserve = async (operation, amount) => {
+    if (!comparison) return;
+    report.usage = reserveUsage(
+      report.usage,
+      plan.suite.settings.limits,
+      amount,
+    );
+    report.attempts.push({
+      operation,
+      amount,
+      reservedAt: new Date().toISOString(),
+    });
+    await atomic(reportFile, report);
   };
   await atomic(reportFile, report);
   try {
@@ -290,12 +508,18 @@ async function run() {
         "add",
         "--path",
         source.path,
+        ...(comparison ? ["--embedding", "text-embedding-3-small"] : []),
       ]);
       assert.equal(repository.repoKey, source.key);
       assert.equal(repository.collection, plan.inputs[id].collection);
       report.repositories[id] ??= { repository, versions: {} };
       assert.deepEqual(report.repositories[id].repository, repository);
       for (const [commit, input] of Object.entries(inputs[id])) {
+        await reserve(`import:${id}:${commit}`, {
+          documentInputTokens: [...input.docs.values()]
+            .filter((d) => d.embeddingStatus === "managed")
+            .reduce((n, d) => n + tokens(d.embeddingText), 0),
+        });
         const { value: version } = await cli([
           "import",
           "--repo",
@@ -309,7 +533,7 @@ async function run() {
         assert.equal(version.commitOid, commit);
         assert.equal(version.recordsHash, input.build.recordsHash);
         assert.equal(version.inventoryHash, input.build.inventoryHash);
-        assert.equal(version.configHash, hash(PRESET));
+        assert.equal(version.configHash, hash(preset));
         report.repositories[id].versions[commit] = version;
         await atomic(reportFile, report);
         console.log(
@@ -317,12 +541,22 @@ async function run() {
         );
       }
     }
-    for (const q of plan.suite.queries) {
-      if (report.rows.some((row) => row.id === q.id)) continue;
+    for (const { query: q, mode } of querySchedule(plan.suite)) {
+      if (
+        report.rows.some(
+          (row) => row.id === q.id && (!comparison || row.mode === mode),
+        )
+      )
+        continue;
       const r = report.repositories[q.repository],
         version = r.versions[q.commit];
       const { docs, files } = inputs[q.repository][q.commit];
       // Omit --limit to exercise the CLI's actual default (ten results).
+      await reserve(`search:${q.id}:${mode}`, {
+        searchRequests: 1,
+        queryEmbeddingRequests: mode === "lexical" ? 0 : 1,
+        queryInputTokens: mode === "lexical" ? 0 : tokens(q.query),
+      });
       const search = await cli([
         "search",
         "--repo",
@@ -331,6 +565,7 @@ async function run() {
         q.commit,
         "--query",
         q.query,
+        ...(comparison ? ["--mode", mode] : []),
       ]);
       const handles = await Promise.all(
         search.value.map((result) => {
@@ -341,6 +576,12 @@ async function run() {
           ).then(JSON.parse);
         }),
       );
+      if (comparison)
+        for (const h of handles) {
+          assert.equal(h.repository.configHash, hash(preset));
+          assert.equal(h.repository.collection, r.repository.collection);
+          assert.deepEqual(h.repository.preset, preset);
+        }
       verifyCliResults(
         search.value,
         handles,
@@ -375,6 +616,20 @@ async function run() {
       );
       report.rows.push({
         id: q.id,
+        ...(comparison
+          ? {
+              mode,
+              handles,
+              originalMetrics: scoreCliQuery(
+                plan.referenceSuite.queries.find(
+                  (original) => original.id === q.id,
+                ),
+                spans,
+                search.stdout,
+                reads.map((r) => r.stdout),
+              ),
+            }
+          : {}),
         repository: q.repository,
         commit: q.commit,
         category: q.category,
@@ -388,12 +643,15 @@ async function run() {
       console.log(
         JSON.stringify({
           queried: q.id,
+          ...(comparison ? { mode } : {}),
           reads: metrics.reads,
           coverage: metrics.coverage,
         }),
       );
     }
-    report.summary = summarizeCli(report.rows);
+    report.summary = comparison
+      ? summarizeModes(report.rows, plan.suite)
+      : summarizeCli(report.rows);
     report.status = "complete";
     report.completedAt = new Date().toISOString();
     delete report.error;

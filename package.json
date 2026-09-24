@@ -37,7 +37,9 @@
     "eval:prepare": "npm run build && node scripts/retrieval-eval.mjs prepare",
     "eval:run": "node scripts/retrieval-eval.mjs run",
     "eval:cli:prepare": "npm run build && node scripts/cli-eval.mjs prepare",
-    "eval:cli:run": "node scripts/cli-eval.mjs run"
+    "eval:cli:run": "node scripts/cli-eval.mjs run",
+    "eval:modes:prepare": "npm run build && node scripts/cli-eval.mjs prepare --suite eval/retrieval-modes-v1.json --root .srcx/mode-eval",
+    "eval:modes:run": "node scripts/cli-eval.mjs run --root .srcx/mode-eval"
   },
   "dependencies": {
     "@functional-systems/lambdadb": "0.5.1",

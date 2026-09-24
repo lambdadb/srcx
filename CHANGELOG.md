@@ -9,6 +9,10 @@
 
 ### Added
 
+- Bounded actual-CLI lexical/semantic/hybrid evaluation on identical managed
+  corpora, with reviewed and original labels, per-question regressions, stdout
+  token counts, command timings and durable request reservations.
+
 - Opt-in LambdaDB managed OpenAI `text-embedding-3-small` Collections, offline
   embedding input previews, and explicit semantic/RRF hybrid search modes.
 - Candidate validation of generated vectors separately from exact source payloads,
