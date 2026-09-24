@@ -2,12 +2,19 @@
 
 ## Current state
 
-The source is prepared as `@functional-systems/srcx@0.1.0-dev.1` under Apache-2.0.
-It has not been published to npm. `private: false` permits a reviewed first
-publication; it does not establish registry availability or distribution readiness.
-`NPM_DEV_PUBLISH_ENABLED` is initially `false`. No stable/rc release or Homebrew
-formula has been published. Local/live application evidence is in
-[VALIDATION.md](VALIDATION.md); it is separate from package publication evidence.
+The initial `@functional-systems/srcx@0.1.0-dev.1` package was published publicly
+from reviewed commit `f94f947bf593b2f8498c07e130933b0ab444f868`. Its exact tarball
+passed clean-install and live LambdaDB checks. The local bootstrap has no GitHub
+Actions provenance. npm created both `dev` and `latest` at that prerelease; select
+`@dev` explicitly. No stable/rc release or Homebrew formula has been published.
+
+The package-specific Trusted Publisher is configured for `lambdadb/srcx` and
+`publish.yaml`, with direct publication allowed. `NPM_DEV_PUBLISH_ENABLED=true`.
+The first successful [OIDC publication](https://github.com/lambdadb/srcx/actions/runs/36035063463/attempts/3)
+produced `0.1.0-dev.3` from the same commit and moved `dev` to that version.
+Provenance identifies this repository, workflow, commit, and run. The current
+`latest` remains the bootstrap prerelease `0.1.0-dev.1`; it is not a stable release.
+See [VALIDATION.md](VALIDATION.md) for registry and consumer verification.
 
 This workflow follows [LambdaDB CLI](https://github.com/lambdadb/lambdadb-cli/blob/develop/RELEASING.md).
 The repository keeps Prettier plus strict TypeScript checks as its existing lint
@@ -26,7 +33,8 @@ version entries in `package-lock.json` together, for example using
 `npm version VERSION --no-git-tag-version`. CLI `--version` reads package metadata.
 For explicit releases, add a dated `## [VERSION] - YYYY-MM-DD` changelog section.
 The GitHub tag must match the version, and the prerelease flag must match its channel.
-`latest`, not the tip of `main`, identifies the stable npm release.
+After the first stable release, `latest` identifies the stable npm release;
+the bootstrap exception is recorded above.
 
 The checked-in development base starts at `0.1.0-dev.1`. During an eligible push,
 `scripts/dev-release.mjs` replaces `N` with the full history's first-parent commit
@@ -64,7 +72,8 @@ Do not republish, overwrite versions, or move release tags to work around lag.
 
 ## First publication and Trusted Publisher setup
 
-Complete these steps from a reviewed, validated commit after this setup PR merges:
+The initial bootstrap is complete. The procedure below documents first-time setup
+and the checks required before declaring automatic publication operational:
 
 1. Verify npm ownership for the `functional-systems` scope and the package name.
    GitHub organization membership does not establish npm permissions.
