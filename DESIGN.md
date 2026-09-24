@@ -478,7 +478,8 @@ fields are omitted when absent; records of different kinds need not share them.
 | Corpus root (`kind=manifest`, `role=corpus`, ID `__manifest__`) | `repoId`, `indexId`, full `commitOid`, `commitTime`, `requestedRef`, full `config`, `inventoryHash`, `recordsHash`, `counts`, `buildId`, `attemptId`, `inventoryPartIds` |
 | Inventory part (`kind=manifest`, `role=inventory`) | `partOrdinal`, `partHash`, ordered `entries` with path, file/chunk IDs, blob/content identities, inclusion/exclusion reasons, parse states, sizes, and embedding coverage |
 | Repository control (`kind=manifest`, `role=repository`, main ID `__repo__`) | Full source identity, repo/index IDs, immutable preset/config, initialization state |
-| Ref control (`kind=manifest`, `role=git-ref`, main) | Full Git ref name, encoded Alias/Branch name, observed commit/time, applied version and synchronization state |
+| Git tag control (`kind=manifest`, `role=git-ref`, main) | Full Git tag ref, encoded Alias name, observed commit, applied version and synchronization state |
+| Git branch control (`kind=manifest`, `role=git-branch`, main) | Full Git branch ref, encoded Branch name, validated writer baseline, canonical published Tag and pending attempt identity |
 | Validation summary (`kind=manifest`, `role=validation`, main) | Candidate name/Snapshot, build/config/attempt identity, verifier version and checked counts/hashes; no premature claim of publication |
 
 `startByte`/`endByte` are half-open; display lines are one-based/inclusive.

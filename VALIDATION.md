@@ -59,6 +59,32 @@ On Node **22.14.0** and **24.15.0**, typechecking, all **43 tests**, and install
 package checks passed. Formatting, release-version validation, and `git diff
 --check` also passed locally. These results are not GitHub CI evidence.
 
+## Final branch review validation
+
+The final pre-PR review reproduced a read-order race: a concurrent publication
+could advance branch control beyond the version list already captured by the
+reader. Resolution now pins the control record first. The review also found that
+live reruns could skip saved checkpoints while replacing the reported source
+revision; checkpoints now require matching runtime, harness, fixture, lockfile,
+and Node fingerprints and preserve their original revision/completion time.
+Regression tests cover both cases, including rejecting stale evidence before any
+connection or report mutation.
+
+After these fixes, Node **22.14.0** and **24.15.0** each passed typechecking,
+all **45 tests**, and installed-package checks. Formatting, release-version
+validation, and diff checks passed locally.
+
+A fresh synthetic live run at application/harness commit
+`2988c7e1826a44cfed48381681d0125b28ae9086` passed all **12 checkpoints** in
+**432.836 seconds**. The built CLI also passed live branch resolution,
+search, and exact source reads. Final reports are retained separately under
+`.srcx/live-branches-review/report.json` and
+`.srcx/live-branches-review/cli-report.json`; the previous run remains intact.
+This final run retained one synthetic Collection with two tracked writers, one
+manual writer, two control/checkpoint Branches, three canonical commit Tags,
+and seven candidate Tags. CI evidence, once available on the PR, is separate
+from these local and live results.
+
 ## Initial npm package and live self-index
 
 The exact `0.1.0-dev.1` tarball from merged commit
