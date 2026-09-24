@@ -3,7 +3,8 @@
 This follow-up exercises the actual built CLI, with the unchanged syntax chunker,
 path/scope/symbol enrichment, source policies and lexical search. It does not
 compare chunkers or implement embeddings. The earlier path-only pilot and its
-retained evidence remain separate.
+retained evidence remain separate. Observed results and inspected label limitations
+are in [CLI-RESULTS.md](CLI-RESULTS.md).
 
 ## Frozen protocol and labels
 
