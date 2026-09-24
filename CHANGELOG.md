@@ -9,6 +9,8 @@
   last published commit Tag.
 - Remote pending import ownership and resumable in-place branch updates, including
   shared commit Tags across branches and non-fast-forward Git branch changes.
+- `test:live:branches` for repeatable synthetic live acceptance with retained
+  checkpoint, retry, and resource evidence.
 
 ### Changed
 

@@ -9,9 +9,8 @@ a live synthetic A/B acceptance run, and an exact-package self-index of the publ
 srcx repository against the user-supplied LambdaDB connection. No private source
 or paid embeddings were used. These checks are not a throughput, general
 concurrency, or retrieval-quality benchmark. npm publication evidence is recorded
-separately below. The persistent Git branch changes described next have local
-fixture and SDK transport evidence only; the earlier live runs do not validate
-this new path.
+separately below. The persistent Git branch changes have a separate synthetic
+live run recorded next; the earlier live runs do not validate this new path.
 
 ## Persistent Git branch tracking
 
@@ -26,7 +25,35 @@ explicit full refs are covered.
 The CLI fixture also imports and updates a tracked branch through the real SDK
 transport and selects it for search, resolve, and read. The same fixture runs
 against the installed tarball. These checks use a loopback fault-injection model,
-not a live LambdaDB deployment. Live tracked-branch acceptance remains unverified.
+not a live LambdaDB deployment.
+
+A separate **live LambdaDB run passed all 12 checkpoints** on September 25 using
+Node **24.15.0**, application source commit
+`f42a9141cef3bfc0b604e1b14a00c79607c7dd98`, and the original checkout's `.env.local`
+loaded explicitly through Node. The run took **414.195 seconds** and uploaded only
+synthetic Git source with no paid embeddings. It verified:
+
+- First-import timeout remains unpublished, followed by same-journal recovery.
+- A -> B uses one fixed Collection Branch; pending B still resolves/searches A,
+  and a fresh local state cannot overwrite that pending branch.
+- Added/modified/deleted code searches correctly after B; old A evidence still
+  reads the exact original source bytes.
+- A second Git branch shares canonical A/B Tags while maintaining its own writer
+  baseline, including B -> A -> B movement and an unchanged repeated import.
+- A SHA-only new commit uses a manual `work-*` writer.
+
+A separate invocation of the actual CLI against that live Collection passed
+branch `resolve`, branch-selected `search`, and a full-file `read` compared byte
+for byte with the pinned Git blob. It used the built CLI, not a registry-installed
+package. Local installed-package evidence remains separate above.
+
+The reproducible harness is `scripts/live-branches.mjs` (`npm run
+test:live:branches`). Its ignored evidence is `.srcx/live-branches/report.json`
+and `.srcx/live-branches/cli-report.json` in the validation worktree. The report
+records the exact source commit, harness SHA-256, per-check results, and resource
+URL. One synthetic Collection is retained with two tracked writers, one manual
+writer, the two control/checkpoint Branches, three canonical commit Tags, and seven
+candidate Tags. No application fix was needed during this live run.
 
 On Node **22.14.0** and **24.15.0**, typechecking, all **43 tests**, and installed
 package checks passed. Formatting, release-version validation, and `git diff

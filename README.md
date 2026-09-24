@@ -96,6 +96,21 @@ It saves connection settings under `.srcx/live/config.json` and keeps its state
 separate under `.srcx/live/state`. Rerunning resumes the saved synthetic run and
 refuses to reuse it against a different destination.
 
+For persistent Git branch acceptance, run `npm run test:live:branches`. It uses a
+separate synthetic Collection and `.srcx/live-branches/` state/report, covering
+in-place A/B updates, last-published reads during a pending update, shared commit
+Tags across two branches, rewinds, no-op imports, and SHA-only manual imports.
+From an isolated worktree, load the original checkout's env file explicitly:
+
+```sh
+npm run build
+node --env-file=/absolute/path/to/srcx/.env.local scripts/live-branches.mjs
+```
+
+The branch harness retains resources and resumes completed checkpoints on rerun.
+Its per-import deadline defaults to 300 seconds and accepts
+`SRCX_LIVE_TIMEOUT_MS` up to 600000. Do not delete pending journals to start over.
+
 ## Connected workflow
 
 These commands create and write LambdaDB resources. Select an approved project
