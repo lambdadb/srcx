@@ -2,7 +2,9 @@
 
 This diagnostic compares the three CLI search modes on the same managed Collection
 and immutable commit Tag for each public repository. The product's lexical default,
-chunker, read policy and ranking implementation are unchanged.
+chunker, read policy and ranking implementation are unchanged. A transport fix
+fetches managed vectors omitted from query responses using the same pinned Tag;
+hit order, scores and non-vector payloads are preserved.
 
 ## Frozen inputs and labels
 

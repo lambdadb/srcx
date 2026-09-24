@@ -36,6 +36,9 @@
 
 ### Fixed
 
+- Fetch omitted managed vectors from query responses through the same immutable
+  Tag, preserving hit order/scores and requiring exact non-vector payload equality.
+
 - Reject an unprepared CLI evaluation run before creating its root/lock so a
   subsequent offline preparation can use the same path.
 - Pin branch control before enumerating versions so a concurrent publication

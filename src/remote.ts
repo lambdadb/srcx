@@ -96,6 +96,43 @@ export class LambdaRemote {
     const c = this.client.collection(name);
     const ref = (r: Ref) =>
       r.kind === "tag" ? tagRef(r.name) : branchRef(r.name);
+    // Some deployments omit managed vectors from list/query responses despite
+    // includeVectors. Keep the same immutable Tag and exact non-vector payload.
+    const hydrate = async (r: Ref, docs: Doc[]): Promise<Doc[]> => {
+      const missing = docs.filter(
+        (d) => d.embeddingStatus === "managed" && d.embedding === undefined,
+      );
+      const hydrated = new Map<string, Doc>();
+      if (missing.length) {
+        invariant(
+          r.kind === "tag",
+          "Managed vector hydration requires an immutable Tag.",
+        );
+        const fetched = await request("fetch omitted vectors", () =>
+          c.docs.fetch({
+            ref: tagRef(r.name),
+            ids: missing.map((d) => d.id),
+            consistentRead: false,
+            includeVectors: true,
+          }),
+        );
+        const expected = new Map(missing.map((d) => [d.id, hash(d)]));
+        for (const item of fetched.docs) {
+          const doc = item.doc as Doc;
+          const { embedding: _, ...source } = doc;
+          invariant(
+            !hydrated.has(doc.id) && expected.get(doc.id) === hash(source),
+            "Returned/fetched managed payloads disagree.",
+          );
+          hydrated.set(doc.id, doc);
+        }
+        invariant(
+          hydrated.size === expected.size,
+          "Returned managed records are missing from fetch.",
+        );
+      }
+      return docs.map((doc) => hydrated.get(doc.id) ?? doc);
+    };
     return {
       fetch: (r, ids, consistent = false) =>
         request("fetch", async () => {
@@ -132,48 +169,11 @@ export class LambdaRemote {
               pageToken: cursor,
             }),
           );
-          // Some deployments omit managed vectors from list responses even with
-          // includeVectors. Fetch only those records from the same immutable Tag;
-          // require identical non-vector payloads rather than weakening validation.
-          const missing = page.docs
-            .map((d) => d.doc as Doc)
-            .filter(
-              (d) =>
-                d.embeddingStatus === "managed" && d.embedding === undefined,
-            );
-          const hydrated = new Map<string, Doc>();
-          if (missing.length) {
-            invariant(
-              r.kind === "tag",
-              "Managed vector hydration requires an immutable Tag.",
-            );
-            const fetched = await request("fetch listed vectors", () =>
-              c.docs.fetch({
-                ref: tagRef(r.name),
-                ids: missing.map((d) => d.id),
-                consistentRead: false,
-                includeVectors: true,
-              }),
-            );
-            const expected = new Map(missing.map((d) => [d.id, hash(d)]));
-            for (const item of fetched.docs) {
-              const doc = item.doc as Doc;
-              const { embedding: _, ...source } = doc;
-              invariant(
-                !hydrated.has(doc.id) && expected.get(doc.id) === hash(source),
-                "Listed/fetched managed payloads disagree.",
-              );
-              hydrated.set(doc.id, doc);
-            }
-            invariant(
-              hydrated.size === expected.size,
-              "Listed managed records are missing from fetch.",
-            );
-          }
-          for (const d of page.docs) {
-            const doc = d.doc as Doc;
-            yield hydrated.get(doc.id) ?? doc;
-          }
+          for (const doc of await hydrate(
+            r,
+            page.docs.map((d) => d.doc as Doc),
+          ))
+            yield doc;
           cursor = page.nextPageToken || undefined;
           if (cursor) {
             invariant(
@@ -240,18 +240,22 @@ export class LambdaRemote {
             : c.aliases.create({ aliasName: name, target: tagTarget(target) }),
         );
       },
-      query: (tag, query, size) =>
-        request("query", async () =>
-          (
-            await c.query({
-              ref: tagRef(tag),
-              consistentRead: false,
-              query,
-              size,
-              includeVectors: true,
-            })
-          ).docs.map((h) => ({ doc: h.doc as Doc, score: h.score })),
-        ),
+      query: async (name, query, size) => {
+        const result = await request("query", () =>
+          c.query({
+            ref: tagRef(name),
+            consistentRead: false,
+            query,
+            size,
+            includeVectors: true,
+          }),
+        );
+        const docs = await hydrate(
+          { kind: "tag", name },
+          result.docs.map((h) => h.doc as Doc),
+        );
+        return result.docs.map((h, i) => ({ doc: docs[i]!, score: h.score }));
+      },
     };
   }
 }
