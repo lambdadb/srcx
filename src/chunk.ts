@@ -75,7 +75,9 @@ export function detectLanguage(path: string): string {
     )[ext ?? ""] ?? "text"
   );
 }
-function enrichment(path: string, u: Unit): string {
+export type Enrichment = "path-scope-symbol-v1" | "path-only-v1";
+function enrichment(path: string, u: Unit, policy: Enrichment): string {
+  if (policy === "path-only-v1") return path.slice(0, 240) + "\n";
   return (
     [path.slice(0, 240), u.scope?.slice(0, 160), u.symbol?.slice(0, 160)]
       .filter(Boolean)
@@ -106,10 +108,11 @@ function splitUnit(
   path: string,
   u: Unit,
   overlap: number,
+  policy: Enrichment,
 ): Unit[] {
   const result: Unit[] = [];
   let start = u.start;
-  const prefix = enrichment(path, u);
+  const prefix = enrichment(path, u, policy);
   invariant(
     tokens(prefix) < CHUNKER.maxTokens,
     "Path/scope enrichment exceeds token limit.",
@@ -185,6 +188,7 @@ export async function chunk(
   source: string,
   path: string,
   mode: "syntax" | "window" = "syntax",
+  policy: Enrichment = CHUNKER.enrichment,
 ): Promise<{ spans: Span[]; parseStatus: string; language: string }> {
   const lang = detectLanguage(path);
   if (!source.length)
@@ -224,7 +228,7 @@ export async function chunk(
           if (
             n.namedChildCount &&
             (container ||
-              tokens(enrichment(path, u) + n.text) > CHUNKER.maxTokens)
+              tokens(enrichment(path, u, policy) + n.text) > CHUNKER.maxTokens)
           ) {
             for (const child of n.namedChildren) if (child) visit(child);
           } else if (n.endIndex > n.startIndex) units.push(u);
@@ -271,8 +275,9 @@ export async function chunk(
       prev.kind !== "function" &&
       u.kind === prev.kind &&
       u.scope === prev.scope &&
-      tokens(enrichment(path, prev) + source.slice(prev.start, u.end)) <=
-        CHUNKER.targetTokens
+      tokens(
+        enrichment(path, prev, policy) + source.slice(prev.start, u.end),
+      ) <= CHUNKER.targetTokens
     ) {
       prev.end = u.end;
       delete prev.symbol;
@@ -280,7 +285,7 @@ export async function chunk(
     } else merged.push({ ...u });
   }
   const bounded = merged.flatMap((u) =>
-    splitUnit(source, path, u, fallback ? CHUNKER.fallbackOverlap : 0),
+    splitUnit(source, path, u, fallback ? CHUNKER.fallbackOverlap : 0, policy),
   );
   const offsets = new Uint32Array(source.length + 1);
   let byte = 0;
@@ -298,7 +303,7 @@ export async function chunk(
     const startByte = offsets[u.start]!,
       endByte = offsets[u.end]!;
     const text = source.slice(u.start, u.end);
-    const searchText = enrichment(path, u) + text;
+    const searchText = enrichment(path, u, policy) + text;
     const kind = text.trim() === "" ? "structural" : u.kind;
     return {
       startByte,

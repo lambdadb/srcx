@@ -27,6 +27,8 @@ export type Preset = {
   schemaVersion: 1;
   chunker: typeof CHUNKER;
   mode: "syntax" | "window";
+  /** Internal evaluation override; the CLI keeps its original enrichment. */
+  enrichment?: "path-only-v1";
   maxFileBytes: number;
   embedding: { model: string; dimensions: number } | null;
 };
@@ -136,6 +138,8 @@ export async function materialize(args: {
   invariant(
     hash(preset.chunker) === hash(CHUNKER) &&
       ["syntax", "window"].includes(preset.mode) &&
+      (preset.enrichment === undefined ||
+        preset.enrichment === "path-only-v1") &&
       preset.maxFileBytes === PRESET.maxFileBytes,
     "Unsupported build preset.",
   );
@@ -235,7 +239,12 @@ export async function materialize(args: {
         item.reason = "lfs-pointer";
         continue;
       }
-      const parsed = await chunk(source, e.path, preset.mode);
+      const parsed = await chunk(
+        source,
+        e.path,
+        preset.mode,
+        preset.enrichment,
+      );
       const contentHash = hash(data);
       const fileId = `f-${hash([e.pathBase64, contentHash])}`;
       const base = { schemaVersion: 1, configHash };

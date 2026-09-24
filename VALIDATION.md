@@ -12,6 +12,28 @@ concurrency, or retrieval-quality benchmark. npm publication evidence is recorde
 separately below. The persistent Git branch changes have a separate synthetic
 live run recorded next; the earlier live runs do not validate this new path.
 
+## Retrieval evaluation harness
+
+The internal pilot adds five checks for unique source-range scoring, token-budget
+prefix selection, source/hit integrity, equal path-only enrichment, and rejecting
+stale runtime checkpoints before any connection. With these checks, Node.js
+24.15.0 passed **50 tests**, typechecking, version validation, and clean installed
+package checks. The default CLI preset and config hash remain unchanged.
+
+The suite fixes 16 queries, expected source byte ranges, and two full Git commits
+before retrieval. Both chunkers materialize the same included files, use separate
+config identities, and run through the existing immutable publication validation.
+Live retrieval observations and limitations are in [eval/RESULTS.md](https://github.com/lambdadb/srcx/blob/develop/eval/RESULTS.md),
+with reproduction instructions in [eval/README.md](https://github.com/lambdadb/srcx/blob/develop/eval/README.md). These diagnostic
+labels were authored from source before querying and are not independently
+human-reviewed judgments or a general retrieval-quality benchmark.
+
+Post-review, `splitEvidence` now requires complete coverage of all required ranges
+before classifying a result as split across chunks. The multi-range regression
+brings the local suite to **51 passing tests**. Offline rescoring of all 32 retained
+query/method pairs preserved every metric and category summary. The original live
+report, runtime fingerprint, and completion timestamp were not changed.
+
 ## Persistent Git branch tracking
 
 Local regression coverage exercises one writer across consecutive commits,
@@ -221,9 +243,10 @@ or lease protocol.
 Parsing uses the pinned packaged grammars. Unsupported/new syntax can fall back
 and is recorded; no claim of complete language-version coverage is made. There is
 no optimal-chunking claim. The fixed-window baseline is implemented internally;
-the planned 10–20-query retrieval comparison has not been run. The in-memory test
-model does not approximate Lucene ranking, distributed indexing, retention, or
-compaction timing.
+the first 16-query live lexical comparison is recorded in [eval/RESULTS.md](https://github.com/lambdadb/srcx/blob/develop/eval/RESULTS.md).
+It is a single-repository diagnostic, not a general optimal-chunking result. The
+in-memory test model does not approximate Lucene ranking, distributed indexing,
+retention, or compaction timing.
 
 Canonical publication records exist on main; listings require both the remote
 summary and the matching immutable Tag manifest. A candidate or a lone `ver-*`

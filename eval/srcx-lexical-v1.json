@@ -1,0 +1,288 @@
+{
+  "format": 1,
+  "name": "srcx-lexical-pilot-v1",
+  "repository": "github.com/lambdadb/srcx",
+  "labelStatus": "Assistant-authored diagnostic labels, fixed from Git source before retrieval; not independently human-reviewed.",
+  "settings": {
+    "topK": 5,
+    "retrieveK": 20,
+    "tokenBudget": 3000,
+    "enrichment": "path-only-v1",
+    "contextExpansion": "none",
+    "budgetPolicy": "ranked whole-chunk prefix; stop before first chunk exceeding budget"
+  },
+  "queries": [
+    {
+      "id": "identifier-branch-name",
+      "category": "identifier",
+      "query": "gitBranchName",
+      "commit": "82eb5237e62f12536b11786c229c0c38ba0dead2",
+      "evidence": [
+        {
+          "path": "src/publish.ts",
+          "startByte": 1440,
+          "endByte": 1648,
+          "startLine": 58,
+          "endLine": 64,
+          "sha256": "0207cae6b5d52013f89ac933bb2aa57337a6172139f5d20e25529c9f2c6fc0fd",
+          "excerpt": "export function gitBranchName(ref: string): string {\n  invariant(\n    ref.startsWith(\"refs/heads/\") && ref.length > 11,\n    \"Expected a full Git branch ref.\",\n  );\n  return `git-${hash(ref).slice(0, 40)}`;\n}\n"
+        }
+      ]
+    },
+    {
+      "id": "identifier-lexical-query",
+      "category": "identifier",
+      "query": "lexicalQuery",
+      "commit": "82eb5237e62f12536b11786c229c0c38ba0dead2",
+      "evidence": [
+        {
+          "path": "src/search.ts",
+          "startByte": 2040,
+          "endByte": 2771,
+          "startLine": 63,
+          "endLine": 86,
+          "sha256": "354aa90ade0ecbbed841e7fc581e60a82e58080e8526f60a94143241f7cd8bd5",
+          "excerpt": "export function lexicalQuery(\n  query: string,\n  filters: { path?: string; language?: string } = {},\n): Record<string, unknown> {\n  invariant(\n    query.trim().length > 0 && query.length <= 4096,\n    \"Query must contain 1\u20134096 characters.\",\n  );\n  const literal = (field: string, value: string) => ({\n    queryString: { query: value, defaultField: field, skipSyntax: true },\n    occur: \"filter\",\n  });\n  return {\n    bool: [\n      literal(\"kind\", \"chunk\"),\n      {\n        queryString: { query, defaultField: \"searchText\", skipSyntax: true },\n        occur: \"must\",\n      },\n      ...(filters.path ? [literal(\"path\", filters.path)] : []),\n      ...(filters.language ? [literal(\"language\", filters.language)] : []),\n    ],\n  };\n}\n"
+        }
+      ]
+    },
+    {
+      "id": "identifier-chunk-budget",
+      "category": "identifier",
+      "query": "maxTokens targetTokens",
+      "commit": "82eb5237e62f12536b11786c229c0c38ba0dead2",
+      "evidence": [
+        {
+          "path": "src/chunk.ts",
+          "startByte": 389,
+          "endByte": 689,
+          "startLine": 10,
+          "endLine": 20,
+          "sha256": "20ede5b94b49f3976f9cd75a1296669d2dd137ab67df087ebb9d5c0026ea173a",
+          "excerpt": "export const CHUNKER = {\n  version: 1,\n  parser: \"web-tree-sitter@0.25.10\",\n  grammars: \"tree-sitter-wasms@0.1.13\",\n  tokenizer: \"js-tiktoken@1.0.21/cl100k_base\",\n  targetTokens: 800,\n  maxTokens: 1500,\n  fallbackOverlap: 0.1,\n  enrichment: \"path-scope-symbol-v1\",\n  policy: \"source-v1\",\n} as const;\n"
+        }
+      ]
+    },
+    {
+      "id": "identifier-dev-version",
+      "category": "identifier",
+      "query": "developmentVersion",
+      "commit": "82eb5237e62f12536b11786c229c0c38ba0dead2",
+      "evidence": [
+        {
+          "path": "scripts/dev-release.mjs",
+          "startByte": 1233,
+          "endByte": 1551,
+          "startLine": 38,
+          "endLine": 46,
+          "sha256": "7c564e6bf964567589482d9af46b5a8063d73bc3a40a1ee79cf17b2c55067a95",
+          "excerpt": "export function developmentVersion(version, count) {\n  const match = devPattern.exec(version);\n  if (!match || !/^[1-9]\\d*$/.test(String(count)))\n    throw new Error(\n      \"Develop requires X.Y.Z-dev.N and a positive first-parent commit count.\",\n    );\n  return `${match[1]}.${match[2]}.${match[3]}-dev.${count}`;\n}\n\n"
+        }
+      ]
+    },
+    {
+      "id": "behavior-endpoint-secrets",
+      "category": "behavior",
+      "query": "Where does srcx reject credentials embedded in an endpoint URL?",
+      "commit": "82eb5237e62f12536b11786c229c0c38ba0dead2",
+      "evidence": [
+        {
+          "path": "src/settings.ts",
+          "startByte": 701,
+          "endByte": 1068,
+          "startLine": 25,
+          "endLine": 35,
+          "sha256": "a6639e5fde4310bc1c04ba6d9e143592946d31b0243c5c91d7814fd16707c4ce",
+          "excerpt": "  const u = new URL(s.endpoint);\n  const local = [\"localhost\", \"127.0.0.1\", \"[::1]\"].includes(u.hostname);\n  invariant(\n    (u.protocol === \"https:\" || (local && u.protocol === \"http:\")) &&\n      !u.username &&\n      !u.password &&\n      !u.search &&\n      !u.hash &&\n      u.pathname === \"/\",\n    \"Endpoint must be an HTTPS origin (HTTP loopback is allowed).\",\n  );\n"
+        }
+      ]
+    },
+    {
+      "id": "behavior-source-integrity",
+      "category": "behavior",
+      "query": "How does reading a result verify that the original source has not changed?",
+      "commit": "82eb5237e62f12536b11786c229c0c38ba0dead2",
+      "evidence": [
+        {
+          "path": "src/search.ts",
+          "startByte": 6119,
+          "endByte": 6519,
+          "startLine": 206,
+          "endLine": 215,
+          "sha256": "c455576434207a4fcd670c6ae83fedb6f0aa46c79042abb591273ca28ae2bd24",
+          "excerpt": "  const file = await one(store, tag(v.tagName), h.fileId);\n  invariant(\n    file?.kind === \"file\" &&\n      file.configHash === h.repository.configHash &&\n      file.path === h.path &&\n      typeof file.sourceText === \"string\" &&\n      file.contentHash === h.contentHash &&\n      hash(Buffer.from(file.sourceText)) === h.contentHash,\n    \"Original source is missing or its hash does not match.\",\n  );\n"
+        }
+      ]
+    },
+    {
+      "id": "behavior-pending-import",
+      "category": "behavior",
+      "query": "What prevents another import from overwriting a pending attempt?",
+      "commit": "82eb5237e62f12536b11786c229c0c38ba0dead2",
+      "evidence": [
+        {
+          "path": "src/publish.ts",
+          "startByte": 8576,
+          "endByte": 9067,
+          "startLine": 293,
+          "endLine": 306,
+          "sha256": "c270c77f267a616b6bebece97d53531836be0ad410e1e3f56e412cf46177468b",
+          "excerpt": "  if (j) {\n    invariant(\n      j.buildId === b.buildId &&\n        j.recordsHash === b.recordsHash &&\n        j.inventoryHash === b.inventoryHash &&\n        (j.gitRef === b.branchRef ||\n          (j.reuseWriter === undefined && j.writer.startsWith(\"work-\"))),\n      \"Another build is pending. Resume the artifact recorded in pending.json before importing a new commit.\",\n    );\n    invariant(\n      args.resume,\n      \"Pending import found; use --resume with the same artifact.\",\n    );\n  }\n"
+        }
+      ]
+    },
+    {
+      "id": "behavior-deleted-tag",
+      "category": "behavior",
+      "query": "How does a reader detect that a pinned tag was deleted or recreated?",
+      "commit": "82eb5237e62f12536b11786c229c0c38ba0dead2",
+      "evidence": [
+        {
+          "path": "src/search.ts",
+          "startByte": 812,
+          "endByte": 990,
+          "startLine": 28,
+          "endLine": 32,
+          "sha256": "8038d451fa90bcef109e562a06866d7640680a7fd76d3848aa8b050e66137671",
+          "excerpt": "  const current = (await store.tags()).find((t) => t.name === v.tagName);\n  invariant(\n    current?.snapshotId === v.snapshotId,\n    \"Pinned Tag was deleted or recreated.\",\n  );\n"
+        }
+      ]
+    },
+    {
+      "id": "docs-runtime",
+      "category": "documentation",
+      "query": "minimum Node.js version Git",
+      "commit": "82eb5237e62f12536b11786c229c0c38ba0dead2",
+      "evidence": [
+        {
+          "path": "README.md",
+          "startByte": 543,
+          "endByte": 682,
+          "startLine": 13,
+          "endLine": 15,
+          "sha256": "aa0c9ca06507d83ad9949da43a47137ff4467ea0d7ae22366fd967f1840a4bab",
+          "excerpt": "Requires Node.js 22.14+ and Git. These are experimental prereleases; there is no\nstable release yet. Select the `dev` channel explicitly:\n\n"
+        }
+      ]
+    },
+    {
+      "id": "docs-parser-fallback",
+      "category": "documentation",
+      "query": "unsupported languages parse errors fallback",
+      "commit": "82eb5237e62f12536b11786c229c0c38ba0dead2",
+      "evidence": [
+        {
+          "path": "README.md",
+          "startByte": 3038,
+          "endByte": 3521,
+          "startLine": 73,
+          "endLine": 78,
+          "sha256": "cc3bd9429428015f0d4b139da43e652685d13177a2531058c8fcb628baa397bf",
+          "excerpt": "Java, TypeScript/TSX, and JavaScript use pinned Tree-sitter WASM grammars. Markdown\nuses heading/paragraph/fence boundaries; configuration text uses section/line\nboundaries. Parse errors and unsupported languages use recorded text fallback.\nChunks cover the exact source bytes, carry one-based line ranges, target 800 tokens,\nand stay below 1,500 tokens including path/symbol context. The internal window\nbaseline is available to the test/build API, not as a public storage backend.\n"
+        }
+      ]
+    },
+    {
+      "id": "docs-embedding-cost",
+      "category": "documentation",
+      "query": "embedding account paid API lexical",
+      "commit": "82eb5237e62f12536b11786c229c0c38ba0dead2",
+      "evidence": [
+        {
+          "path": "README.md",
+          "startByte": 780,
+          "endByte": 919,
+          "startLine": 24,
+          "endLine": 25,
+          "sha256": "544f18375e02bd00f73a92a361caae83e4ca11bbddc8b9f74d2a1b1507230299",
+          "excerpt": "Requires Node.js 22.14+ and Git. The initial preset uses lexical search with\n`embedding=none`; no embedding account or paid API is needed.\n"
+        }
+      ]
+    },
+    {
+      "id": "docs-install-dev",
+      "category": "documentation",
+      "query": "npm install dev srcx",
+      "commit": "82eb5237e62f12536b11786c229c0c38ba0dead2",
+      "evidence": [
+        {
+          "path": "README.md",
+          "startByte": 688,
+          "endByte": 758,
+          "startLine": 17,
+          "endLine": 19,
+          "sha256": "95b6d291b808e2369d9520deb54015e6552693b9af9ca1b36e4952f50eb4654c",
+          "excerpt": "npm install -g @functional-systems/srcx@dev\nsrcx --version\nsrcx --help"
+        }
+      ]
+    },
+    {
+      "id": "version-old-writer",
+      "category": "version",
+      "query": "import Git branch writer baseline",
+      "commit": "9612cf3c342dbcf898b0ed8ca1526c0c3a04648f",
+      "evidence": [
+        {
+          "path": "README.md",
+          "startByte": 7057,
+          "endByte": 7448,
+          "startLine": 154,
+          "endLine": 158,
+          "sha256": "e05dad74aec8ea1667ce8b0b3f4f627a274797916c7001614597db8fdf712eb2",
+          "excerpt": "The control Branch `main` holds descriptors/version summaries. `checkpoint-empty`\nis forked before any control write. Each import uses a new `work-*` Branch,\noptionally forked from the last locally retained, remotely validated writer\nbaseline. Writers are frozen after publication. A fresh local state can start a\nfull import from `checkpoint-empty`; source data is never forked from a Tag.\n"
+        }
+      ]
+    },
+    {
+      "id": "version-new-writer",
+      "category": "version",
+      "query": "import Git branch writer baseline",
+      "commit": "82eb5237e62f12536b11786c229c0c38ba0dead2",
+      "evidence": [
+        {
+          "path": "README.md",
+          "startByte": 8377,
+          "endByte": 8927,
+          "startLine": 178,
+          "endLine": 184,
+          "sha256": "cea7cd4a96ec8db6d8d68d6bd8a58d62229e5b4ba1a520f0b7d6bfd94873c71a",
+          "excerpt": "The control Branch `main` holds descriptors/version summaries. `checkpoint-empty`\nis forked before any control write. Importing a Git branch creates or updates its\nstable `git-*` Collection Branch, derived from the full `refs/heads/...` name.\nGit `main` also uses a `git-*` Branch; Collection `main` remains control-only.\nEach later import reconciles against that branch's last validated snapshot,\nincluding deletions and non-fast-forward changes. Branches sharing a commit share\none canonical `ver-*` Tag while retaining their own writer snapshots.\n"
+        }
+      ]
+    },
+    {
+      "id": "version-old-manual-workspace",
+      "category": "version",
+      "query": "attemptId writer work branch",
+      "commit": "9612cf3c342dbcf898b0ed8ca1526c0c3a04648f",
+      "evidence": [
+        {
+          "path": "src/publish.ts",
+          "startByte": 9044,
+          "endByte": 9348,
+          "startLine": 318,
+          "endLine": 330,
+          "sha256": "d2d014042199bd9ce7f3714b37fb222f3f7323ba289b8d840401811dab2dda60",
+          "excerpt": "    const attemptId = randomUUID();\n    j = {\n      buildId: b.buildId,\n      recordsHash: b.recordsHash,\n      inventoryHash: b.inventoryHash,\n      artifact: b.directory,\n      attemptId,\n      writer: `work-${attemptId}`,\n      source,\n      baseline,\n      phase: \"branch\",\n      batches: [],\n    };\n"
+        }
+      ]
+    },
+    {
+      "id": "version-new-tracked-workspace",
+      "category": "version",
+      "query": "attemptId writer work branch",
+      "commit": "82eb5237e62f12536b11786c229c0c38ba0dead2",
+      "evidence": [
+        {
+          "path": "src/publish.ts",
+          "startByte": 13420,
+          "endByte": 13833,
+          "startLine": 437,
+          "endLine": 451,
+          "sha256": "97786815e9ab0aca0fb7080ca5c32bca536624adbe3a77c5b0b3ea8dd85618e4",
+          "excerpt": "    const attemptId = randomUUID();\n    j = {\n      buildId: b.buildId,\n      recordsHash: b.recordsHash,\n      inventoryHash: b.inventoryHash,\n      artifact: b.directory,\n      attemptId,\n      writer: b.branchRef ? gitBranchName(b.branchRef) : `work-${attemptId}`,\n      gitRef: b.branchRef,\n      reuseWriter: !!tracked?.applied,\n      source,\n      baseline,\n      phase: \"branch\",\n      batches: [],\n    };\n"
+        }
+      ]
+    }
+  ]
+}
