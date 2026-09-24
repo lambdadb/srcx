@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readFileSync } from "node:fs";
 import { Command, InvalidArgumentError } from "commander";
 import { mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -22,7 +23,11 @@ const cli = new Command()
   .name("srcx")
   .description("Version-aware code search on LambdaDB")
   .enablePositionalOptions()
-  .version("0.1.0-dev.1");
+  .version(
+    JSON.parse(
+      readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+    ).version,
+  );
 const output = (value: unknown): void => {
   process.stdout.write(JSON.stringify(value, null, 2) + "\n");
 };

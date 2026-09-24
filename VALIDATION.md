@@ -19,14 +19,19 @@ Runtime used: Node.js 24.15.0, npm 11.12.1. Dependencies are pinned in
 ```sh
 npm ci --ignore-scripts
 npm run typecheck
+npm run check:version
 npm test
+npm run test:package
 npm run demo
 npm run format:check
 ```
 
-Result after the pre-commit review fixes: **20 tests passed**, with no failures,
-skips, or cancellations. The three added regression tests ran locally; the live
-acceptance record below predates these fixes and was not rerun for them.
+Result after release-tooling setup: **34 tests passed**, with no failures,
+skips, or cancellations. This includes the prior 20 application checks and 14
+release/versioning checks. A clean install of the exact npm tarball also passed
+the CLI contract test, including loading the parser WASM assets and importing Git
+source with installation scripts disabled. These release-tooling checks ran
+locally; the synthetic live acceptance record below predates this setup.
 The A/B demo also passed: five included files and four exclusions per version,
 one addition/modification/deletion, six obsolete record IDs, two release Aliases,
 and preserved A source after publishing B.
@@ -66,6 +71,16 @@ The test suite covers:
 - Real SDK request serialization, explicit Branch/Tag refs, paginated immutable
   document listing, ordinary upsert/delete, Tag-to-Tag copy, disabled retries,
   and sanitized user-visible errors, against a local HTTP fixture.
+- Canonical dev/rc/stable versions, package/lock/tag consistency, deterministic
+  first-parent development numbering, stale-job rejection, and same-artifact
+  reruns. Simulated registry delays/failures verify bounded post-write reads and
+  no automatic publication retry; no test writes to npm.
+
+Release infrastructure is prepared in `.github/workflows/publish.yaml` for Node
+22/24. Local validation does not establish GitHub Actions or npm publication
+success. Initial npm registration, package-specific Trusted Publisher setup, and
+enabling `NPM_DEV_PUBLISH_ENABLED` remain separate release steps. See
+[RELEASING.md](RELEASING.md); no npm or Homebrew release was performed in this setup.
 
 The demo writes [.srcx/demo-report.json](.srcx/demo-report.json). That generated
 report identifies the retained synthetic repository, A/B build artifacts, counts,
