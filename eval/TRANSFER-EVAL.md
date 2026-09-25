@@ -1,7 +1,9 @@
 # Transfer evaluation preparation
 
-Status: source-verified draft, September 25, 2026. No retrieval or embedding
-requests were made. [Candidate questions](transfer-candidates-v1.json) contain
+Status at preparation: source-verified draft, September 25, 2026. No retrieval or
+embedding requests were made during preparation. The separate
+[development diagnostic protocol](TRANSFER-RUN.md) permits execution without
+claiming independent review; this original draft remains unchanged. [Candidate questions](transfer-candidates-v1.json) contain
 16 tasks, eight per repository, with pinned byte ranges, SHA-256 hashes, and
 GitHub source links. All labels are assistant-authored and await independent
 review. These are proposed developer questions, not collected user searches.
@@ -54,10 +56,11 @@ Report complete evidence@5, candidate availability@10, per-query gains/losses,
 full stdout tokens and command durations. Sequential runs reduce interference,
 but single observations still do not establish service latency distributions.
 
-The candidate file has a deliberately separate draft format. The existing live
-runner rejects it; its two-repository allowlist has not been widened. Promotion
-requires independent label review, explicit support for the pinned repositories
-and draft-to-live schema conversion, and a predeclared usage budget. The current
+The candidate file has a deliberately separate draft format, which the live
+runner still rejects. A reviewed benchmark requires independent label review.
+The separate format-4 development diagnostic supports only one allowlisted
+Click/Cobra repository per root with explicit unreviewed status and fixed limits.
+The preparation-time
 400,000-document-token cap leaves only 11,229 tokens after the estimated 388,771
 initial input tokens. It cannot accommodate re-reserving either full import on
 resume. Specify separate repository run roots or an appropriate reservation cap

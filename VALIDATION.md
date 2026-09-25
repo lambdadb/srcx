@@ -12,6 +12,25 @@ concurrency, or retrieval-quality benchmark. npm publication evidence is recorde
 separately below. The persistent Git branch changes have a separate synthetic
 live run recorded next; the earlier live runs do not validate this new path.
 
+## Click/Cobra development diagnostic
+
+At frozen harness `4f7c865055749c82641015a2302983b034877e23`, 48 actual CLI searches
+completed sequentially on pinned public Click/Python and Cobra/Go sources with
+managed small and existing text fallback. All **455 handles and 231 reads** passed
+source/version checks. Complete first-five evidence was lexical **7/16**, semantic
+**5/16**, hybrid **8/16**; natural-language tasks scored **2/6, 2/6, 4/6**. Top-ten
+candidate availability was **8/16, 11/16, 10/16**. These are fixed assistant-authored
+implementation labels without independent review or agent answer grading.
+
+Both imports published validated immutable versions; no command failures or
+resumes occurred. Usage reservations were 388,771 document input tokens, 32 query
+embeddings, 350 query input tokens and 48 searches. Completed replays preserved
+report bytes/timestamps without service calls. Local Node 24.15.0 passed **78 tests**,
+typecheck, formatting and version checks; frozen-harness Node 22/24 CI and installed
+package checks passed. [Results and limitations](eval/TRANSFER-RESULTS.md) include
+report hashes, inspected cases and coverage/output costs; [protocol](eval/TRANSFER-RUN.md)
+records fixed budgets. Earlier draft-preparation evidence below remains historical.
+
 ## Evaluation diagnostics and transfer draft
 
 Evaluation subprocess failures now append safe command diagnostics with process

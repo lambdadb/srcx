@@ -1,0 +1,228 @@
+{
+  "format": 4,
+  "name": "transfer-cobra-v1",
+  "repositories": {
+    "cobra": "github.com/spf13/cobra"
+  },
+  "labelStatus": "development-diagnostic-not-independently-reviewed",
+  "draftHash": "793d10a9e90bb3eef25dfd2e70e3ca907c36acd4047feb2d34eb5f7f9d7950a9",
+  "settings": {
+    "preset": "managed-openai-small",
+    "searchLimit": 10,
+    "readLimit": 5,
+    "context": 0,
+    "selection": "ranked-prefix",
+    "modes": ["lexical", "semantic", "hybrid"],
+    "order": "rotate-by-question",
+    "limits": {
+      "documentInputTokens": 600000,
+      "queryEmbeddingRequests": 32,
+      "queryInputTokens": 2000,
+      "searchRequests": 48
+    }
+  },
+  "queries": [
+    {
+      "id": "cobra-all-validators",
+      "repository": "cobra",
+      "queryStyle": "identifier",
+      "query": "MatchAll",
+      "rationale": "Sequential argument validation stops on the first error.",
+      "evidenceSets": [
+        [
+          {
+            "path": "args.go",
+            "startLine": 114,
+            "endLine": 123,
+            "startByte": 3562,
+            "endByte": 3784,
+            "sha256": "d34d386958d4b2601a89e2d931f3ced315f919db0575d613d69f0d2a9e87eac8",
+            "sourceUrl": "https://github.com/spf13/cobra/blob/40b5bc1437a564fc795d388b23835e84f54cd1d1/args.go#L114-L123"
+          }
+        ]
+      ],
+      "commit": "40b5bc1437a564fc795d388b23835e84f54cd1d1",
+      "category": "identifier",
+      "taskId": "cobra-all-validators"
+    },
+    {
+      "id": "cobra-valid-arg-description",
+      "repository": "cobra",
+      "queryStyle": "natural",
+      "query": "Where are tab-separated descriptions removed before checking whether positional arguments are allowed?",
+      "rationale": "Validation uses only the value preceding the tab.",
+      "evidenceSets": [
+        [
+          {
+            "path": "args.go",
+            "startLine": 51,
+            "endLine": 65,
+            "startByte": 1656,
+            "endByte": 2204,
+            "sha256": "f8a555c6def41ac1f40b3f711c27a8fee9ea7a0d01b4ab445bbc5cbca53a4e7b",
+            "sourceUrl": "https://github.com/spf13/cobra/blob/40b5bc1437a564fc795d388b23835e84f54cd1d1/args.go#L51-L65"
+          }
+        ]
+      ],
+      "commit": "40b5bc1437a564fc795d388b23835e84f54cd1d1",
+      "category": "behavior",
+      "taskId": "cobra-valid-arg-description"
+    },
+    {
+      "id": "cobra-persistent-hook-order",
+      "repository": "cobra",
+      "queryStyle": "mixed",
+      "query": "EnableTraverseRunHooks persistent pre-run ordering",
+      "rationale": "Parent collection order and break behavior determine which pre-run hooks execute.",
+      "evidenceSets": [
+        [
+          {
+            "path": "command.go",
+            "startLine": 972,
+            "endLine": 998,
+            "startByte": 28711,
+            "endByte": 29502,
+            "sha256": "14e070e6aa5154a63bc7f5dcf9cf81da371167f67f803b59acbde787b4044842",
+            "sourceUrl": "https://github.com/spf13/cobra/blob/40b5bc1437a564fc795d388b23835e84f54cd1d1/command.go#L972-L998"
+          }
+        ]
+      ],
+      "commit": "40b5bc1437a564fc795d388b23835e84f54cd1d1",
+      "category": "behavior",
+      "taskId": "cobra-persistent-hook-order"
+    },
+    {
+      "id": "cobra-silent-errors",
+      "repository": "cobra",
+      "queryStyle": "natural",
+      "query": "When a subcommand fails, how can either the root or the child suppress the error line and the usage text separately?",
+      "rationale": "Two independent conditions combine root and child settings.",
+      "evidenceSets": [
+        [
+          {
+            "path": "command.go",
+            "startLine": 1157,
+            "endLine": 1168,
+            "startByte": 33152,
+            "endByte": 33505,
+            "sha256": "a3139ce3c2f29b83466d7206b9c7935947020ca6f82f5fd5af5230b8729c2aa1",
+            "sourceUrl": "https://github.com/spf13/cobra/blob/40b5bc1437a564fc795d388b23835e84f54cd1d1/command.go#L1157-L1168"
+          }
+        ]
+      ],
+      "commit": "40b5bc1437a564fc795d388b23835e84f54cd1d1",
+      "category": "behavior",
+      "taskId": "cobra-silent-errors"
+    },
+    {
+      "id": "cobra-exclusive-flags",
+      "repository": "cobra",
+      "queryStyle": "mixed",
+      "query": "ValidateFlagGroups mutually exclusive before RunE",
+      "rationale": "Requires dispatch before RunE and the validator rejecting multiple changed flags.",
+      "evidenceSets": [
+        [
+          {
+            "path": "command.go",
+            "startLine": 1007,
+            "endLine": 1015,
+            "startByte": 29653,
+            "endByte": 29853,
+            "sha256": "c18a908d73d379870ae84b0314423ed9eea238b71bc507fb8796ac22ccd917e5",
+            "sourceUrl": "https://github.com/spf13/cobra/blob/40b5bc1437a564fc795d388b23835e84f54cd1d1/command.go#L1007-L1015"
+          },
+          {
+            "path": "flag_groups.go",
+            "startLine": 103,
+            "endLine": 106,
+            "startByte": 3985,
+            "endByte": 4097,
+            "sha256": "90c5bec888506e8a993316d9bbaa25cf17ccc0fd7eead2c2c37bcdba249d03d5",
+            "sourceUrl": "https://github.com/spf13/cobra/blob/40b5bc1437a564fc795d388b23835e84f54cd1d1/flag_groups.go#L103-L106"
+          },
+          {
+            "path": "flag_groups.go",
+            "startLine": 188,
+            "endLine": 207,
+            "startByte": 6094,
+            "endByte": 6673,
+            "sha256": "72a6ad9bfe9ae7a5a3942215add530e0129164479e081f36ae98fb837304efc1",
+            "sourceUrl": "https://github.com/spf13/cobra/blob/40b5bc1437a564fc795d388b23835e84f54cd1d1/flag_groups.go#L188-L207"
+          }
+        ]
+      ],
+      "commit": "40b5bc1437a564fc795d388b23835e84f54cd1d1",
+      "category": "behavior",
+      "taskId": "cobra-exclusive-flags"
+    },
+    {
+      "id": "cobra-command-suggestions",
+      "repository": "cobra",
+      "queryStyle": "identifier",
+      "query": "SuggestionsFor",
+      "rationale": "Suggestions combine edit distance, case-insensitive prefix and explicit alternatives.",
+      "evidenceSets": [
+        [
+          {
+            "path": "command.go",
+            "startLine": 863,
+            "endLine": 881,
+            "startByte": 25959,
+            "endByte": 26655,
+            "sha256": "a12333e92ee8a5e4af21faa73b20b06f3ee520f6203c65024b981da2354491e7",
+            "sourceUrl": "https://github.com/spf13/cobra/blob/40b5bc1437a564fc795d388b23835e84f54cd1d1/command.go#L863-L881"
+          }
+        ]
+      ],
+      "commit": "40b5bc1437a564fc795d388b23835e84f54cd1d1",
+      "category": "identifier",
+      "taskId": "cobra-command-suggestions"
+    },
+    {
+      "id": "cobra-context-inheritance",
+      "repository": "cobra",
+      "queryStyle": "natural",
+      "query": "Where does a child command inherit the root execution context only when the child has no context of its own?",
+      "rationale": "Nil check occurs before command execution.",
+      "evidenceSets": [
+        [
+          {
+            "path": "command.go",
+            "startLine": 1143,
+            "endLine": 1149,
+            "startByte": 32852,
+            "endByte": 32987,
+            "sha256": "b085231742c95e3e970318f558ca7b2195d9ec6116593977970b6144a667f3c6",
+            "sourceUrl": "https://github.com/spf13/cobra/blob/40b5bc1437a564fc795d388b23835e84f54cd1d1/command.go#L1143-L1149"
+          }
+        ]
+      ],
+      "commit": "40b5bc1437a564fc795d388b23835e84f54cd1d1",
+      "category": "behavior",
+      "taskId": "cobra-context-inheritance"
+    },
+    {
+      "id": "cobra-required-flag-bypass",
+      "repository": "cobra",
+      "queryStyle": "mixed",
+      "query": "ValidateRequiredFlags DisableFlagParsing",
+      "rationale": "Disabled parsing bypasses required flags; otherwise annotations and Changed control errors.",
+      "evidenceSets": [
+        [
+          {
+            "path": "command.go",
+            "startLine": 1180,
+            "endLine": 1201,
+            "startByte": 33758,
+            "endByte": 34316,
+            "sha256": "4343b2a43204901f21cbb4a20fe030cb942339eb3cea1ed60772f32f32791f39",
+            "sourceUrl": "https://github.com/spf13/cobra/blob/40b5bc1437a564fc795d388b23835e84f54cd1d1/command.go#L1180-L1201"
+          }
+        ]
+      ],
+      "commit": "40b5bc1437a564fc795d388b23835e84f54cd1d1",
+      "category": "behavior",
+      "taskId": "cobra-required-flag-bypass"
+    }
+  ]
+}

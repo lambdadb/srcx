@@ -159,7 +159,9 @@ compares small and large on both frozen suites, including lexical controls.
 show mixed gains and regressions; small remains the initial managed choice.
 
 [Transfer evaluation preparation](https://github.com/lambdadb/srcx/blob/develop/eval/TRANSFER-EVAL.md) adds source-verified,
-unreviewed Python/Go questions; no live retrieval has been run on them.
+unreviewed Python/Go questions. The [completed development diagnostic](https://github.com/lambdadb/srcx/blob/develop/eval/TRANSFER-RESULTS.md)
+compares all three modes with managed small and text fallback; it is not an
+independently reviewed benchmark.
 New evaluation roots retain [safe command failure diagnostics](https://github.com/lambdadb/srcx/blob/develop/eval/COMMAND-DIAGNOSTICS.md)
 for explicit recovery.
 

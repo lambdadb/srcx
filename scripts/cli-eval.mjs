@@ -36,6 +36,8 @@ const { values, positionals } = parseArgs({
   options: {
     root: { type: "string", default: ".srcx/cli-eval" },
     srcx: { type: "string", default: "." },
+    click: { type: "string" },
+    cobra: { type: "string" },
     "lambdadb-cli": { type: "string", default: "../lambdadb-cli" },
     suite: { type: "string", default: "eval/cli-workflow-v1.json" },
     "reference-suite": { type: "string", default: "eval/cli-workflow-v1.json" },
@@ -88,14 +90,20 @@ async function corpus(build) {
   return { docs, files };
 }
 function presetForSuite(suite) {
-  if (suite.format !== 3) return PRESET;
+  if (suite.format < 3) return PRESET;
   return suite.settings.preset === "managed-openai-large"
     ? MANAGED_LARGE_PRESET
     : MANAGED_PRESET;
 }
 function compareReference(suite, reference) {
   validateCliSuite(reference);
-  assert.ok([2, 3].includes(reference.format));
+  assert.ok([2, 3, 4].includes(reference.format));
+  if (suite.format === 4)
+    assert.deepEqual(
+      reference,
+      suite,
+      "Transfer labels must remain unchanged.",
+    );
   const questions = (s) =>
     s.queries.map(({ id, repository, commit, category, query }) => ({
       id,
@@ -115,12 +123,13 @@ async function prepare() {
   validateCliSuite(suite);
   const preset = presetForSuite(suite);
   const referenceSuite =
-    suite.format === 3
+    suite.format >= 3
       ? JSON.parse(await readFile(values["reference-suite"], "utf8"))
       : undefined;
   if (referenceSuite) compareReference(suite, referenceSuite);
   const sources = {};
   for (const [id, key] of Object.entries(suite.repositories)) {
+    assert.ok(values[id], `Provide --${id} for this suite.`);
     sources[id] = await identity(resolve(values[id]));
     assert.equal(sources[id].key, key);
   }
@@ -160,7 +169,7 @@ async function prepare() {
         "--ref",
         commit,
         "--dry-run",
-        ...(suite.format === 3 ? ["--embedding", preset.embedding.model] : []),
+        ...(suite.format >= 3 ? ["--embedding", preset.embedding.model] : []),
         "--output",
         output,
       ]);
@@ -186,7 +195,7 @@ async function prepare() {
       );
     }
   }
-  if (suite.format === 3) {
+  if (suite.format >= 3) {
     const documentInputTokens = Object.values(plan.inputs)
       .flatMap((i) => Object.values(i.artifacts))
       .reduce((n, a) => n + a.counts.managedTokens, 0);
@@ -209,7 +218,7 @@ async function prepare() {
   );
 }
 function markdown(report, plan) {
-  if (plan.suite.format === 3) return modeMarkdown(report, plan);
+  if (plan.suite.format >= 3) return modeMarkdown(report, plan);
   const lines = [
     "# Default CLI search/read evaluation",
     "",
@@ -286,7 +295,7 @@ async function run() {
   const plan = await optionalJson(planFile);
   assert.equal(plan?.status, "prepared", "Run offline prepare first.");
   validateCliSuite(plan.suite);
-  const comparison = plan.suite.format === 3;
+  const comparison = plan.suite.format >= 3;
   const preset = presetForSuite(plan.suite);
   if (comparison) {
     compareReference(plan.suite, plan.referenceSuite);
