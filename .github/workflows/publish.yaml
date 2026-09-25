@@ -48,6 +48,7 @@ jobs:
           .srcx/benchmark-venv/bin/pip install -r eval/bm25-requirements.txt
           .srcx/benchmark-venv/bin/python -m unittest discover -s test -p benchmark_data_test.py
           .srcx/benchmark-venv/bin/python -m unittest discover -s test -p cosqa_bm25_test.py
+          .srcx/benchmark-venv/bin/python -m unittest discover -s test -p cosqa_rerank_test.py
 
   publish:
     needs: validate
