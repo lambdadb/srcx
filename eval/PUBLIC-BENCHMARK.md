@@ -58,6 +58,8 @@ Every official test query stays in the denominator, including zero-hit results,
 unsupported inputs and failed calls. Python has nine questions exceeding srcx's
 existing 4,096-character input limit; retain them as unsupported/zero without
 silently truncating them or changing product behavior for this benchmark.
+Reports count only `failed` outcomes in `failures` and expose `unsupported`
+separately. A completed search returning zero hits belongs to neither count.
 
 Compare retrieval pipelines on these datasets, not a hybrid pipeline's score
 against an embedding-only leaderboard as if they were identical methods.

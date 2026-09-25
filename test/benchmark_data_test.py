@@ -15,15 +15,17 @@ spec.loader.exec_module(benchmark)
 
 
 class BenchmarkScoringTest(unittest.TestCase):
-    def test_trec_metrics_preserve_empty_and_failed_query_denominators(self):
+    def test_trec_metrics_separate_statuses_and_preserve_all_query_denominators(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             data = {
                 "fixture-corpus.jsonl": [{"id": "d1"}, {"id": "d2"}],
-                "fixture-queries.jsonl": [{"id": "q1"}, {"id": "q2"}],
+                "fixture-queries.jsonl": [{"id": f"q{i}"} for i in range(1, 5)],
                 "fixture-qrels.jsonl": [
                     {"query-id": "q1", "corpus-id": "d2", "score": 1},
                     {"query-id": "q2", "corpus-id": "d1", "score": 1},
+                    {"query-id": "q3", "corpus-id": "d1", "score": 1},
+                    {"query-id": "q4", "corpus-id": "d1", "score": 1},
                 ],
             }
             files = {}
@@ -60,6 +62,8 @@ class BenchmarkScoringTest(unittest.TestCase):
                             "lexical": {
                                 "q1": {"status": "complete", "ids": ["d1", "d2"]},
                                 "q2": {"status": "failed", "ids": []},
+                                "q3": {"status": "unsupported", "ids": []},
+                                "q4": {"status": "complete", "ids": []},
                             }
                         },
                     }
@@ -70,11 +74,15 @@ class BenchmarkScoringTest(unittest.TestCase):
             with contextlib.redirect_stdout(io.StringIO()):
                 benchmark.evaluate(args)
             metrics = benchmark.read_json(args.output)["tasks"]["fixture"]["lexical"]
-            self.assertEqual(metrics["queries"], 2)
+            self.assertEqual(metrics["queries"], 4)
             self.assertEqual(metrics["failures"], 1)
-            self.assertAlmostEqual(metrics["mean"]["ndcg_cut_10"], 1 / math.log2(3) / 2)
-            self.assertEqual(metrics["mean"]["recall_10"], 0.5)
-            self.assertEqual(metrics["mean"]["recip_rank"], 0.25)
+            self.assertEqual(metrics["unsupported"], 1)
+            self.assertAlmostEqual(metrics["mean"]["ndcg_cut_10"], 1 / math.log2(3) / 4)
+            self.assertEqual(metrics["mean"]["recall_10"], 0.25)
+            self.assertEqual(metrics["mean"]["recall_100"], 0.25)
+            self.assertEqual(metrics["mean"]["recip_rank"], 0.125)
+            for qid in ("q2", "q3", "q4"):
+                self.assertTrue(all(v == 0 for v in metrics["perQuery"][qid].values()))
             with self.assertRaises(FileExistsError):
                 with contextlib.redirect_stdout(io.StringIO()):
                     benchmark.evaluate(args)

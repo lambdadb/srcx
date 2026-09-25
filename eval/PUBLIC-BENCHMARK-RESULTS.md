@@ -101,6 +101,14 @@ API-key values are never saved. Collections remain available for inspection.
 | `state.json`  | `c1fe9a74d4594902597b5ff167b88e10bcfb7146d0729a5c05d475a76859cff2` |
 | `report.json` | `b01885487d68a6eede699db484c151f56753dc15afddf91d2945671231c72a46` |
 
+The original frozen scorer counted unsupported inputs in `failures`, so the
+retained `report.json` reports nine failures for each Python mode. The saved
+outcome statuses distinguish them: each Python mode has **zero failed** and
+**nine unsupported** outcomes; all other task/mode pairs have zero of both.
+The scorer now exposes these counts separately for newly prepared runs. The
+original plan, state and report remain unchanged; the ranking metrics and their
+denominators are unaffected. No searches were repeated for this correction.
+
 Validation passed **91 Node tests**, **three Python reranker protocol tests**,
 **two public-benchmark export/scorer tests**, **three installed-package checks**,
 typecheck, formatting and version checks.

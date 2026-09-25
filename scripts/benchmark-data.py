@@ -105,7 +105,7 @@ def evaluate(args):
         "split": suite["split"],
         "scorer": "pytrec-eval-terrier=="
         + importlib.metadata.version("pytrec-eval-terrier"),
-        "metrics": "nDCG@10, Recall@10/100, MRR truncated at 100; failures score zero",
+        "metrics": "nDCG@10, Recall@10/100, MRR truncated at 100; failed and unsupported queries score zero",
         "planHash": digest(plan_bytes),
         "stateHash": digest(state_bytes),
         "tasks": {},
@@ -160,7 +160,8 @@ def evaluate(args):
             }
             report["tasks"][task_id][mode] = {
                 "queries": len(query_ids),
-                "failures": sum(r["status"] != "complete" for r in results.values()),
+                "failures": sum(r["status"] == "failed" for r in results.values()),
+                "unsupported": sum(r["status"] == "unsupported" for r in results.values()),
                 "mean": {
                     metric: sum(r[metric] for r in per_query.values()) / len(query_ids)
                     for metric in suite["metrics"]

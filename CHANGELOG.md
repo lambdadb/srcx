@@ -56,6 +56,9 @@
 
 ### Fixed
 
+- Count failed and unsupported public-benchmark queries separately, retaining
+  both in the ranking metric denominators.
+
 - Fetch omitted managed vectors from query responses through the same immutable
   Tag, preserving hit order/scores and requiring exact non-vector payload equality.
 
