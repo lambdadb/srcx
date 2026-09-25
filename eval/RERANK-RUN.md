@@ -6,6 +6,9 @@ This diagnostic uses the unchanged candidate bundle and labels from the
 [review worksheet](TRANSFER-REVIEW.md) remain pending. The run does not promote
 these observed tasks to an independently reviewed benchmark.
 
+[Completed results](RERANK-RESULTS.md) retain per-task outcomes, partial regressions,
+usage and hashes. The 455-pair run completed without errors or retries.
+
 ## Treatment and bounds
 
 Use `Qwen/Qwen3-Reranker-0.6B` revision
