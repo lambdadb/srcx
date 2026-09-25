@@ -127,7 +127,7 @@ export async function search(
   );
   invariant(
     mode === "lexical" || r.preset?.embedding?.managed,
-    "Semantic/hybrid search requires a managed embedding Collection; register with --embedding text-embedding-3-small.",
+    "Semantic/hybrid search requires a managed embedding Collection; register with --embedding text-embedding-3-small or text-embedding-3-large.",
   );
   const request = retrievalQuery(query, size, filters, mode);
   const entries = await inventoryAt(store, r, v);

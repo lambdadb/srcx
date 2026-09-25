@@ -1,0 +1,579 @@
+{
+  "format": 3,
+  "name": "query-style-diagnostic-v2",
+  "repositories": {
+    "srcx": "github.com/lambdadb/srcx",
+    "lambdadb-cli": "github.com/lambdadb/lambdadb-cli"
+  },
+  "labelStatus": "Assistant-reviewed diagnostic labels, revised after inspecting the previous lexical run and before this three-mode run. Two related public TypeScript repositories; not independent human labels or a held-out benchmark. Original labels are scored separately.",
+  "settings": {
+    "preset": "managed-openai-large",
+    "searchLimit": 10,
+    "readLimit": 5,
+    "context": 0,
+    "selection": "ranked-prefix",
+    "modes": ["lexical", "semantic", "hybrid"],
+    "order": "rotate-by-question",
+    "limits": {
+      "documentInputTokens": 400000,
+      "queryEmbeddingRequests": 64,
+      "queryInputTokens": 10000,
+      "searchRequests": 96
+    }
+  },
+  "queries": [
+    {
+      "id": "srcx-atomic-save-identifier",
+      "taskId": "srcx-atomic-save",
+      "queryStyle": "identifier",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "identifier",
+      "query": "atomic",
+      "rationale": "Locate the temporary exclusive write, rename, and unconditional cleanup.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/common.ts",
+            "startByte": 1092,
+            "endByte": 1485,
+            "startLine": 31,
+            "endLine": 43,
+            "sha256": "dc5d153a0855fee7103d4423741170b0c33e6b29e5259324c1adb5a3782c7810",
+            "excerpt": "export async function atomic(path: string, value: unknown): Promise<void> {\n  await mkdir(dirname(path), { recursive: true, mode: 0o700 });\n  const temp = `${path}.${randomUUID()}.tmp`;\n  try {\n    await writeFile(temp, `${JSON.stringify(value, null, 2)}\\n`, {\n      flag: \"wx\",\n      mode: 0o600,\n    });\n    await rename(temp, path);\n  } finally {\n    await rm(temp, { force: true });\n  }\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "srcx-atomic-save-natural",
+      "taskId": "srcx-atomic-save",
+      "queryStyle": "natural",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "behavior",
+      "query": "Where do we save a local record so another process cannot see half of the new contents, and remove leftover temporary data even on failure?",
+      "rationale": "Locate the temporary exclusive write, rename, and unconditional cleanup.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/common.ts",
+            "startByte": 1092,
+            "endByte": 1485,
+            "startLine": 31,
+            "endLine": 43,
+            "sha256": "dc5d153a0855fee7103d4423741170b0c33e6b29e5259324c1adb5a3782c7810",
+            "excerpt": "export async function atomic(path: string, value: unknown): Promise<void> {\n  await mkdir(dirname(path), { recursive: true, mode: 0o700 });\n  const temp = `${path}.${randomUUID()}.tmp`;\n  try {\n    await writeFile(temp, `${JSON.stringify(value, null, 2)}\\n`, {\n      flag: \"wx\",\n      mode: 0o600,\n    });\n    await rename(temp, path);\n  } finally {\n    await rm(temp, { force: true });\n  }\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "srcx-atomic-save-mixed",
+      "taskId": "srcx-atomic-save",
+      "queryStyle": "mixed",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "behavior",
+      "query": "How does atomic prevent partially written local records and clean up after failure?",
+      "rationale": "Locate the temporary exclusive write, rename, and unconditional cleanup.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/common.ts",
+            "startByte": 1092,
+            "endByte": 1485,
+            "startLine": 31,
+            "endLine": 43,
+            "sha256": "dc5d153a0855fee7103d4423741170b0c33e6b29e5259324c1adb5a3782c7810",
+            "excerpt": "export async function atomic(path: string, value: unknown): Promise<void> {\n  await mkdir(dirname(path), { recursive: true, mode: 0o700 });\n  const temp = `${path}.${randomUUID()}.tmp`;\n  try {\n    await writeFile(temp, `${JSON.stringify(value, null, 2)}\\n`, {\n      flag: \"wx\",\n      mode: 0o600,\n    });\n    await rename(temp, path);\n  } finally {\n    await rm(temp, { force: true });\n  }\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "srcx-lossless-text-natural",
+      "taskId": "srcx-lossless-text",
+      "queryStyle": "natural",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "behavior",
+      "query": "Where do we reject damaged text bytes instead of silently replacing them with replacement characters?",
+      "rationale": "Locate the decode/encode round-trip equality check and undefined result.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/common.ts",
+            "startByte": 1828,
+            "endByte": 1979,
+            "startLine": 55,
+            "endLine": 58,
+            "sha256": "a874ea43f508fa8c932193aeb5c4dc8c60b2ebb466a288cb199c72f33451afcd",
+            "excerpt": "export function utf8(bytes: Buffer): string | undefined {\n  const s = bytes.toString(\"utf8\");\n  return Buffer.from(s).equals(bytes) ? s : undefined;\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "srcx-lossless-text-mixed",
+      "taskId": "srcx-lossless-text",
+      "queryStyle": "mixed",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "behavior",
+      "query": "How does utf8 detect decoding that would silently change the original bytes?",
+      "rationale": "Locate the decode/encode round-trip equality check and undefined result.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/common.ts",
+            "startByte": 1828,
+            "endByte": 1979,
+            "startLine": 55,
+            "endLine": 58,
+            "sha256": "a874ea43f508fa8c932193aeb5c4dc8c60b2ebb466a288cb199c72f33451afcd",
+            "excerpt": "export function utf8(bytes: Buffer): string | undefined {\n  const s = bytes.toString(\"utf8\");\n  return Buffer.from(s).equals(bytes) ? s : undefined;\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "srcx-lossless-text-identifier",
+      "taskId": "srcx-lossless-text",
+      "queryStyle": "identifier",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "identifier",
+      "query": "utf8",
+      "rationale": "Locate the decode/encode round-trip equality check and undefined result.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/common.ts",
+            "startByte": 1828,
+            "endByte": 1979,
+            "startLine": 55,
+            "endLine": 58,
+            "sha256": "a874ea43f508fa8c932193aeb5c4dc8c60b2ebb466a288cb199c72f33451afcd",
+            "excerpt": "export function utf8(bytes: Buffer): string | undefined {\n  const s = bytes.toString(\"utf8\");\n  return Buffer.from(s).equals(bytes) ? s : undefined;\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "srcx-service-address-mixed",
+      "taskId": "srcx-service-address",
+      "queryStyle": "mixed",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "behavior",
+      "query": "How does validateSettings restrict insecure connections and reject extra URL components?",
+      "rationale": "Locate the loopback exception and URL component validation; project/env checks are outside this task.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/settings.ts",
+            "startByte": 643,
+            "endByte": 1068,
+            "startLine": 24,
+            "endLine": 35,
+            "sha256": "20608cc292834486457ffb4c661b293beea3fce62d354bdc92ffe66b79e65e9c",
+            "excerpt": "export function validateSettings(s: Settings): Settings {\n  const u = new URL(s.endpoint);\n  const local = [\"localhost\", \"127.0.0.1\", \"[::1]\"].includes(u.hostname);\n  invariant(\n    (u.protocol === \"https:\" || (local && u.protocol === \"http:\")) &&\n      !u.username &&\n      !u.password &&\n      !u.search &&\n      !u.hash &&\n      u.pathname === \"/\",\n    \"Endpoint must be an HTTPS origin (HTTP loopback is allowed).\",\n  );\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "srcx-service-address-identifier",
+      "taskId": "srcx-service-address",
+      "queryStyle": "identifier",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "identifier",
+      "query": "validateSettings",
+      "rationale": "Locate the loopback exception and URL component validation; project/env checks are outside this task.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/settings.ts",
+            "startByte": 643,
+            "endByte": 1068,
+            "startLine": 24,
+            "endLine": 35,
+            "sha256": "20608cc292834486457ffb4c661b293beea3fce62d354bdc92ffe66b79e65e9c",
+            "excerpt": "export function validateSettings(s: Settings): Settings {\n  const u = new URL(s.endpoint);\n  const local = [\"localhost\", \"127.0.0.1\", \"[::1]\"].includes(u.hostname);\n  invariant(\n    (u.protocol === \"https:\" || (local && u.protocol === \"http:\")) &&\n      !u.username &&\n      !u.password &&\n      !u.search &&\n      !u.hash &&\n      u.pathname === \"/\",\n    \"Endpoint must be an HTTPS origin (HTTP loopback is allowed).\",\n  );\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "srcx-service-address-natural",
+      "taskId": "srcx-service-address",
+      "queryStyle": "natural",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "behavior",
+      "query": "Why can I connect without encryption on my own machine but not to a remote server, and why are credentials or extra URL components rejected?",
+      "rationale": "Locate the loopback exception and URL component validation; project/env checks are outside this task.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/settings.ts",
+            "startByte": 643,
+            "endByte": 1068,
+            "startLine": 24,
+            "endLine": 35,
+            "sha256": "20608cc292834486457ffb4c661b293beea3fce62d354bdc92ffe66b79e65e9c",
+            "excerpt": "export function validateSettings(s: Settings): Settings {\n  const u = new URL(s.endpoint);\n  const local = [\"localhost\", \"127.0.0.1\", \"[::1]\"].includes(u.hostname);\n  invariant(\n    (u.protocol === \"https:\" || (local && u.protocol === \"http:\")) &&\n      !u.username &&\n      !u.password &&\n      !u.search &&\n      !u.hash &&\n      u.pathname === \"/\",\n    \"Endpoint must be an HTTPS origin (HTTP loopback is allowed).\",\n  );\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "srcx-stable-serialization-identifier",
+      "taskId": "srcx-stable-serialization",
+      "queryStyle": "identifier",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "identifier",
+      "query": "canonical",
+      "rationale": "Locate key sorting, undefined omission and recursive value serialization.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/common.ts",
+            "startByte": 306,
+            "endByte": 727,
+            "startLine": 7,
+            "endLine": 16,
+            "sha256": "d6ac8d02840e64b09f0d68686dcce8dfd778a90cbbf396dca5f3a01f3777c1eb",
+            "excerpt": "export function canonical(value: unknown): string {\n  if (Array.isArray(value)) return `[${value.map(canonical).join(\",\")}]`;\n  if (value && typeof value === \"object\")\n    return `{${Object.entries(value)\n      .filter(([, v]) => v !== undefined)\n      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))\n      .map(([k, v]) => `${JSON.stringify(k)}:${canonical(v)}`)\n      .join(\",\")}}`;\n  return JSON.stringify(value);\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "srcx-stable-serialization-natural",
+      "taskId": "srcx-stable-serialization",
+      "queryStyle": "natural",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "behavior",
+      "query": "Where is an object turned into deterministic text so changing property insertion order does not change it, while missing values are left out?",
+      "rationale": "Locate key sorting, undefined omission and recursive value serialization.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/common.ts",
+            "startByte": 306,
+            "endByte": 727,
+            "startLine": 7,
+            "endLine": 16,
+            "sha256": "d6ac8d02840e64b09f0d68686dcce8dfd778a90cbbf396dca5f3a01f3777c1eb",
+            "excerpt": "export function canonical(value: unknown): string {\n  if (Array.isArray(value)) return `[${value.map(canonical).join(\",\")}]`;\n  if (value && typeof value === \"object\")\n    return `{${Object.entries(value)\n      .filter(([, v]) => v !== undefined)\n      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))\n      .map(([k, v]) => `${JSON.stringify(k)}:${canonical(v)}`)\n      .join(\",\")}}`;\n  return JSON.stringify(value);\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "srcx-stable-serialization-mixed",
+      "taskId": "srcx-stable-serialization",
+      "queryStyle": "mixed",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "behavior",
+      "query": "How does canonical produce deterministic object text and omit undefined properties?",
+      "rationale": "Locate key sorting, undefined omission and recursive value serialization.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/common.ts",
+            "startByte": 306,
+            "endByte": 727,
+            "startLine": 7,
+            "endLine": 16,
+            "sha256": "d6ac8d02840e64b09f0d68686dcce8dfd778a90cbbf396dca5f3a01f3777c1eb",
+            "excerpt": "export function canonical(value: unknown): string {\n  if (Array.isArray(value)) return `[${value.map(canonical).join(\",\")}]`;\n  if (value && typeof value === \"object\")\n    return `{${Object.entries(value)\n      .filter(([, v]) => v !== undefined)\n      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))\n      .map(([k, v]) => `${JSON.stringify(k)}:${canonical(v)}`)\n      .join(\",\")}}`;\n  return JSON.stringify(value);\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-batch-limits-natural",
+      "taskId": "lambdadb-cli-batch-limits",
+      "queryStyle": "natural",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "behavior",
+      "query": "Where do we split an upload when either the number of records or encoded request size gets too large, including punctuation and wrapper overhead?",
+      "rationale": "Locate both limits, oversize-single-row rejection and serialized overhead accounting.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/import-workflow.ts",
+            "startByte": 691,
+            "endByte": 1564,
+            "startLine": 16,
+            "endLine": 31,
+            "sha256": "763368c75c8978c5ee98f0f4ce55af3f72031fba531932293274ba585bcc24fe",
+            "excerpt": "export function planBatches(rows: DocumentRow[], branch: string, batchSize: number, maxBytes: number, bulk: boolean): Batch[] {\n  const overhead = Buffer.byteLength(JSON.stringify(bulk ? { docs: [] } : { docs: [], branch }));\n  const batches: Batch[] = [];\n  let current: Batch = { rows: [], bytes: overhead };\n  for (const row of rows) {\n    if (overhead + row.bytes > maxBytes) throw new InputError(`JSONL line ${row.line} exceeds the batch byte limit. Increase the limit within the mode's supported range.`);\n    if (current.rows.length && (current.rows.length >= batchSize || current.bytes + 1 + row.bytes > maxBytes)) {\n      batches.push(current);\n      current = { rows: [], bytes: overhead };\n    }\n    current.bytes += row.bytes + (current.rows.length ? 1 : 0);\n    current.rows.push(row);\n  }\n  if (current.rows.length) batches.push(current);\n  return batches;\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-batch-limits-mixed",
+      "taskId": "lambdadb-cli-batch-limits",
+      "queryStyle": "mixed",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "behavior",
+      "query": "How does planBatches enforce record and byte limits including request overhead?",
+      "rationale": "Locate both limits, oversize-single-row rejection and serialized overhead accounting.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/import-workflow.ts",
+            "startByte": 691,
+            "endByte": 1564,
+            "startLine": 16,
+            "endLine": 31,
+            "sha256": "763368c75c8978c5ee98f0f4ce55af3f72031fba531932293274ba585bcc24fe",
+            "excerpt": "export function planBatches(rows: DocumentRow[], branch: string, batchSize: number, maxBytes: number, bulk: boolean): Batch[] {\n  const overhead = Buffer.byteLength(JSON.stringify(bulk ? { docs: [] } : { docs: [], branch }));\n  const batches: Batch[] = [];\n  let current: Batch = { rows: [], bytes: overhead };\n  for (const row of rows) {\n    if (overhead + row.bytes > maxBytes) throw new InputError(`JSONL line ${row.line} exceeds the batch byte limit. Increase the limit within the mode's supported range.`);\n    if (current.rows.length && (current.rows.length >= batchSize || current.bytes + 1 + row.bytes > maxBytes)) {\n      batches.push(current);\n      current = { rows: [], bytes: overhead };\n    }\n    current.bytes += row.bytes + (current.rows.length ? 1 : 0);\n    current.rows.push(row);\n  }\n  if (current.rows.length) batches.push(current);\n  return batches;\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-batch-limits-identifier",
+      "taskId": "lambdadb-cli-batch-limits",
+      "queryStyle": "identifier",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "identifier",
+      "query": "planBatches",
+      "rationale": "Locate both limits, oversize-single-row rejection and serialized overhead accounting.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/import-workflow.ts",
+            "startByte": 691,
+            "endByte": 1564,
+            "startLine": 16,
+            "endLine": 31,
+            "sha256": "763368c75c8978c5ee98f0f4ce55af3f72031fba531932293274ba585bcc24fe",
+            "excerpt": "export function planBatches(rows: DocumentRow[], branch: string, batchSize: number, maxBytes: number, bulk: boolean): Batch[] {\n  const overhead = Buffer.byteLength(JSON.stringify(bulk ? { docs: [] } : { docs: [], branch }));\n  const batches: Batch[] = [];\n  let current: Batch = { rows: [], bytes: overhead };\n  for (const row of rows) {\n    if (overhead + row.bytes > maxBytes) throw new InputError(`JSONL line ${row.line} exceeds the batch byte limit. Increase the limit within the mode's supported range.`);\n    if (current.rows.length && (current.rows.length >= batchSize || current.bytes + 1 + row.bytes > maxBytes)) {\n      batches.push(current);\n      current = { rows: [], bytes: overhead };\n    }\n    current.bytes += row.bytes + (current.rows.length ? 1 : 0);\n    current.rows.push(row);\n  }\n  if (current.rows.length) batches.push(current);\n  return batches;\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-uncertain-errors-mixed",
+      "taskId": "lambdadb-cli-uncertain-errors",
+      "queryStyle": "mixed",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "behavior",
+      "query": "How does definitelyRejected distinguish definite rejection from timeouts and response validation failures?",
+      "rationale": "Both isInputError response exclusion and HTTP classification are required.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/errors.ts",
+            "startByte": 2243,
+            "endByte": 2736,
+            "startLine": 37,
+            "endLine": 45,
+            "sha256": "d358fec47c6fffbd34891561442d186c39e50575109f46af8a6dac9378e32b68",
+            "excerpt": "export function isInputError(error: unknown): boolean {\n  // SDKValidationError uses Symbol.hasInstance and also matches response validation errors.\n  return error instanceof InputError || (error instanceof SDKValidationError && !(error instanceof ResponseValidationError));\n}\n\nexport function definitelyRejected(error: unknown): boolean {\n  return isInputError(error) || (error instanceof LambdaDBError\n    && error.statusCode >= 400 && error.statusCode < 500 && error.statusCode !== 408);\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-uncertain-errors-identifier",
+      "taskId": "lambdadb-cli-uncertain-errors",
+      "queryStyle": "identifier",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "identifier",
+      "query": "definitelyRejected",
+      "rationale": "Both isInputError response exclusion and HTTP classification are required.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/errors.ts",
+            "startByte": 2243,
+            "endByte": 2736,
+            "startLine": 37,
+            "endLine": 45,
+            "sha256": "d358fec47c6fffbd34891561442d186c39e50575109f46af8a6dac9378e32b68",
+            "excerpt": "export function isInputError(error: unknown): boolean {\n  // SDKValidationError uses Symbol.hasInstance and also matches response validation errors.\n  return error instanceof InputError || (error instanceof SDKValidationError && !(error instanceof ResponseValidationError));\n}\n\nexport function definitelyRejected(error: unknown): boolean {\n  return isInputError(error) || (error instanceof LambdaDBError\n    && error.statusCode >= 400 && error.statusCode < 500 && error.statusCode !== 408);\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-uncertain-errors-natural",
+      "taskId": "lambdadb-cli-uncertain-errors",
+      "queryStyle": "natural",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "behavior",
+      "query": "Where do we distinguish an operation that certainly did not succeed from one that might have reached the server, including timeouts and malformed replies?",
+      "rationale": "Both isInputError response exclusion and HTTP classification are required.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/errors.ts",
+            "startByte": 2243,
+            "endByte": 2736,
+            "startLine": 37,
+            "endLine": 45,
+            "sha256": "d358fec47c6fffbd34891561442d186c39e50575109f46af8a6dac9378e32b68",
+            "excerpt": "export function isInputError(error: unknown): boolean {\n  // SDKValidationError uses Symbol.hasInstance and also matches response validation errors.\n  return error instanceof InputError || (error instanceof SDKValidationError && !(error instanceof ResponseValidationError));\n}\n\nexport function definitelyRejected(error: unknown): boolean {\n  return isInputError(error) || (error instanceof LambdaDBError\n    && error.statusCode >= 400 && error.statusCode < 500 && error.statusCode !== 408);\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-redaction-collisions-identifier",
+      "taskId": "lambdadb-cli-redaction-collisions",
+      "queryStyle": "identifier",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "identifier",
+      "query": "sanitize",
+      "rationale": "Locate reserved names, preservation of unchanged keys, suffix generation and recursive output.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/output.ts",
+            "startByte": 1686,
+            "endByte": 2753,
+            "startLine": 39,
+            "endLine": 55,
+            "sha256": "5b48dc8fa391e8d4e81866614fa6afc3ede76e134e139640def9c19b61fae99a",
+            "excerpt": "      if (value && typeof value === 'object') {\n        const entries = Object.entries(value).map(([key, item]) => ({ key, item, name: freeForm ? this.redact(key) : key }));\n        // Reserve every base name, including unchanged keys that appear later.\n        // Only renamed keys receive suffixes; unrelated field names stay intact.\n        const reserved = new Set(entries.map(entry => entry.name));\n        const used = new Set(entries.filter(entry => entry.key === entry.name).map(entry => entry.name));\n        const suffixes = new Map<string, number>();\n        return Object.fromEntries(entries.map(({ key, item, name }) => {\n          let unique = name;\n          if (key !== name && used.has(unique)) {\n            let suffix = suffixes.get(name) ?? 1;\n            do { unique = `${name}#${suffix++}`; } while (reserved.has(unique) || used.has(unique));\n            suffixes.set(name, suffix);\n          }\n          used.add(unique);\n          return [unique, sanitize(item, path ? `${path}.${key}` : key, freeForm || freeFormMaps.has(key))];\n        }));\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-redaction-collisions-natural",
+      "taskId": "lambdadb-cli-redaction-collisions",
+      "queryStyle": "natural",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "behavior",
+      "query": "Where do we prevent two user-defined fields from overwriting one another after sensitive text is hidden from their names?",
+      "rationale": "Locate reserved names, preservation of unchanged keys, suffix generation and recursive output.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/output.ts",
+            "startByte": 1686,
+            "endByte": 2753,
+            "startLine": 39,
+            "endLine": 55,
+            "sha256": "5b48dc8fa391e8d4e81866614fa6afc3ede76e134e139640def9c19b61fae99a",
+            "excerpt": "      if (value && typeof value === 'object') {\n        const entries = Object.entries(value).map(([key, item]) => ({ key, item, name: freeForm ? this.redact(key) : key }));\n        // Reserve every base name, including unchanged keys that appear later.\n        // Only renamed keys receive suffixes; unrelated field names stay intact.\n        const reserved = new Set(entries.map(entry => entry.name));\n        const used = new Set(entries.filter(entry => entry.key === entry.name).map(entry => entry.name));\n        const suffixes = new Map<string, number>();\n        return Object.fromEntries(entries.map(({ key, item, name }) => {\n          let unique = name;\n          if (key !== name && used.has(unique)) {\n            let suffix = suffixes.get(name) ?? 1;\n            do { unique = `${name}#${suffix++}`; } while (reserved.has(unique) || used.has(unique));\n            suffixes.set(name, suffix);\n          }\n          used.add(unique);\n          return [unique, sanitize(item, path ? `${path}.${key}` : key, freeForm || freeFormMaps.has(key))];\n        }));\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-redaction-collisions-mixed",
+      "taskId": "lambdadb-cli-redaction-collisions",
+      "queryStyle": "mixed",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "behavior",
+      "query": "How does sanitize avoid losing fields when redacted key names collide?",
+      "rationale": "Locate reserved names, preservation of unchanged keys, suffix generation and recursive output.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/output.ts",
+            "startByte": 1686,
+            "endByte": 2753,
+            "startLine": 39,
+            "endLine": 55,
+            "sha256": "5b48dc8fa391e8d4e81866614fa6afc3ede76e134e139640def9c19b61fae99a",
+            "excerpt": "      if (value && typeof value === 'object') {\n        const entries = Object.entries(value).map(([key, item]) => ({ key, item, name: freeForm ? this.redact(key) : key }));\n        // Reserve every base name, including unchanged keys that appear later.\n        // Only renamed keys receive suffixes; unrelated field names stay intact.\n        const reserved = new Set(entries.map(entry => entry.name));\n        const used = new Set(entries.filter(entry => entry.key === entry.name).map(entry => entry.name));\n        const suffixes = new Map<string, number>();\n        return Object.fromEntries(entries.map(({ key, item, name }) => {\n          let unique = name;\n          if (key !== name && used.has(unique)) {\n            let suffix = suffixes.get(name) ?? 1;\n            do { unique = `${name}#${suffix++}`; } while (reserved.has(unique) || used.has(unique));\n            suffixes.set(name, suffix);\n          }\n          used.add(unique);\n          return [unique, sanitize(item, path ? `${path}.${key}` : key, freeForm || freeFormMaps.has(key))];\n        }));\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-stop-after-failure-natural",
+      "taskId": "lambdadb-cli-stop-after-failure",
+      "queryStyle": "natural",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "behavior",
+      "query": "Where does uploading stop after the first unsuccessful group while keeping counts of completed, uncertain, and untouched records and avoiding automatic resubmission?",
+      "rationale": "Locate retry disabling, failure classification, acknowledged/unknown/not-attempted counters and stop condition.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/import-workflow.ts",
+            "startByte": 2517,
+            "endByte": 3337,
+            "startLine": 53,
+            "endLine": 70,
+            "sha256": "58179e8a33200bfed8e7bb9d13eb159fd00bd315237f61a829f70366fb97e021",
+            "excerpt": "    try {\n      const body = { docs: batch.rows.map(row => row.doc), branch };\n      // Mutations are never automatically retried: no public idempotency/receipt contract.\n      const requestOptions: ClientRequestOptions = { ...options, retries: { strategy: 'none' } };\n      if (bulk) await docs.bulkUpsertDocs(body, requestOptions);\n      else await docs.upsert(body, requestOptions);\n    } catch (error) {\n      item.state = definitelyRejected(error) ? 'failed' : 'unknown';\n      item.error = describeError(error);\n    }\n    result[item.state] += item.documents;\n    result.notAttempted -= item.documents;\n    result.batches.push(item);\n    progress(item);\n    if (item.state !== 'accepted') {\n      result.state = item.state === 'unknown' ? 'unknown' : result.accepted > 0 ? 'partial' : 'failed';\n      break;\n    }\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-stop-after-failure-mixed",
+      "taskId": "lambdadb-cli-stop-after-failure",
+      "queryStyle": "mixed",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "behavior",
+      "query": "How does importDocuments stop after a failed batch while preserving progress and disabling retries?",
+      "rationale": "Locate retry disabling, failure classification, acknowledged/unknown/not-attempted counters and stop condition.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/import-workflow.ts",
+            "startByte": 2517,
+            "endByte": 3337,
+            "startLine": 53,
+            "endLine": 70,
+            "sha256": "58179e8a33200bfed8e7bb9d13eb159fd00bd315237f61a829f70366fb97e021",
+            "excerpt": "    try {\n      const body = { docs: batch.rows.map(row => row.doc), branch };\n      // Mutations are never automatically retried: no public idempotency/receipt contract.\n      const requestOptions: ClientRequestOptions = { ...options, retries: { strategy: 'none' } };\n      if (bulk) await docs.bulkUpsertDocs(body, requestOptions);\n      else await docs.upsert(body, requestOptions);\n    } catch (error) {\n      item.state = definitelyRejected(error) ? 'failed' : 'unknown';\n      item.error = describeError(error);\n    }\n    result[item.state] += item.documents;\n    result.notAttempted -= item.documents;\n    result.batches.push(item);\n    progress(item);\n    if (item.state !== 'accepted') {\n      result.state = item.state === 'unknown' ? 'unknown' : result.accepted > 0 ? 'partial' : 'failed';\n      break;\n    }\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-stop-after-failure-identifier",
+      "taskId": "lambdadb-cli-stop-after-failure",
+      "queryStyle": "identifier",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "identifier",
+      "query": "importDocuments",
+      "rationale": "Locate retry disabling, failure classification, acknowledged/unknown/not-attempted counters and stop condition.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/import-workflow.ts",
+            "startByte": 2517,
+            "endByte": 3337,
+            "startLine": 53,
+            "endLine": 70,
+            "sha256": "58179e8a33200bfed8e7bb9d13eb159fd00bd315237f61a829f70366fb97e021",
+            "excerpt": "    try {\n      const body = { docs: batch.rows.map(row => row.doc), branch };\n      // Mutations are never automatically retried: no public idempotency/receipt contract.\n      const requestOptions: ClientRequestOptions = { ...options, retries: { strategy: 'none' } };\n      if (bulk) await docs.bulkUpsertDocs(body, requestOptions);\n      else await docs.upsert(body, requestOptions);\n    } catch (error) {\n      item.state = definitelyRejected(error) ? 'failed' : 'unknown';\n      item.error = describeError(error);\n    }\n    result[item.state] += item.documents;\n    result.notAttempted -= item.documents;\n    result.batches.push(item);\n    progress(item);\n    if (item.state !== 'accepted') {\n      result.state = item.state === 'unknown' ? 'unknown' : result.accepted > 0 ? 'partial' : 'failed';\n      break;\n    }\n"
+          }
+        ]
+      ]
+    }
+  ],
+  "labelProvenance": "Eight new source-derived tasks, each phrased three ways before retrieval. Assistant-reviewed, not independent or held out. The reference suite is this same frozen suite; no revised labels."
+}

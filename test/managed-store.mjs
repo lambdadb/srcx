@@ -2,6 +2,10 @@
 import assert from "node:assert/strict";
 import { MemoryStore } from "./memory-store.mjs";
 export class ManagedStore extends MemoryStore {
+  constructor(dimensions = 1536) {
+    super();
+    this.dimensions = dimensions;
+  }
   async upsert(branch, docs) {
     assert.ok(docs.every((d) => d.embedding === undefined));
     try {
@@ -9,8 +13,9 @@ export class ManagedStore extends MemoryStore {
     } finally {
       for (const d of docs) {
         if (d.embeddingText !== undefined) {
-          this.work.get(branch).docs.get(d.id).embedding =
-            Array(1536).fill(0.01);
+          this.work.get(branch).docs.get(d.id).embedding = Array(
+            this.dimensions,
+          ).fill(0.01);
         }
       }
     }

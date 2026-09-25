@@ -79,6 +79,11 @@ baseline is available to the test/build API, not as a public storage backend.
 
 ## Opt into managed embeddings
 
+Supported models are `text-embedding-3-small` (1536 dimensions) and
+`text-embedding-3-large` (3072 dimensions), both cosine. Use either name with
+`--embedding`; each has a separate pinned preset and Collection. Existing small
+Collections keep their identity. Changing models requires a separate import.
+
 LambdaDB can generate OpenAI `text-embedding-3-small` vectors (1536 dimensions,
 cosine) for meaningful code, tests and prose. Imports-only and structural chunks
 remain lexical. The CLI uses LambdaDB credentials; it does not need an OpenAI key.

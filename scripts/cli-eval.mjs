@@ -10,6 +10,7 @@ import { identity, git } from "../dist/git.js";
 import {
   PRESET,
   MANAGED_PRESET,
+  MANAGED_LARGE_PRESET,
   loadBuild,
   records,
   validateBuild,
@@ -102,7 +103,10 @@ async function corpus(build) {
   return { docs, files };
 }
 function presetForSuite(suite) {
-  return suite.format === 3 ? MANAGED_PRESET : PRESET;
+  if (suite.format !== 3) return PRESET;
+  return suite.settings.preset === "managed-openai-large"
+    ? MANAGED_LARGE_PRESET
+    : MANAGED_PRESET;
 }
 function compareReference(suite, reference) {
   validateCliSuite(reference);
@@ -171,9 +175,7 @@ async function prepare() {
         "--ref",
         commit,
         "--dry-run",
-        ...(suite.format === 3
-          ? ["--embedding", "text-embedding-3-small"]
-          : []),
+        ...(suite.format === 3 ? ["--embedding", preset.embedding.model] : []),
         "--output",
         output,
       ]);
@@ -508,7 +510,7 @@ async function run() {
         "add",
         "--path",
         source.path,
-        ...(comparison ? ["--embedding", "text-embedding-3-small"] : []),
+        ...(comparison ? ["--embedding", preset.embedding.model] : []),
       ]);
       assert.equal(repository.repoKey, source.key);
       assert.equal(repository.collection, plan.inputs[id].collection);

@@ -1,12 +1,13 @@
 # Embedding candidates for code retrieval
 
 Research checked September 25, 2026. These are candidates, not measured srcx wins.
-The query-style diagnostic still uses `text-embedding-3-small`. Do not change the
+The query-style diagnostic used `text-embedding-3-small`; the separate
+[managed model comparison](MODEL-COMPARISON.md) compares small and large. Do not change the
 model and question distribution together when attributing a quality difference.
 
 | Candidate                        | Why test it                                                                                                   | Integration in srcx                                                                                                                                           |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| OpenAI `text-embedding-3-large`  | Closest controlled comparison with the existing managed small model; not a code-specialized quality guarantee | LambdaDB managed support exists; srcx currently accepts only small, so add a distinct preset and Collection before evaluation                                 |
+| OpenAI `text-embedding-3-large`  | Closest controlled comparison with the existing managed small model; not a code-specialized quality guarantee | LambdaDB managed support exists; srcx supports a distinct large preset and Collection; compare under the frozen protocol                                      |
 | Voyage `voyage-code-4`           | First external candidate: designed for code and coding-agent retrieval, including issue-like descriptions     | Generate document/query vectors via a separate API, store in a non-managed vector field and query with `queryVector`; provider integration is not implemented |
 | Qwen3-Embedding-4B               | Open-weight option for a self-hosted comparison, with multilingual/code retrieval focus                       | Separate inference service and query instruction handling required                                                                                            |
 | Jina `jina-code-embeddings-1.5b` | Specialized natural-language-to-code and code-to-code tasks                                                   | Separate inference and task prefixes; published weights use CC-BY-NC-4.0, so do not assume unrestricted commercial self-hosting                               |
@@ -16,8 +17,7 @@ model and question distribution together when attributing a quality difference.
 LambdaDB's [managed embedding documentation](https://docs.lambdadb.ai/guides/collections/managed-embeddings)
 lists OpenAI small (default 1536 dimensions), large (3072) and ada-002. Only OpenAI
 is listed as a managed provider. Large permits reduced dimensions up to 3072.
-LambdaDB support does not imply the current srcx CLI accepts a model: its preset
-allowlist currently contains small only. A large comparison should predeclare
+LambdaDB support does not imply the current srcx CLI accepts a model: the large preset is now implemented alongside small. A large comparison should predeclare
 1536 dimensions for a fixed-vector-width comparison, or 3072 for the native
 configuration; these answer different questions.
 

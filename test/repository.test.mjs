@@ -12,6 +12,7 @@ import { hash } from "../dist/common.js";
 import {
   PRESET,
   MANAGED_PRESET,
+  MANAGED_LARGE_PRESET,
   INDEX_CONFIGS,
   indexConfigs,
 } from "../dist/build.js";
@@ -158,6 +159,27 @@ test("managed preset provisions a separate discoverable Collection and rejects e
   assert.notEqual(managed.collection, lexical.collection);
   assert.deepEqual(managed.preset, MANAGED_PRESET);
   assert.equal((await discover(remote)).repositories.length, 2);
+  const large = await register(remote, {
+    path: f.path,
+    preset: MANAGED_LARGE_PRESET,
+  });
+  assert.notEqual(large.collection, managed.collection);
+  assert.notEqual(large.collection, lexical.collection);
+  assert.equal((await discover(remote)).repositories.length, 3);
+  assert.deepEqual(
+    (await selectRepository(remote, large.collection)).preset,
+    MANAGED_LARGE_PRESET,
+  );
+  assert.ok(
+    matchesIndexSchema(
+      indexConfigs(MANAGED_LARGE_PRESET),
+      MANAGED_LARGE_PRESET,
+    ),
+  );
+  assert.equal(
+    matchesIndexSchema(indexConfigs(MANAGED_PRESET), MANAGED_LARGE_PRESET),
+    false,
+  );
   await assert.rejects(
     selectRepository(remote, f.source.key),
     /exact Collection name/,

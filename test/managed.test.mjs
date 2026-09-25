@@ -7,6 +7,9 @@ import { ManagedStore } from "./managed-store.mjs";
 import {
   PRESET,
   MANAGED_PRESET,
+  MANAGED_LARGE_PRESET,
+  presetFor,
+  supportedPreset,
   materialize,
   records,
   recordHash,
@@ -25,6 +28,78 @@ const settings = {
   project: "fixture",
   apiKeyEnv: "unused",
 };
+
+test("large has a distinct pinned identity, preserves chunk inputs and rejects small vectors/baselines", async (t) => {
+  assert.equal(
+    hash(PRESET),
+    "413f291e8667b59463a83567304ab1fab39b69647a0a3fe16e8f7ea1cf876944",
+  );
+  assert.equal(
+    hash(MANAGED_PRESET),
+    "07bc7a32c1d98479dbb92fe4776e18fdca22df61ec2b2aa51a0db1e644f97535",
+  );
+  assert.equal(presetFor("text-embedding-3-large"), MANAGED_LARGE_PRESET);
+  assert.ok(supportedPreset(MANAGED_LARGE_PRESET));
+  assert.equal(
+    supportedPreset({
+      ...MANAGED_LARGE_PRESET,
+      embedding: { ...MANAGED_LARGE_PRESET.embedding, dimensions: 1536 },
+    }),
+    false,
+  );
+  assert.throws(() => presetFor("unknown"));
+  const f = await fixture();
+  t.after(f.cleanup);
+  const build = (preset, name, previous) =>
+    materialize({
+      identity: f.source,
+      ref: f.a,
+      output: join(f.root, name),
+      preset,
+      previous,
+    });
+  const small = await build(MANAGED_PRESET, "small");
+  const large = await build(MANAGED_LARGE_PRESET, "large");
+  const load = async (b) => {
+    const docs = [];
+    for await (const d of records(b.directory)) docs.push(d);
+    return docs;
+  };
+  const a = await load(small),
+    b = await load(large);
+  assert.notEqual(small.configHash, large.configHash);
+  assert.deepEqual(small.counts, large.counts);
+  const inputs = (docs) =>
+    docs
+      .filter((d) => d.embeddingStatus === "managed")
+      .map((d) => ({
+        path: d.path,
+        startByte: d.startByte,
+        endByte: d.endByte,
+        text: d.embeddingText,
+      }));
+  assert.deepEqual(inputs(a), inputs(b));
+  const d = b.find((d) => d.embeddingStatus === "managed");
+  assert.equal(
+    recordHash(
+      { ...d, embedding: Array(3072).fill(0.01) },
+      MANAGED_LARGE_PRESET,
+    ),
+    hash(d),
+  );
+  assert.throws(
+    () =>
+      recordHash(
+        { ...d, embedding: Array(1536).fill(0.01) },
+        MANAGED_LARGE_PRESET,
+      ),
+    /managed embedding/,
+  );
+  await assert.rejects(
+    build(MANAGED_LARGE_PRESET, "cross-model", small),
+    /config mismatch/,
+  );
+});
 
 test("managed artifacts keep code/prose inputs and explicit skips without generating vectors", async (t) => {
   const f = await fixture();

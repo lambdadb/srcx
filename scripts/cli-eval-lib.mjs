@@ -14,8 +14,15 @@ export const PUBLIC_REPOSITORIES = {
 export function validateCliSuite(suite) {
   assert.ok([2, 3].includes(suite.format));
   assert.deepEqual(suite.repositories, PUBLIC_REPOSITORIES);
+  assert.ok(
+    suite.format === 3
+      ? ["managed-openai-small", "managed-openai-large"].includes(
+          suite.settings.preset,
+        )
+      : suite.settings.preset === "cli-default",
+  );
   assert.deepEqual(suite.settings, {
-    preset: suite.format === 3 ? "managed-openai-small" : "cli-default",
+    preset: suite.settings.preset,
     searchLimit: 10,
     readLimit: 5,
     context: 0,

@@ -65,3 +65,16 @@ test("rank and token metrics require a complete alternative and count all search
   });
   assert.equal(indivisible.budgetCoverage[8000], 0);
 });
+
+test("large comparison suites change only the managed preset and retain all labels", async () => {
+  for (const name of ["query-styles-v2", "retrieval-modes-v1"]) {
+    const small = JSON.parse(await readFile(`eval/${name}.json`, "utf8"));
+    const large = JSON.parse(await readFile(`eval/${name}-large.json`, "utf8"));
+    validateCliSuite(large);
+    assert.equal(large.settings.preset, "managed-openai-large");
+    large.settings.preset = "managed-openai-small";
+    assert.deepEqual(large, small);
+    large.settings.preset = "unknown";
+    assert.throws(() => validateCliSuite(large));
+  }
+});
