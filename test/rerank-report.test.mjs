@@ -1,6 +1,22 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
+import {
+  mkdtemp,
+  mkdir,
+  readFile,
+  writeFile,
+  rm,
+  access,
+} from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
+import { hash } from "../dist/common.js";
 import { evaluateSelections } from "../scripts/rerank-report-lib.mjs";
+
+const exec = promisify(execFile);
 
 function fixture() {
   const candidates = Array.from({ length: 6 }, (_, i) => ({
@@ -149,4 +165,84 @@ test("reranking rejects missing, duplicated, changed or non-finite score evidenc
     change(f);
     assert.throws(() => evaluate(f));
   }
+});
+
+test("report CLI selects a reproduction preflight and preserves integrity checks", async (t) => {
+  const cwd = await mkdtemp(join(tmpdir(), "srcx-rerank-report-"));
+  t.after(() => rm(cwd, { recursive: true, force: true }));
+  for (const dir of ["eval", "run", "bundle"]) await mkdir(join(cwd, dir));
+  const save = (path, value) =>
+    writeFile(join(cwd, path), JSON.stringify(value) + "\n");
+  const f = fixture();
+  const config = f.plan.config;
+  config.bundleHashes = {};
+  for (const [name, value] of Object.entries({
+    "inputs.json": f.inputs,
+    "evaluation.json": f.evaluation,
+    "manifest.json": { format: 1 },
+  })) {
+    await save(`bundle/${name}`, value);
+    config.bundleHashes[name] = hash(await readFile(join(cwd, "bundle", name)));
+  }
+  const script = fileURLToPath(
+    new URL("../scripts/rerank-report.mjs", import.meta.url),
+  );
+  f.plan.pipeline = { [script]: hash(await readFile(script)) };
+  // A reproduction has its own machine-specific identity.
+  f.plan.modelPath = "/reproduction-machine/model";
+  await save("eval/rerank-qwen-v1.json", config);
+  await save("run/inputs.json", f.inputs);
+  await save("run/plan.json", f.plan);
+  f.scores.planHash = hash(await readFile(join(cwd, "run/plan.json")));
+  await save("run/scores.json", f.scores);
+  const preflight = { planHash: f.scores.planHash };
+  await save("eval/reproduction-preflight.json", preflight);
+  await save("eval/rerank-qwen-preflight.json", { planHash: "0".repeat(64) });
+  const run = (output, ...args) =>
+    exec(
+      process.execPath,
+      [
+        script,
+        "--root",
+        "run",
+        "--bundle",
+        "bundle",
+        "--output",
+        output,
+        ...args,
+      ],
+      { cwd },
+    );
+  const selected = ["--preflight", "eval/reproduction-preflight.json"];
+
+  await assert.rejects(
+    run("wrong-preflight.json"),
+    /Plan differs from frozen preflight/,
+  );
+  await assert.rejects(access(join(cwd, "wrong-preflight.json")));
+  await run("reproduction-report.json", ...selected);
+  const report = JSON.parse(
+    await readFile(join(cwd, "reproduction-report.json")),
+  );
+  assert.equal(report.status, "complete");
+  assert.deepEqual(report.summary, evaluate(f).summary);
+  assert.equal(report.provenance.planHash, preflight.planHash);
+  assert.equal(
+    report.provenance.preflightHash,
+    hash(await readFile(join(cwd, "eval/reproduction-preflight.json"))),
+  );
+
+  // The original default path remains usable when it matches the run.
+  await save("eval/rerank-qwen-preflight.json", preflight);
+  await run("default-report.json");
+  assert.deepEqual(
+    JSON.parse(await readFile(join(cwd, "default-report.json"))),
+    report,
+  );
+  await assert.rejects(run("reproduction-report.json", ...selected), /EEXIST/);
+
+  f.scores.planHash = "0".repeat(64);
+  await save("run/scores.json", f.scores);
+  await assert.rejects(run("wrong-scores.json", ...selected), /AssertionError/);
+  await assert.rejects(access(join(cwd, "wrong-scores.json")));
 });

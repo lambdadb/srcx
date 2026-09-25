@@ -57,7 +57,8 @@ uv pip sync --python .srcx/rerank-venv/bin/python eval/rerank-requirements.txt
 ```
 
 Before running, freeze the generated plan hash, model file hashes, runtime,
-tokenization totals and limits in `rerank-qwen-preflight.json` and commit that
+tokenization totals and limits in a new record such as
+`eval/rerank-qwen-reproduction-preflight.json` and commit that
 record with the executable. Paths and Python/platform details make plan hashes
 environment-specific; a reproduction requires its own clearly identified
 preflight record. Do not overwrite the retained run's record or root.
@@ -66,8 +67,16 @@ preflight record. Do not overwrite the retained run's record or root.
 .srcx/rerank-venv/bin/python scripts/local-rerank.py run --root .srcx/qwen-run-v1
 node scripts/rerank-report.mjs --root .srcx/qwen-run-v1 \
   --bundle /absolute/path/to/rerank-inputs-v1 \
+  --preflight eval/rerank-qwen-reproduction-preflight.json \
   --output .srcx/qwen-run-v1/report.json
 ```
+
+`--preflight` selects the record frozen before that reproduction's inference.
+If omitted, it defaults to `eval/rerank-qwen-preflight.json`, the original run's
+record. Selecting a different record does not bypass plan, pipeline, bundle or
+score identity checks; the report retains the selected record's hash. To analyze
+the retained original run, use its frozen executable commit `ba9fa0f` and the
+original preflight. Later report changes intentionally fail its pipeline check.
 
 The worker writes a reservation before each forward and retains scores and timing
 after it. A failed or interrupted run is retained and never automatically retried.

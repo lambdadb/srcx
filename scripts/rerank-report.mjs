@@ -11,14 +11,16 @@ const { values } = parseArgs({
     root: { type: "string" },
     bundle: { type: "string" },
     output: { type: "string" },
+    preflight: { type: "string", default: "eval/rerank-qwen-preflight.json" },
   },
 });
 assert.ok(
   values.root && values.bundle && values.output,
-  "Provide --root RUN_ROOT --bundle INPUT_BUNDLE --output NEW_FILE.",
+  "Provide --root RUN_ROOT --bundle INPUT_BUNDLE --output NEW_FILE [--preflight FROZEN_RECORD].",
 );
 const config = JSON.parse(await readFile("eval/rerank-qwen-v1.json"));
-const preflight = JSON.parse(await readFile("eval/rerank-qwen-preflight.json"));
+const preflightBytes = await readFile(values.preflight);
+const preflight = JSON.parse(preflightBytes);
 const planBytes = await readFile(join(values.root, "plan.json"));
 assert.equal(
   hash(planBytes),
@@ -54,6 +56,7 @@ const report = {
     plan,
   ),
   provenance: {
+    preflightHash: hash(preflightBytes),
     planHash: hash(planBytes),
     scoresHash: hash(scoreBytes),
     bundleHashes: config.bundleHashes,
