@@ -52,3 +52,20 @@ uv pip sync --python .srcx/bm25-venv/bin/python eval/bm25-requirements.txt
 
 This command intentionally requires the original retained run and its frozen
 hashes. It does not silently substitute newly downloaded or re-searched data.
+
+## Follow-up audit scope
+
+The primary run exposed duplicate documents and all 74 nDCG improvements involved
+a duplicated gold document. Before extending the conclusion, run one post-hoc
+audit of retained rankings: reorder lexical's exact score ties by the already
+fixed BM25S ID tie-break, and count a hit when returned title/text exactly equals
+the labeled document. Preserve candidate positions and duplicates. Do not edit
+qrels, retune retrieval or replace the official-label primary scores. Tie sorting
+is limited to the original top 100, and cannot recover excluded boundary ties.
+
+```sh
+.srcx/bm25-venv/bin/python scripts/cosqa-bm25-audit.py \
+  --source /absolute/path/to/retained/public-benchmark-v1 \
+  --run .srcx/cosqa-bm25-v1 \
+  --output .srcx/cosqa-bm25-v1/tie-audit.json
+```
