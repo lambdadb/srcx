@@ -405,6 +405,11 @@ async function run() {
         assert.equal(row.query, q.query);
         assert.equal(row.commit, q.commit);
         assert.equal(row.repository, q.repository);
+        assert.equal(
+          row.category,
+          q.category,
+          "Saved row category differs from frozen question.",
+        );
         const r = saved.repositories[q.repository],
           version = r.versions[q.commit],
           data = inputs[q.repository][q.commit];

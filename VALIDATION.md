@@ -76,6 +76,15 @@ CI passed. [Full results](eval/MODEL-COMPARISON-RESULTS.md) record per-query cha
 report hashes, original-label scores, all five roots' reserved usage, and limits;
 [protocol](eval/MODEL-COMPARISON.md) records the predeclared comparison.
 
+Review follow-up: resume and completed replay now reject saved rows whose category
+is missing or differs from the frozen question, even when the stored summary was
+recomputed to match the corruption. The subprocess regression first reproduced
+the acceptance bug, then passed with the guard; valid replay and rejected reports
+both preserve their bytes. Node 24.15.0 passed **73 tests** after this change.
+The four completed model reports have no category mismatches and remain unchanged.
+Their frozen harness remains the revision recorded above; the new harness requires
+fresh run roots rather than rewriting historical runtime fingerprints.
+
 ## Managed OpenAI embedding acceptance
 
 The opt-in managed preset passed a separate synthetic live run at application and

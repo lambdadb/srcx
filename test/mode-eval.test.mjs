@@ -13,6 +13,7 @@ import {
   querySchedule,
   reserveUsage,
   summarizeModes,
+  scoreCliQuery,
 } from "../scripts/cli-eval-lib.mjs";
 const suite = JSON.parse(
   await readFile("eval/retrieval-modes-v1.json", "utf8"),
@@ -249,4 +250,90 @@ test("managed prepare pins source-only artifacts, original labels and budgets; d
   assert.equal(resume.status, 1);
   assert.match(resume.stderr, /Usage ledger mismatch/);
   assert.equal(await readFile(join(output, "report.json"), "utf8"), savedBytes);
+
+  await t.test(
+    "saved categories reject corruption before resume or completed replay",
+    async () => {
+      const replay = () =>
+        spawnSync(
+          process.execPath,
+          ["scripts/cli-eval.mjs", "run", "--root", output, "--resume"],
+          {
+            encoding: "utf8",
+            env: {
+              ...process.env,
+              LAMBDADB_BASE_URL: "http://127.0.0.1:9",
+              LAMBDADB_PROJECT_NAME: "fixture",
+            },
+          },
+        );
+      // Empty search results make a valid, fully offline report. Only category
+      // metadata changes below; source artifacts, metrics and the ledger stay valid.
+      const rows = querySchedule(next).map(({ query: q, mode }) => ({
+        id: q.id,
+        query: q.query,
+        commit: q.commit,
+        repository: q.repository,
+        category: q.category,
+        mode,
+        search: { stdout: "[]", value: [], durationMs: 0 },
+        handles: [],
+        reads: [],
+        spans: [],
+        metrics: scoreCliQuery(q, [], "[]", []),
+        originalMetrics: scoreCliQuery(
+          ref.queries.find((r) => r.id === q.id),
+          [],
+          "[]",
+          [],
+        ),
+      }));
+      const report = {
+        ...saved,
+        status: "complete",
+        usage: {},
+        rows,
+        repositories: Object.fromEntries(
+          Object.keys(next.repositories).map((id) => [
+            id,
+            {
+              repository: { repoKey: next.repositories[id] },
+              versions: Object.fromEntries(
+                next.queries
+                  .filter((q) => q.repository === id)
+                  .map((q) => [q.commit, {}]),
+              ),
+            },
+          ]),
+        ),
+        summary: summarizeModes(rows, next),
+      };
+      const reportFile = join(output, "report.json");
+      const validBytes = JSON.stringify(report);
+      await writeFile(reportFile, validBytes);
+      const valid = replay();
+      assert.equal(valid.status, 0, valid.stderr);
+      assert.equal(JSON.parse(valid.stdout).status, "already-complete");
+      assert.equal(await readFile(reportFile, "utf8"), validBytes);
+      for (const status of ["complete", "incomplete"]) {
+        for (const category of ["documentation", undefined]) {
+          assert.notEqual(category, rows[0].category);
+          const bad = structuredClone(report);
+          bad.status = status;
+          bad.rows[0].category = category;
+          // Even a matching recomputed summary must not authorize changed labels.
+          bad.summary = summarizeModes(bad.rows, next);
+          const bytes = JSON.stringify(bad);
+          await writeFile(reportFile, bytes);
+          const rejected = replay();
+          assert.equal(rejected.status, 1, rejected.stdout);
+          assert.match(
+            rejected.stderr,
+            /Saved row category differs from frozen question/,
+          );
+          assert.equal(await readFile(reportFile, "utf8"), bytes);
+        }
+      }
+    },
+  );
 });
