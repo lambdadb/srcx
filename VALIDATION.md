@@ -51,7 +51,30 @@ ranking, read-selection or product default changed. The original suite/results
 and incomplete run remain intact. A completed rerun preserved report bytes and
 timestamp without service calls. Node 22.14.0 and 24.15.0 passed **69 tests**;
 typecheck, formatting and frozen-harness CI passed. See [results and cases](eval/QUERY-STYLE-RESULTS.md),
-[protocol](eval/QUERY-STYLES.md), and [unmeasured model candidates](eval/EMBEDDING-MODELS.md).
+[protocol](eval/QUERY-STYLES.md), and [embedding model research](eval/EMBEDDING-MODELS.md).
+
+## Managed small versus large comparison
+
+At frozen harness `6fa65b541dc50debdfa4f9a6297301b2cb3c2b53`, small (1536 dimensions)
+and large (3072 dimensions) completed 240 searches over identical pinned source/chunk inputs.
+All **2,304 result handles and 1,184 reads** passed source/version validation.
+Style-suite complete top-five evidence was semantic **17/24 → 16/24** and hybrid
+**14/24 → 16/24**; natural semantic improved **3/8 → 4/8**. The separate regression
+set scored semantic **8/16 → 8/16** and hybrid **13/16 → 12/16**. All 40 lexical
+candidate lists matched across models. Small coverage repeated the earlier runs.
+
+An initial large attempt stopped twice with an unknown CLI search error; its
+19 partial rows and two successful diagnostic queries remain excluded. A fresh
+isolated run reused the same publications and completed without changing the
+frozen protocol. All four completed reports revalidated without service calls
+and retained their bytes/timestamps. Keep small as the initial managed choice
+and large opt-in; these familiar diagnostic tasks do not establish a model winner.
+
+Node 22.14.0 and 24.15.0 passed **72 tests**, typecheck and installed-package CLI
+checks covering lexical/small/large. Formatting/version checks and frozen-code
+CI passed. [Full results](eval/MODEL-COMPARISON-RESULTS.md) record per-query changes,
+report hashes, original-label scores, all five roots' reserved usage, and limits;
+[protocol](eval/MODEL-COMPARISON.md) records the predeclared comparison.
 
 ## Managed OpenAI embedding acceptance
 

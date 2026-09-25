@@ -84,9 +84,8 @@ Supported models are `text-embedding-3-small` (1536 dimensions) and
 `--embedding`; each has a separate pinned preset and Collection. Existing small
 Collections keep their identity. Changing models requires a separate import.
 
-LambdaDB can generate OpenAI `text-embedding-3-small` vectors (1536 dimensions,
-cosine) for meaningful code, tests and prose. Imports-only and structural chunks
-remain lexical. The CLI uses LambdaDB credentials; it does not need an OpenAI key.
+LambdaDB generates vectors for meaningful code, tests and prose. Imports-only
+and structural chunks remain lexical. The CLI uses LambdaDB credentials; it does not need an OpenAI key.
 Source text sent for embedding and semantic/hybrid queries pass through LambdaDB
 to OpenAI and incur usage charges. See [LambdaDB managed embeddings](https://docs.lambdadb.ai/guides/collections/managed-embeddings).
 
@@ -97,7 +96,7 @@ srcx import --path /path/to/repo --ref main --dry-run \
 
 # Creates a separate Collection; existing lexical Collections stay usable.
 srcx repo add --path /path/to/repo --embedding text-embedding-3-small
-# Use the exact collection value returned above, especially with two presets.
+# Use the exact collection value returned above, especially with multiple presets.
 srcx import --repo <collection> --ref main
 srcx search --repo <collection> --version main --query "retry failed writes" --mode hybrid
 srcx search --repo <collection> --version main --query "retry failed writes" --mode semantic
@@ -154,6 +153,10 @@ pairs identifiers, natural-language descriptions and mixed questions on eight ne
 tasks. It adds rank-prefix and stdout-budget measurements without changing the
 model or ranking. [Embedding model candidates](https://github.com/lambdadb/srcx/blob/develop/eval/EMBEDDING-MODELS.md)
 separately describe possible follow-up comparisons and integration requirements.
+The [managed model comparison](https://github.com/lambdadb/srcx/blob/develop/eval/MODEL-COMPARISON.md)
+compares small and large on both frozen suites, including lexical controls.
+[Results](https://github.com/lambdadb/srcx/blob/develop/eval/MODEL-COMPARISON-RESULTS.md)
+show mixed gains and regressions; small remains the initial managed choice.
 
 ## Explicit live acceptance run
 

@@ -1,13 +1,14 @@
 # Embedding candidates for code retrieval
 
-Research checked September 25, 2026. These are candidates, not measured srcx wins.
-The query-style diagnostic used `text-embedding-3-small`; the separate
-[managed model comparison](MODEL-COMPARISON.md) compares small and large. Do not change the
-model and question distribution together when attributing a quality difference.
+Research checked September 25, 2026. Managed small and large have now been
+[compared on the same frozen tasks](MODEL-COMPARISON-RESULTS.md): large showed
+mixed gains and regressions, so small remains the initial managed choice. External
+models below remain unmeasured srcx candidates. Do not change the model and
+question distribution together when attributing a quality difference.
 
 | Candidate                        | Why test it                                                                                                   | Integration in srcx                                                                                                                                           |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| OpenAI `text-embedding-3-large`  | Closest controlled comparison with the existing managed small model; not a code-specialized quality guarantee | LambdaDB managed support exists; srcx supports a distinct large preset and Collection; compare under the frozen protocol                                      |
+| OpenAI `text-embedding-3-large`  | Closest controlled comparison with the existing managed small model; not a code-specialized quality guarantee | LambdaDB managed support exists; srcx supports a distinct large preset and Collection; native-dimension comparison completed with mixed results               |
 | Voyage `voyage-code-4`           | First external candidate: designed for code and coding-agent retrieval, including issue-like descriptions     | Generate document/query vectors via a separate API, store in a non-managed vector field and query with `queryVector`; provider integration is not implemented |
 | Qwen3-Embedding-4B               | Open-weight option for a self-hosted comparison, with multilingual/code retrieval focus                       | Separate inference service and query instruction handling required                                                                                            |
 | Jina `jina-code-embeddings-1.5b` | Specialized natural-language-to-code and code-to-code tasks                                                   | Separate inference and task prefixes; published weights use CC-BY-NC-4.0, so do not assume unrestricted commercial self-hosting                               |
@@ -17,9 +18,9 @@ model and question distribution together when attributing a quality difference.
 LambdaDB's [managed embedding documentation](https://docs.lambdadb.ai/guides/collections/managed-embeddings)
 lists OpenAI small (default 1536 dimensions), large (3072) and ada-002. Only OpenAI
 is listed as a managed provider. Large permits reduced dimensions up to 3072.
-LambdaDB support does not imply the current srcx CLI accepts a model: the large preset is now implemented alongside small. A large comparison should predeclare
-1536 dimensions for a fixed-vector-width comparison, or 3072 for the native
-configuration; these answer different questions.
+The srcx large preset is now implemented alongside small. The completed
+comparison used 3072 for the native large configuration. A future 1536-dimension comparison would answer the separate
+fixed-vector-width question.
 
 Voyage's [current model list](https://docs.voyageai.com/docs/embeddings) lists
 `voyage-code-4` for code and coding-agent retrieval: 32K context and 256, 512, 1024
@@ -43,10 +44,11 @@ commercial deployment suggestion.
 
 ## Controlled next comparisons
 
-First evaluate the frozen query-style supplement with small. Then compare small
-with managed large using the same source, labels, chunk text, eligibility and
-retrieval protocol. Add Voyage code-4 when its connection and provider integration
-are available. A model change requires re-embedding both documents and queries;
+The frozen small/large comparison is complete; retain it as a development
+diagnostic. Add independently reviewed tasks from unfamiliar repositories before
+changing defaults. Compare Voyage code-4 when its connection and provider
+integration are available, keeping source, labels, chunk text, eligibility and
+retrieval protocol fixed. A model change requires re-embedding both documents and queries;
 never mix small, large or Voyage vectors in one field/version.
 
 Use separate Collection/config identities and record model, dimensions, input

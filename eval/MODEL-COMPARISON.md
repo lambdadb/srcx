@@ -7,6 +7,10 @@ embeddings. These are their native default dimensions, as documented by
 [LambdaDB](https://docs.lambdadb.ai/guides/collections/managed-embeddings).
 It measures the two native configurations, not model quality at equal vector size.
 
+[Completed results](MODEL-COMPARISON-RESULTS.md) include per-query changes and the
+separately retained incomplete attempt. The limits below describe the original
+four-run plan; actual reservations and recovery are recorded in the results.
+
 ## Frozen protocol
 
 Run both models freshly at the same harness commit and Node version. Reuse existing
