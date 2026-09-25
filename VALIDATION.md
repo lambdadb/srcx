@@ -1,6 +1,14 @@
 # Validation record
 
-Date: 2026-09-25 (Asia/Seoul).
+Date: 2026-09-26 (Asia/Seoul).
+
+## Fixed-candidate CosQA reranking
+
+The [completed Qwen comparison](eval/COSQA-RERANK-RESULTS.md), run on September 26
+(Asia/Seoul), improved exact-content hit@10 from 57.4% to 64.8% with roughly one
+second of local model computation per query. All 500 original candidate pools
+and duplicate-ID ordering were preserved. The report separates official-ID
+metrics, content-equivalence diagnostics, regressions and local latency.
 
 ## Independent CosQA BM25 cross-check
 

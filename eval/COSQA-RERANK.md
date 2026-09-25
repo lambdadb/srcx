@@ -1,5 +1,7 @@
 # Fixed-candidate CosQA Qwen reranking
 
+[Completed results, latency and regressions](COSQA-RERANK-RESULTS.md).
+
 ## Decision and frozen treatment
 
 Measure whether one existing local Qwen reranker adds useful ranking quality
