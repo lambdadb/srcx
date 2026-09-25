@@ -12,6 +12,27 @@ concurrency, or retrieval-quality benchmark. npm publication evidence is recorde
 separately below. The persistent Git branch changes have a separate synthetic
 live run recorded next; the earlier live runs do not validate this new path.
 
+## Evaluation diagnostics and transfer draft
+
+Evaluation subprocess failures now append safe command diagnostics with process
+or JSON-decode stage, exit/signal metadata and allowlisted stderr. Fixture checks
+cover no automatic retry, preservation across multiple failures, secret/source
+omission, private file permissions, malformed output, output overflow and log-write
+failure. This cannot recover stderr from old live failures. Node 24.15.0 passed
+**75 tests**, typecheck, formatting and version checks for this follow-up.
+The read-side regression invokes the actual `readHandle` for seven failure paths
+and verifies both safe-message retention and omission of contaminated stderr.
+
+A separate offline preparation imported pinned Click 8.1.8 and Cobra v1.9.1 Git
+sources into local managed-small build artifacts, without service calls or
+embedding generation. All 16 draft questions' byte hashes, source line ranges and
+inclusion were verified. The 207 files contain 544 eligible chunks with 388,771
+estimated embedding input tokens. Python/Go use the current text fallback; no new
+parser or search behavior was added. These labels are assistant-authored and not
+independently reviewed. See [draft protocol and reproduction](eval/TRANSFER-EVAL.md)
+and [diagnostic retention rules](eval/COMMAND-DIAGNOSTICS.md). No retrieval quality,
+provider cost or live operational reliability is measured by this preparation.
+
 ## Retrieval mode comparison
 
 At application/harness commit `de5a23bbc2f0712d134066354b4313420d21fccd`, the

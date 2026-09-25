@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Retain allowlisted CLI evaluation failure diagnostics without raw output or credentials.
+- Prepare an offline, unreviewed Click/Cobra question set with pinned source evidence.
 - Default CLI search/read evaluation across two pinned public repositories, with
   alternative answer sets, exact source verification, and complete stdout accounting.
 - Internal reproducible lexical chunking evaluation with pinned source labels,
