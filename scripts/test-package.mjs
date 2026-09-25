@@ -30,6 +30,13 @@ try {
   assert.equal(inventory.name, pkg.name);
   assert.equal(inventory.version, pkg.version);
   assert.ok(inventory.files.some((file) => file.path === "dist/cli.js"));
+  assert.deepEqual(
+    inventory.files
+      .filter((file) => file.path.startsWith("runtime/"))
+      .map((file) => file.path)
+      .sort(),
+    ["runtime/qwen.py", "runtime/requirements.txt"],
+  );
   for (const file of inventory.files) {
     assert.ok(
       !/(^|\/)(\.env(?:\..*)?|\.github|test|node_modules|scripts|\.srcx)(\/|$)/.test(

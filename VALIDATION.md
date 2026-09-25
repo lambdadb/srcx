@@ -2,6 +2,53 @@
 
 Date: 2026-09-26 (Asia/Seoul).
 
+## Local reranker integration
+
+The opt-in `search --rerank qwen` path was exercised with the cached
+Qwen3-Reranker-0.6B revision `e61197ed45024b0ed8a2d74b80b4d909f1255473`,
+Python 3.12, float32/MPS on the same Apple M5 Pro / 64 GB machine. A local model
+check ranked a sorting function above an unrelated reader and assigned identical
+scores to exact duplicate source. Offline snapshot loading initially rejected the
+selectively downloaded cache; matching the download allowlist fixed this before
+any live search. No model download was required.
+
+Three existing repository questions were selected before running, with a fixed
+20-candidate pool and a first-five result/read limit. The six CLI searches used
+existing immutable Tags for srcx `8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1`
+and lambdadb-cli `513af6e4d262edd380013c86d51a20aad16274d7`. Baselines retrieved
+20 results so candidate membership could be checked. All 28 selected-result
+reads matched committed Git source, and every reranked result retained its
+baseline candidate, retrieval score and Snapshot identity.
+
+| Question / mode                            | Candidates | Baseline CLI | Qwen CLI | Qwen worker | First-five complete evidence, before → after |
+| ------------------------------------------ | ---------: | -----------: | -------: | ----------: | -------------------------------------------- |
+| `srcx-alias-name` / lexical                |          4 |       2.04 s |   4.44 s |      2.46 s | yes → yes                                    |
+| `srcx-read-integrity` / semantic           |         20 |       6.73 s |   9.75 s |      5.35 s | no → no                                      |
+| `lambdadb-cli-command-deadline` / semantic |         20 |       3.86 s |   8.58 s |      4.89 s | yes → yes                                    |
+
+CLI timings are external process wall times, excluding subsequent `read` checks;
+worker timings include Python startup, fresh model loading and inference.
+Network/cache/order effects are uncontrolled and these are single measurements,
+not latency percentiles or proof of interactive suitability. The baseline prints
+up to 20 hits while the reranked command prints up to five; both verify the same
+candidate pool. Existing assistant-authored evidence labels were reused, with
+no tuning or new independent relevance judgments. This is an integration smoke
+check, not another ranking benchmark. It supports keeping reranking optional;
+no defaults changed and Jev evaluation remains deferred.
+
+There were six searches (four managed query embeddings), no new Collections,
+document writes, document embeddings, retries or failed live commands. The
+retained local report is `.srcx/reranker-smoke/live/report.json` in the integration
+worktree (SHA-256 `0b1a406153a751def4106ce4e6dbeca4fd9f2439e02cefd04e5be111a4679568`).
+Raw command outputs, the bounded runner and isolated result handles are retained
+alongside it; credentials were not recorded.
+
+Local validation passed 95 Node tests, 13 Python checks, typecheck, formatting,
+version consistency and three installed-package CLI checks. Installed-package
+checks include the bundled worker path and opt-in search/read protocol with a
+synthetic worker; real model inference and LambdaDB searches were local checks,
+not CI inference. See [setup and behavior](README.md#optional-local-qwen-reranker).
+
 ## Fixed-candidate CosQA reranking
 
 The [completed Qwen comparison](eval/COSQA-RERANK-RESULTS.md), run on September 26

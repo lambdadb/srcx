@@ -40,6 +40,7 @@ jobs:
           npm run typecheck
           npm test
           python3 -m unittest discover -s test -p local_rerank_test.py
+          python3 -m unittest discover -s test -p qwen_worker_test.py
           npm run test:package
       - name: Check public benchmark export and official scorer
         if: matrix.node == 22
