@@ -6,6 +6,13 @@ import { stateRoot, type Settings } from "./settings.js";
 import type { Repository } from "./repository.js";
 import type { Published } from "./publish.js";
 import { PRESET, recordHash, type InventoryItem } from "./build.js";
+import {
+  candidateLimit,
+  qwenScores,
+  QWEN_MODEL,
+  QWEN_REVISION,
+  type RerankOptions,
+} from "./rerank.js";
 export type Handle = {
   id: string;
   endpoint: string;
@@ -120,22 +127,27 @@ export async function search(
   size = 10,
   filters: { path?: string; language?: string } = {},
   mode: SearchMode = "lexical",
+  options: RerankOptions = {},
 ): Promise<unknown[]> {
-  invariant(
-    Number.isInteger(size) && size > 0 && size <= 100,
-    "Limit must be an integer from 1 to 100.",
-  );
+  const started = performance.now();
+  const count = candidateLimit(size, options);
   invariant(
     mode === "lexical" || r.preset?.embedding?.managed,
     "Semantic/hybrid search requires a managed embedding Collection; register with --embedding text-embedding-3-small or text-embedding-3-large.",
   );
-  const request = retrievalQuery(query, size, filters, mode);
+  const request = retrievalQuery(query, count, filters, mode);
   const entries = await inventoryAt(store, r, v);
   const files = new Map(
     entries.filter((e) => e.status === "included").map((e) => [e.fileId, e]),
   );
-  const result = [];
-  for (const hit of await store.query(v.tagName, request, size)) {
+  const candidates = [];
+  const hits = await store.query(v.tagName, request, count);
+  invariant(
+    hits.length <= count &&
+      new Set(hits.map((h) => h.doc.id)).size === hits.length,
+    "Invalid search candidate count or duplicate IDs.",
+  );
+  for (const hit of hits) {
     const d = hit.doc,
       e = files.get(d.fileId as string);
     invariant(
@@ -162,23 +174,73 @@ export async function search(
       endLine: Number(d.endLine),
     };
     // Check the exact source/ranges before persisting an evidence handle.
-    const evidence = await readHandle(store, s, handle);
-    await atomic(join(stateRoot(), "results", id + ".json"), handle);
-    result.push({
-      resultId: id,
-      repository: r.repoKey,
-      commitOid: v.commitOid,
-      version: v.tagName,
-      snapshotId: v.snapshotId,
-      path: d.path,
-      startLine: d.startLine,
-      endLine: d.endLine,
-      symbol: d.symbol,
-      score: hit.score,
-      excerpt: evidence.sourceText.slice(0, 600),
-      citation: evidence.citation,
+    const evidence = await readHandle(store, s, handle, {
+      exactChunk: !!options.rerank,
+    });
+    candidates.push({
+      handle,
+      text: evidence.sourceText,
+      result: {
+        resultId: id,
+        repository: r.repoKey,
+        commitOid: v.commitOid,
+        version: v.tagName,
+        snapshotId: v.snapshotId,
+        path: d.path,
+        startLine: d.startLine,
+        endLine: d.endLine,
+        symbol: d.symbol,
+        score: hit.score,
+        excerpt: evidence.sourceText.slice(0, 600),
+        citation: evidence.citation,
+      },
     });
   }
+  const retrievalMs = performance.now() - started;
+  let rerankMs = 0;
+  let ranked = candidates.map((candidate, index) => ({
+    ...candidate,
+    index,
+    rerankScore: 0,
+  }));
+  if (options.rerank && candidates.length) {
+    const response = await qwenScores(
+      query,
+      candidates.map((c) => ({ id: c.handle.chunkId!, text: c.text })),
+    );
+    rerankMs = response.elapsedMs;
+    ranked = ranked
+      .map((c, index) => ({ ...c, rerankScore: response.scores[index]! }))
+      .sort((a, b) => b.rerankScore - a.rerankScore || a.index - b.index);
+  }
+  if (options.rerank)
+    invariant(
+      (await store.tags()).find((t) => t.name === v.tagName)?.snapshotId ===
+        v.snapshotId,
+      "Pinned Tag was deleted or recreated during reranking.",
+    );
+  const result = [];
+  for (const c of ranked.slice(0, size)) {
+    await atomic(join(stateRoot(), "results", c.handle.id + ".json"), c.handle);
+    result.push({
+      ...c.result,
+      ...(options.rerank
+        ? {
+            rerankScore: c.rerankScore,
+            retrievalRank: c.index + 1,
+            reranker: { model: QWEN_MODEL, revision: QWEN_REVISION },
+          }
+        : {}),
+    });
+  }
+  if (options.rerank)
+    options.onTiming?.({
+      candidates: candidates.length,
+      returned: result.length,
+      retrievalMs,
+      rerankMs,
+      searchMs: performance.now() - started,
+    });
   return result;
 }
 export async function loadHandle(id: string): Promise<Handle> {
@@ -220,6 +282,7 @@ export async function readHandle(
     context?: number;
     fullFile?: boolean;
     lines?: [number, number];
+    exactChunk?: boolean;
   } = {},
 ) {
   invariant(
@@ -247,6 +310,7 @@ export async function readHandle(
     raw.length === 0
       ? 0
       : lineAt(raw, raw.length - (raw.at(-1) === 10 ? 1 : 0));
+  let chunkSource: string | undefined;
   if (h.chunkId) {
     const d = await one(store, tag(v.tagName), h.chunkId);
     invariant(
@@ -268,6 +332,7 @@ export async function readHandle(
         lineAt(raw, z - 1) === h.endLine,
       "Invalid source range.",
     );
+    chunkSource = raw.subarray(a, z).toString("utf8");
   }
   const context = options.context ?? 0;
   invariant(
@@ -293,9 +358,19 @@ export async function readHandle(
     end = Math.min(total, end + context);
   }
   const lines = file.sourceText.match(/[^\n]*\n|[^\n]+$/g) ?? [];
-  const sourceText = options.fullFile
-    ? file.sourceText
-    : lines.slice(start - 1, end).join("");
+  invariant(
+    !options.exactChunk ||
+      (chunkSource !== undefined &&
+        !options.fullFile &&
+        !options.lines &&
+        !options.context),
+    "Exact chunk reads require a chunk handle without range overrides.",
+  );
+  const sourceText = options.exactChunk
+    ? chunkSource!
+    : options.fullFile
+      ? file.sourceText
+      : lines.slice(start - 1, end).join("");
   return {
     repository: h.repository.repoKey,
     commitOid: v.commitOid,

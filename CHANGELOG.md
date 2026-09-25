@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add opt-in local Qwen search reranking with bounded candidate pools, pinned
+  source evidence, separate scores and per-command timing.
+
 - Evaluate fixed-candidate CosQA semantic reranking with local Qwen, shared
   duplicate scores, stable ties and separate official-ID/content metrics.
 

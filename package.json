@@ -9,6 +9,8 @@
   },
   "files": [
     "dist",
+    "runtime/qwen.py",
+    "runtime/requirements.txt",
     "README.md",
     "DESIGN.md",
     "VALIDATION.md",

@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 import { join, resolve } from "node:path";
 import { rm, readFile } from "node:fs/promises";
 import { fixture, git } from "./fixture.mjs";
+import { fakeQwen } from "./rerank-fixture.mjs";
 import { MemoryStore } from "./memory-store.mjs";
 import { ManagedStore } from "./managed-store.mjs";
 import { publish, published, gitBranchName } from "../dist/publish.js";
@@ -161,7 +162,10 @@ async function cliContract(t, preset) {
       } else if (path.endsWith("/query")) {
         assert.equal(body.includeVectors, true);
         if (body.query.rrf) {
-          assert.equal(body.query.rrf[1].knn.queryText, "newword");
+          assert.ok(
+            ["newword", "return"].includes(body.query.rrf[1].knn.queryText),
+          );
+          assert.equal(body.query.rrf[1].knn.k, body.size);
           assert.equal(body.query.rrf[1].knn.queryVector, undefined);
         }
         const hits = await store.query(body.ref.name, body.query, body.size);
@@ -277,6 +281,38 @@ async function cliContract(t, preset) {
     "code.ts",
   ]);
   assert.ok(hits.length > 0);
+  assert.ok(hits.every((h) => !("rerankScore" in h)));
+  const reranked = await promisify(execFile)(
+    process.execPath,
+    [
+      cliPath,
+      "search",
+      "--repo",
+      "review",
+      "--version",
+      f.b,
+      "--query",
+      "return",
+      "--mode",
+      managed ? "hybrid" : "lexical",
+      "--rerank",
+      "qwen",
+      "--candidates",
+      "10",
+      "--limit",
+      "1",
+    ],
+    { env: { ...options.env, SRCX_RERANK_PYTHON: await fakeQwen(f.root) } },
+  );
+  const rerankedHits = JSON.parse(reranked.stdout);
+  assert.equal(rerankedHits.length, 1);
+  assert.ok(rerankedHits[0].retrievalRank > 1);
+  const timing = JSON.parse(reranked.stderr);
+  assert.equal(timing.event, "rerank-timing");
+  assert.ok(timing.commandMs >= timing.searchMs);
+  const evidence = await runCli(["read", "--result", rerankedHits[0].resultId]);
+  assert.equal(evidence.commitOid, f.b);
+
   assert.ok(hits.every((h) => h.commitOid === f.b));
   const oldSource = await runCli([
     "read",

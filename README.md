@@ -130,6 +130,59 @@ Completed reruns preserve the original report and make no service calls; changed
 runtime inputs require a fresh directory. Failed runs retain journals and reject
 automatic replay. These are correctness checks, not retrieval-quality measurements.
 
+## Optional local Qwen reranker
+
+`search --rerank qwen` reranks candidates from any retrieval mode with
+[Qwen3-Reranker-0.6B](https://huggingface.co/Qwen/Qwen3-Reranker-0.6B/blob/e61197ed45024b0ed8a2d74b80b4d909f1255473/README.md).
+It is off by default. Prepare Python 3.12+ and the model separately; npm does not
+install Python dependencies or download model weights. From a checkout:
+
+```sh
+python3.12 -m venv .srcx/qwen-venv
+.srcx/qwen-venv/bin/pip install -r runtime/requirements.txt
+.srcx/qwen-venv/bin/hf download Qwen/Qwen3-Reranker-0.6B \
+  --revision e61197ed45024b0ed8a2d74b80b4d909f1255473 \
+  config.json generation_config.json model.safetensors tokenizer.json tokenizer_config.json vocab.json merges.txt
+export SRCX_RERANK_PYTHON="$PWD/.srcx/qwen-venv/bin/python"
+
+srcx search --repo <collection> --version <commit> \
+  --query "retry failed writes" --mode semantic \
+  --rerank qwen --candidates 50 --limit 10
+```
+
+For a global npm installation, the requirements file is at
+`$(npm root -g)/@functional-systems/srcx/runtime/requirements.txt`; place the venv
+in a persistent directory of your choice and use its absolute Python path.
+`HF_HUB_CACHE` can select an existing Hugging Face cache for both download and
+search. The worker loads only the pinned revision from that cache, offline.
+`SRCX_RERANK_DEVICE` accepts `auto` (default: CUDA, then MPS, then CPU), `cuda`,
+`mps`, or `cpu`. The current worker uses float32, SDPA and batch size one.
+
+`--candidates` defaults to `max(50, limit)` and must be between `--limit` and 100.
+It requires `--rerank qwen`. Both hybrid retrieval legs use this candidate limit;
+path/language filters and the immutable version apply before reranking. The
+worker receives the query and complete, verified source bytes of each chunk,
+without a path prefix or evaluator labels. Identical source text shares a score
+within the query; every candidate remains present and ties retain retrieval order.
+It uses the code-search instruction from the CoSQA evaluation and ranks by the
+raw yes-minus-no logit margin, not a calibrated relevance probability.
+
+JSON stdout remains an array of results. `score` retains the retrieval score;
+`rerankScore`, `retrievalRank` (one-based), and `reranker` identify the new order.
+Only the returned results receive persisted evidence handles. Reranked excerpts
+use the exact chunk bytes; normal reads still expand to complete source lines.
+A JSON timing record on stderr reports verified retrieval, worker, search, and
+command-handler times. Worker time includes Python startup, model loading and
+inference. External process timing additionally includes Node startup and output.
+
+Each CLI invocation loads a fresh model; this is an opt-in local integration,
+not a warm inference service. The worker has a 120-second timeout, a 4 MiB input
+cap and an 8,192-token limit per query/chunk pair. Missing setup, oversized input,
+invalid scores and inference failures fail the command without silent truncation
+or fallback. Empty candidate pools skip model execution. Existing search defaults
+and managed embedding usage rules remain unchanged; wider pools increase source
+verification work. See the [integration validation](VALIDATION.md#local-reranker-integration).
+
 ## Evaluate retrieval quality
 
 The internal [lexical chunking pilot](https://github.com/lambdadb/srcx/blob/develop/eval/README.md) compares syntax-aware and

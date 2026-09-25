@@ -33,6 +33,7 @@ import {
 } from "./publish.js";
 import { resolveVersion, syncTags } from "./releases.js";
 import { directHandle, loadHandle, readHandle, search } from "./search.js";
+import { candidateLimit } from "./rerank.js";
 const cli = new Command()
   .name("srcx")
   .description("Version-aware code search on LambdaDB")
@@ -335,9 +336,22 @@ cli
       .choices(["lexical", "semantic", "hybrid"])
       .default("lexical"),
   )
+  .addOption(
+    new Option(
+      "--rerank <model>",
+      "Opt-in local reranker (requires separate Python/model setup)",
+    ).choices(["qwen"]),
+  )
+  .option(
+    "--candidates <count>",
+    "Rerank pool size (default: max(50, limit); max: 100)",
+    integer,
+  )
   .option("--path <path>", "Exact path filter")
   .option("--language <name>")
   .action(async (o) => {
+    const started = performance.now();
+    candidateLimit(o.limit, o);
     const { remote, settings } = await connected();
     const r = await selectRepository(remote, o.repo),
       store = remote.store(r.collection),
@@ -355,6 +369,18 @@ cli
           language: o.language,
         },
         o.mode,
+        {
+          rerank: o.rerank,
+          candidates: o.candidates,
+          onTiming: (timing) =>
+            process.stderr.write(
+              JSON.stringify({
+                event: "rerank-timing",
+                ...timing,
+                commandMs: performance.now() - started,
+              }) + "\n",
+            ),
+        },
       ),
     );
   });
