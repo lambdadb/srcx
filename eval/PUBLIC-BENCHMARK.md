@@ -1,5 +1,8 @@
 # Public code retrieval baseline
 
+[Completed baseline results](PUBLIC-BENCHMARK-RESULTS.md) report all three tasks,
+unsupported queries, usage and retained evidence hashes.
+
 This replaces further tuning on the 16 observed Click/Cobra questions with an
 external, fixed-label baseline. It evaluates the srcx retrieval queries on
 official code snippets, not Git import, file chunking, CLI evidence reads or
@@ -44,8 +47,9 @@ text, equally for lexical and embedding input. Do not re-chunk, trim, enrich wit
 paths, remove comments, add query text or drop distractors. Benchmark IDs remain
 the evaluation identity; their hashes are only used for LambdaDB document IDs.
 CosQA's train/valid documents remain in the search corpus. Only queries with
-official test qrels are scored. The public test labels are not independent
-human review, and prior model exposure to public data is unknown.
+official test qrels are scored. These are existing external benchmark labels,
+not newly commissioned srcx judgments; prior model exposure to the public data
+is unknown.
 
 Score with `pytrec-eval-terrier==0.5.10`: **nDCG@10**, Recall@10/100 and MRR
 truncated at the 100 returned candidates. Preserve the system's returned order,
