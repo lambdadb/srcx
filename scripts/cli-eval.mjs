@@ -106,7 +106,7 @@ function presetForSuite(suite) {
 }
 function compareReference(suite, reference) {
   validateCliSuite(reference);
-  assert.equal(reference.format, 2);
+  assert.ok([2, 3].includes(reference.format));
   const questions = (s) =>
     s.queries.map(({ id, repository, commit, category, query }) => ({
       id,
@@ -118,7 +118,7 @@ function compareReference(suite, reference) {
   assert.deepEqual(
     questions(suite),
     questions(reference),
-    "Comparison must keep the original questions and pinned sources.",
+    "Comparison must keep reference questions and pinned sources.",
   );
 }
 async function prepare() {
@@ -260,9 +260,9 @@ function modeMarkdown(report, plan) {
     "",
     `Harness commit: \`${plan.harnessCommit}\`; suite SHA-256: \`${plan.suiteHash}\`; runtime fingerprint: \`${hash(plan.runtime)}\`.`,
     "",
-    "Same managed Collection and immutable commit Tag per repository; actual CLI search (10) then top five reads, no extra context. Output tokens count all stdout. Rotating mode order; one observation per query/mode, no latency significance claim. Revised diagnostic labels and original labels are both reported; no independent human or held-out benchmark.",
+    "Same managed Collection and immutable commit Tag per repository; actual CLI search (10) then top five reads, no extra context. Output tokens count all stdout. Rotating mode order; one observation per query/mode, no latency significance claim. Diagnostic labels and reference labels are both reported; the reference may be the same frozen suite. No independent human or held-out benchmark.",
     "",
-    "| Mode | Complete evidence | Original labels | Mean coverage | Mean stdout tokens | Median search ms | Median search + read command ms |",
+    "| Mode | Complete evidence | Reference labels | Mean coverage | Mean stdout tokens | Median search ms | Median search + read command ms |",
     "| --- | --- | --- | --- | --- | --- | --- |",
   ];
   for (const [mode, s] of Object.entries(report.summary.modes))

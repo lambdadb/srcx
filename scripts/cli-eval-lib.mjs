@@ -69,6 +69,30 @@ export function validateCliSuite(suite) {
     assert.ok(
       suite.queries.filter((q) => q.repository === repository).length >= 8,
     );
+  if (suite.queries.some((q) => q.queryStyle !== undefined)) {
+    const groups = new Map();
+    for (const q of suite.queries) {
+      assert.ok(["identifier", "natural", "mixed"].includes(q.queryStyle));
+      assert.match(q.taskId, /^[a-z0-9-]+$/);
+      const group = groups.get(q.taskId) ?? [];
+      group.push(q);
+      groups.set(q.taskId, group);
+    }
+    for (const group of groups.values()) {
+      assert.equal(group.length, 3);
+      assert.deepEqual(
+        new Set(group.map((q) => q.queryStyle)),
+        new Set(["identifier", "natural", "mixed"]),
+      );
+      for (const q of group)
+        for (const key of ["repository", "commit", "evidenceSets"])
+          assert.deepEqual(
+            q[key],
+            group[0][key],
+            "Query styles must share a task and labels.",
+          );
+    }
+  }
 }
 export function verifyCliEvidence(query, files) {
   for (const evidence of query.evidenceSets) {
