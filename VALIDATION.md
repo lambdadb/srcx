@@ -2,6 +2,20 @@
 
 Date: 2026-09-25 (Asia/Seoul).
 
+## Public code retrieval baseline
+
+At frozen executable `03ac468`, the pinned CoIR CosQA and MTEB CodeSearchNet
+Python/Go baseline validated all 22,604 documents and managed vectors in immutable
+Tags and collected 7,473 successful searches. Nine Python inputs exceeded the
+existing query limit; all 27 mode/query outcomes remained zero-scored in the
+2,500-query denominator for each mode. There were no API failures or retries.
+
+Semantic nDCG@10 exceeded lexical and the current RRF hybrid on all three tasks.
+This is an external-task retrieval baseline, not a full CoIR average, Git/CLI
+integration validation or an agent coding-success benchmark. Product defaults
+are unchanged. See [full metrics, usage and limitations](eval/PUBLIC-BENCHMARK-RESULTS.md)
+and the [fixed protocol](eval/PUBLIC-BENCHMARK.md).
+
 ## Evidence boundary
 
 The initial implementation passed local fixtures/fault injection/SDK transport checks,

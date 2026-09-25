@@ -1,0 +1,187 @@
+{
+  "planHash": "bf4703486b6752899b8126c501f569aa80c6b212a90a78632217bafe2fbed9ed",
+  "format": 1,
+  "suite": {
+    "format": 1,
+    "name": "code-retrieval-v1",
+    "scope": "CoIR CosQA and MTEB CodeSearchNet Python/Go; not a full CoIR score",
+    "reference": {
+      "repository": "embeddings-benchmark/mteb",
+      "commit": "28aea4854684b7e848881dc9ef3fe5847c1a1673",
+      "tasks": [
+        "mteb/tasks/retrieval/code/cos_qa_retrieval.py",
+        "mteb/tasks/retrieval/code/code_search_net_retrieval.py"
+      ]
+    },
+    "split": "test",
+    "tasks": [
+      {
+        "id": "cosqa",
+        "dataset": "CoIR-Retrieval/cosqa",
+        "revision": "bc5efb7e9d437246ce393ed19d772e08e4a79535",
+        "files": {
+          "corpus": {
+            "path": "corpus/corpus-00000-of-00001.parquet",
+            "sha256": "ae1ad54bfe4fdb73f203b9b85b400be8dbc5d84db2ca1bfa8fd9866f8d13980b",
+            "rows": 20604
+          },
+          "queries": {
+            "path": "queries/queries-00000-of-00001.parquet",
+            "sha256": "052b54069b0553ea89e61a15bdce26f35265adeec337c0d9b7e30c2d4d1e1d30",
+            "rows": 20604
+          },
+          "qrels": {
+            "path": "data/test-00000-of-00001.parquet",
+            "sha256": "95fe31bf2bc16fb55053275a15d374da0f22e5f0aa53c5c83dd350e6a39ab38f",
+            "rows": 500
+          }
+        },
+        "task": "CosQA",
+        "subset": "default",
+        "expectedQueries": 500
+      },
+      {
+        "id": "codesearchnet-python",
+        "dataset": "mteb/CodeSearchNetRetrieval",
+        "revision": "68e8f0731a656fa4bd5b7c81936d95ad48a39bfe",
+        "files": {
+          "corpus": {
+            "path": "python-corpus/test-00000-of-00001.parquet",
+            "sha256": "c3ffed7d172b9ef900d0c41a5081a42ff364f0e93ae156154bf314609709c962",
+            "rows": 1000
+          },
+          "queries": {
+            "path": "python-queries/test-00000-of-00001.parquet",
+            "sha256": "ddd3115b111f46cae60474225502e10093b8758a839e9ec23233231165f746a2",
+            "rows": 1000
+          },
+          "qrels": {
+            "path": "python-qrels/test-00000-of-00001.parquet",
+            "sha256": "53a35604523810cc7672633000abe8b190acd52501a838f9bd8884f2e2e62f06",
+            "rows": 1000
+          }
+        },
+        "task": "CodeSearchNetRetrieval",
+        "subset": "python",
+        "expectedQueries": 1000
+      },
+      {
+        "id": "codesearchnet-go",
+        "dataset": "mteb/CodeSearchNetRetrieval",
+        "revision": "68e8f0731a656fa4bd5b7c81936d95ad48a39bfe",
+        "files": {
+          "corpus": {
+            "path": "go-corpus/test-00000-of-00001.parquet",
+            "sha256": "965b6899308478ef9c1bed8f8e8854adb552fd2fd0d6ae64ec23a50e1c15465e",
+            "rows": 1000
+          },
+          "queries": {
+            "path": "go-queries/test-00000-of-00001.parquet",
+            "sha256": "bd1e0e79e22ad46c63708c7b2fd340b9a248e568167978e7bfbf6a9193a36c3e",
+            "rows": 1000
+          },
+          "qrels": {
+            "path": "go-qrels/test-00000-of-00001.parquet",
+            "sha256": "c566ba2fb40f8d3e0fd96a0aac99f9b28f053e51c5fe9cd67f093c264b460bb6",
+            "rows": 1000
+          }
+        },
+        "task": "CodeSearchNetRetrieval",
+        "subset": "go",
+        "expectedQueries": 1000
+      }
+    ],
+    "modes": ["lexical", "semantic", "hybrid"],
+    "retrieveK": 100,
+    "embedding": "text-embedding-3-small",
+    "dimensions": 1536,
+    "representation": "title + single space + text if title is nonempty, otherwise text; no chunking or enrichment",
+    "limits": {
+      "documentTokens": 6000000,
+      "queryEmbeddingTokens": 1000000,
+      "searches": 7500,
+      "queryEmbeddings": 5000,
+      "tokensPerDocument": 8191,
+      "publicationSeconds": 1200,
+      "failedSearches": 10
+    },
+    "metrics": ["ndcg_cut_10", "recall_10", "recall_100", "recip_rank"]
+  },
+  "dataFiles": {
+    "manifest.json": "9e96242d05721cae95a8cde6409f90f6227857d8ed1b40d10bb1686031eacea9",
+    "cosqa-corpus.jsonl": "4b7e376e1c4bce7c611f8a98bcc63985c520fc090fb8e47e334395e38fdfb99f",
+    "cosqa-queries.jsonl": "086bd4f24bc6078c6aa92d36189a0febbedd967c2e40b1350b293a9d45956d6e",
+    "cosqa-qrels.jsonl": "9a990440df3c88575a24ea078a72b38c3c3732902e4acd1e71d3818e167f0935",
+    "codesearchnet-python-corpus.jsonl": "9409f727aff730859ddd996a5c4ced2aa3710d9a5b1e970eb1d20738407c73e8",
+    "codesearchnet-python-queries.jsonl": "1b018b5af13201ed44f9d92f2701afaf0b1f15014f48ff3e761da5288109884b",
+    "codesearchnet-python-qrels.jsonl": "72b855947c442af336ef9a567f9b985d2b1099b8e8664f09a5bed98a32ec62e2",
+    "codesearchnet-go-corpus.jsonl": "2f6c507777c38ffd5891c9c101db46dfd10e0766975d91163cf41edc058e7cfd",
+    "codesearchnet-go-queries.jsonl": "cc911dc8d669614310a57e78caa89509ec83c93bbd1d856f6ea7058edef4a2ec",
+    "codesearchnet-go-qrels.jsonl": "673203c0e54ed4676787d2123f6c78409e87032bbfe9941db05f0d2562074444"
+  },
+  "runtime": {
+    "node": "v24.15.0",
+    "files": {
+      "scripts/benchmark-data.py": "191915f6f7ff8c4edbc9ab955166b2cdb833999256f50dd8cf0031de185463d7",
+      "scripts/benchmark-eval.mjs": "bb5a709f1af33c48d22ba78cf088783f350057e30891d0fb9b79deee7b62d085",
+      "scripts/benchmark-eval-lib.mjs": "3dababdc7c6877a2bf193f5e140f70a1d352b625b20e3cb1c578c9ded8e3f6b4",
+      "eval/benchmark-requirements.txt": "d1b15abad9c285487928fc1409d23c1f65413fc29526651fd3c6ad087125ae4e",
+      "package-lock.json": "a9946c1932bd28cd7f35507cf20c33674c5aa24d3e5530a41680a9748baaca89",
+      "dist/build.js": "34ab0ce80c8e03fc17bcaba6acd3b5f7faf9fdd4d1fb212bd3463a3a8e59a7b2",
+      "dist/chunk.js": "484e4f5c466cd3817c11e3d48a4248332511fef8a504af3ea3fa3886ac8b6ced",
+      "dist/cli.js": "aa678aad3032786bc80565a2c26ce32b8ff9ab4c31adc8ea6e18d3e4b8cd4e9d",
+      "dist/common.js": "ba09989d84fcfe8630192e4f57ef863dfaa1add61be493f8eaee89b2e2d973fd",
+      "dist/git.js": "a8f2b7fce720a994337b5ac09ca6181b5fffa73f74813085d9401c28c1759508",
+      "dist/publish.js": "d1039d972ffa85f28a669fd2a2a86caa02ec1178bddec97f69ab616a44b80edd",
+      "dist/releases.js": "03b0ba86753a06a638f06431fdb93d663094e75894290249012c110ca3930b4e",
+      "dist/remote.js": "5130612ea2db735b0e63c693c34f66c0582c03717f678aadabbf69b4e65e952c",
+      "dist/repository.js": "7dec4c5e87b5da26fb409862a7c0d46420beb9f495eb078b38690a3e6d95fbc6",
+      "dist/search.js": "32720c15cf34f90d545cf97a042b1d13dfd1ebca413cd9d8e1f6354faa11d28d",
+      "dist/settings.js": "4dccf36a8f548ea6fadc87e411136bd1468d55bbe6d3814cd961ebd4de35ab80"
+    }
+  },
+  "preflight": {
+    "tasks": {
+      "cosqa": {
+        "documents": 20604,
+        "queries": 500,
+        "documentTokens": 1376785,
+        "maxDocumentTokens": 1806,
+        "queryTokens": 3484,
+        "unsupportedQueryIds": []
+      },
+      "codesearchnet-python": {
+        "documents": 1000,
+        "queries": 1000,
+        "documentTokens": 186532,
+        "maxDocumentTokens": 1772,
+        "queryTokens": 110049,
+        "unsupportedQueryIds": [
+          "83",
+          "575",
+          "744",
+          "810",
+          "839",
+          "849",
+          "880",
+          "956",
+          "990"
+        ]
+      },
+      "codesearchnet-go": {
+        "documents": 1000,
+        "queries": 1000,
+        "documentTokens": 163709,
+        "maxDocumentTokens": 4510,
+        "queryTokens": 27838,
+        "unsupportedQueryIds": []
+      }
+    },
+    "totals": {
+      "documentTokens": 1727026,
+      "queryEmbeddingTokens": 282742,
+      "searches": 7500,
+      "queryEmbeddings": 5000
+    }
+  }
+}

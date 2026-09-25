@@ -41,6 +41,12 @@ jobs:
           npm test
           python3 -m unittest discover -s test -p local_rerank_test.py
           npm run test:package
+      - name: Check public benchmark export and official scorer
+        if: matrix.node == 22
+        run: |
+          python3 -m venv .srcx/benchmark-venv
+          .srcx/benchmark-venv/bin/pip install -r eval/benchmark-requirements.txt
+          .srcx/benchmark-venv/bin/python -m unittest discover -s test -p benchmark_data_test.py
 
   publish:
     needs: validate

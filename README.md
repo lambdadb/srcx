@@ -165,6 +165,10 @@ independently reviewed benchmark.
 The [local reranking diagnostic](https://github.com/lambdadb/srcx/blob/develop/eval/RERANK-RESULTS.md)
 compares Qwen selection on the same saved candidates, with separate offline
 coverage and compute accounting.
+The [public retrieval baseline](https://github.com/lambdadb/srcx/blob/develop/eval/PUBLIC-BENCHMARK.md)
+uses pinned CoIR CoSQA and MTEB CodeSearchNet Python/Go tasks with official
+labels and trec_eval metrics. It evaluates retrieval separately from Git import,
+chunking and CLI reads.
 New evaluation roots retain [safe command failure diagnostics](https://github.com/lambdadb/srcx/blob/develop/eval/COMMAND-DIAGNOSTICS.md)
 for explicit recovery.
 

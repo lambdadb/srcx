@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add pinned CoIR CoSQA and MTEB CodeSearchNet Python/Go retrieval baselines,
+  sharing srcx query construction and using trec_eval metrics on official labels.
+
 - Add a bounded local Qwen reranking diagnostic with frozen inputs, durable
   per-pair reservations and offline source-selection reporting.
 
@@ -52,6 +55,9 @@
   `refs/tags/...` selectors.
 
 ### Fixed
+
+- Count failed and unsupported public-benchmark queries separately, retaining
+  both in the ranking metric denominators.
 
 - Fetch omitted managed vectors from query responses through the same immutable
   Tag, preserving hit order/scores and requiring exact non-vector payload equality.
