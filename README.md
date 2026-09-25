@@ -162,6 +162,9 @@ show mixed gains and regressions; small remains the initial managed choice.
 unreviewed Python/Go questions. The [completed development diagnostic](https://github.com/lambdadb/srcx/blob/develop/eval/TRANSFER-RESULTS.md)
 compares all three modes with managed small and text fallback; it is not an
 independently reviewed benchmark.
+The [local reranking diagnostic](https://github.com/lambdadb/srcx/blob/develop/eval/RERANK-RESULTS.md)
+compares Qwen selection on the same saved candidates, with separate offline
+coverage and compute accounting.
 New evaluation roots retain [safe command failure diagnostics](https://github.com/lambdadb/srcx/blob/develop/eval/COMMAND-DIAGNOSTICS.md)
 for explicit recovery.
 

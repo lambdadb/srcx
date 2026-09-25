@@ -12,6 +12,22 @@ concurrency, or retrieval-quality benchmark. npm publication evidence is recorde
 separately below. The persistent Git branch changes have a separate synthetic
 live run recorded next; the earlier live runs do not validate this new path.
 
+## Local reranking diagnostic
+
+At frozen executable `ba9fa0f8ad5c57cb54ec0483d05faead78acf2c1`, the local
+Qwen3-Reranker-0.6B treatment scored all 455 retained pairs without failures or
+retries. Offline complete source evidence among five selections changed from
+lexical **7/16 to 8/16**, semantic **5/16 to 9/16**, hybrid **8/16 to 10/16**.
+There were no complete-answer losses; partial evidence declined in two pools.
+No new CLI reads were made and the original labels remain unreviewed.
+
+The run used 391,713 Qwen input tokens and 84.59 seconds on local MPS, with zero
+paid API usage. Completed replay preserved score bytes/timestamps without model
+loading. Local validation passed 86 Node tests, three Python protocol checks and
+three installed-package checks; frozen Node 22/24 CI passed. See [results and
+limitations](eval/RERANK-RESULTS.md), [frozen protocol](eval/RERANK-RUN.md) and
+[preflight](eval/rerank-qwen-preflight.json) for provenance and bounds.
+
 ## Click/Cobra development diagnostic
 
 At frozen harness `4f7c865055749c82641015a2302983b034877e23`, 48 actual CLI searches

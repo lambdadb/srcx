@@ -39,6 +39,7 @@ jobs:
           npm run check:version
           npm run typecheck
           npm test
+          python3 -m unittest discover -s test -p local_rerank_test.py
           npm run test:package
 
   publish:

@@ -1,10 +1,11 @@
 # Fixed-candidate selection experiment plan
 
-Status: **preparation only**. No reranker has been selected or implemented and no
-reranking requests have been made. The next deliverables are the completed
-[question/evidence review](TRANSFER-REVIEW.md), a frozen experiment manifest and
-an offline candidate adapter. This document describes intended behavior, not
-existing CLI flags or a completed experiment.
+The [offline candidate adapter](RERANK-INPUTS.md) reproduces the retained baseline.
+The [local Qwen diagnostic](RERANK-RUN.md) fixes the first scorer and execution
+limits for the unchanged, explicitly unreviewed development labels. Independent
+[question/evidence review](TRANSFER-REVIEW.md) remains pending. The procedure below
+describes the comparison; neither preparation nor execution constitutes human
+review or turns these observed tasks into a held-out benchmark.
 
 ## Question and scope
 
@@ -114,8 +115,10 @@ do not mix that change into this comparison.
 
 ## Completion evidence
 
-Preparation is complete when independent review decisions are recorded, baseline
-reproduction passes, the candidate adapter rejects corrupted inputs, and the
-manifest fixes the treatment and resource limits. Execution is complete only
+For an independently reviewed evaluation, preparation requires independent
+decisions, baseline reproduction, rejection of corrupted inputs and a manifest
+fixing the treatment and resource limits. The separate development diagnostic
+keeps the review status explicitly pending and uses the original labels.
+Execution is complete only
 with all outcomes (including failures), provenance, usage and regressions saved
 under a new root. Neither milestone is complete merely because this plan merges.
