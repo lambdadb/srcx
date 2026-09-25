@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { hash } from "../dist/common.js";
 import { tokens } from "../dist/chunk.js";
 import {
@@ -33,7 +34,33 @@ export function validateCliSuite(suite) {
       suite.labelStatus,
       "development-diagnostic-not-independently-reviewed",
     );
-    assert.match(suite.draftHash, /^[a-f0-9]{64}$/);
+    const draft = JSON.parse(
+      readFileSync(
+        new URL("../eval/transfer-candidates-v1.json", import.meta.url),
+        "utf8",
+      ),
+    );
+    const draftHash = hash(draft);
+    assert.equal(
+      draftHash,
+      "793d10a9e90bb3eef25dfd2e70e3ca907c36acd4047feb2d34eb5f7f9d7950a9",
+      "Canonical transfer draft changed.",
+    );
+    assert.equal(suite.draftHash, draftHash, "Transfer draft hash mismatch.");
+    const repository = names[0];
+    const expected = draft.queries
+      .filter((q) => q.repository === repository)
+      .map(({ review: _, ...q }) => ({
+        ...q,
+        commit: draft.repositories[repository].commit,
+        category: q.queryStyle === "identifier" ? "identifier" : "behavior",
+        taskId: q.id,
+      }));
+    assert.deepEqual(
+      suite.queries,
+      expected,
+      "Transfer questions or evidence differ from canonical draft.",
+    );
     assert.equal(suite.settings.preset, "managed-openai-small");
   } else assert.deepEqual(suite.repositories, PUBLIC_REPOSITORIES);
   assert.ok(

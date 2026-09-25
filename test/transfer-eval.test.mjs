@@ -5,7 +5,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { hash } from "../dist/common.js";
-import { fixture, git } from "./fixture.mjs";
 import {
   validateCliSuite,
   querySchedule,
@@ -92,39 +91,22 @@ test("hash-only labels still reject altered source and old suites still require 
   );
 });
 
-test("single-repository transfer prepare uses managed inputs and rejects changed reference labels", async (t) => {
-  const root = await mkdtemp(join(tmpdir(), "srcx-transfer-test-"));
+test("transfer prepare rejects jointly edited suite and reference before creating a run", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "srcx-transfer-provenance-"));
   t.after(() => rm(root, { recursive: true, force: true }));
-  const f = await fixture();
-  t.after(f.cleanup);
-  const suite = structuredClone(suites[0]);
-  git(
-    f.path,
-    "remote",
-    "set-url",
-    "origin",
-    "https://github.com/pallets/click.git",
-  );
-  for (const q of suite.queries) {
-    q.commit = f.a;
-    q.evidenceSets = [
-      [
-        {
-          path: "code.ts",
-          startByte: 0,
-          endByte: Buffer.byteLength(f.original),
-          sha256: hash(Buffer.from(f.original)),
-        },
-      ],
-    ];
-  }
   const suitePath = join(root, "suite.json"),
-    referencePath = join(root, "reference.json"),
     output = join(root, "run");
-  await writeFile(suitePath, JSON.stringify(suite));
-  await writeFile(referencePath, JSON.stringify(suite));
-  const prepare = () =>
-    spawnSync(
+  for (const change of [
+    (s) => (s.draftHash = "0".repeat(64)),
+    (s) => (s.queries[0].query += " altered"),
+    (s) => (s.queries[0].commit = "a".repeat(40)),
+    (s) => s.queries[0].evidenceSets[0][0].endByte++,
+    (s) => (s.queries[0].evidenceSets[0][0].sha256 = "a".repeat(64)),
+  ]) {
+    const suite = structuredClone(suites[0]);
+    change(suite);
+    await writeFile(suitePath, JSON.stringify(suite));
+    const result = spawnSync(
       process.execPath,
       [
         "scripts/cli-eval.mjs",
@@ -132,9 +114,9 @@ test("single-repository transfer prepare uses managed inputs and rejects changed
         "--suite",
         suitePath,
         "--reference-suite",
-        referencePath,
+        suitePath,
         "--click",
-        f.path,
+        "/unavailable/source",
         "--root",
         output,
       ],
@@ -143,31 +125,13 @@ test("single-repository transfer prepare uses managed inputs and rejects changed
         env: { ...process.env, LAMBDADB_BASE_URL: "invalid" },
       },
     );
-  const result = prepare();
-  assert.equal(result.status, 0, result.stderr);
-  const planBytes = await readFile(join(output, "plan.json"), "utf8"),
-    plan = JSON.parse(planBytes);
-  assert.deepEqual(Object.keys(plan.inputs), ["click"]);
-  assert.deepEqual(plan.referenceSuite, suite);
-  assert.equal(plan.preflight.searchRequests, 24);
-  assert.equal(plan.preflight.queryEmbeddingRequests, 16);
-  assert.ok(plan.preflight.documentInputTokens > 0);
-  assert.equal(
-    plan.runtime.files["scripts/eval-command.mjs"],
-    hash(await readFile("scripts/eval-command.mjs")),
-  );
-  const build = JSON.parse(
-    await readFile(
-      join(plan.inputs.click.artifacts[f.a].path, "build.json"),
-      "utf8",
-    ),
-  );
-  assert.equal(build.preset.embedding.model, "text-embedding-3-small");
-  const wrong = structuredClone(suite);
-  wrong.queries[0].evidenceSets[0][0].endByte--;
-  await writeFile(referencePath, JSON.stringify(wrong));
-  const rejected = prepare();
-  assert.equal(rejected.status, 1);
-  assert.match(rejected.stderr, /Transfer labels must remain unchanged/);
-  assert.equal(await readFile(join(output, "plan.json"), "utf8"), planBytes);
+    assert.equal(result.status, 1);
+    assert.match(
+      result.stderr,
+      /Transfer (draft hash mismatch|questions or evidence differ)/,
+    );
+    await assert.rejects(readFile(join(output, "plan.json")), {
+      code: "ENOENT",
+    });
+  }
 });

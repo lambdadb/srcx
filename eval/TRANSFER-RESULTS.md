@@ -108,3 +108,10 @@ Each completed report passed the frozen runner replay and the offline rank analy
 Ignored evidence is under `.srcx/transfer/click/` and `.srcx/transfer/cobra/`, including plans, source artifacts, reports, raw CLI output and `query-style-analysis.json`. Each analysis records its input report hash and analyzer hashes. Source versions: Click `934813e4d421071a1b3db3973c02fe2721359a6e`; Cobra `40b5bc1437a564fc795d388b23835e84f54cd1d1`.
 
 Node 24.15.0 passed 78 local tests, typecheck, formatting and version checks. The [frozen harness CI](https://github.com/lambdadb/srcx/actions/runs/36105734991) passed Node 22/24 and installed-package checks. These correctness checks are separate from retrieval quality.
+
+After execution, review hardened format-4 validation to load the canonical draft,
+verify its fixed hash and require the exact query/commit/evidence transformation.
+Both saved live suites passed this additional offline check. The 78 tests also
+pass with this hardening, including rejection when a suite and its reference are
+edited together. Results, report hashes and the frozen execution revision above
+remain unchanged; no live rerun was performed for this validation-only fix.
