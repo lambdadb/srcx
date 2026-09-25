@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a pending human review worksheet and fixed-candidate reranking experiment plan.
+
 - Run bounded, explicitly unreviewed Click/Cobra retrieval diagnostics with managed small and unchanged source labels.
 
 - Retain allowlisted CLI evaluation failure diagnostics without raw output or credentials.

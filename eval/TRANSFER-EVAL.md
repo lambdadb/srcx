@@ -47,6 +47,9 @@ minimal required ranges, and alternative correct implementations. Mark changes
 in the PR review rather than silently relabeling a completed evaluation. Freeze
 the reviewed fixture and harness revision before observing search results.
 Independent review is still pending; this document does not claim it occurred.
+The [review worksheet](TRANSFER-REVIEW.md) provides a decision slot for each task.
+The [fixed-candidate selection plan](RERANK-PLAN.md) describes the next experiment
+and preserves the distinction between reviewed labels and previously unseen tasks.
 
 Keep model `text-embedding-3-small`, 1536 dimensions, current chunking, ten search
 candidates, the first five reads and zero context fixed. Compare lexical,
