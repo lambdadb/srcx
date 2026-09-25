@@ -98,3 +98,74 @@ test("evaluation diagnostics retain safe failures without secrets, source, retri
   );
   assert.equal(await readFile(blocked, "utf8"), "retained");
 });
+
+test("evaluation diagnostics preserve actual read integrity errors and omit contaminated stderr", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "srcx-read-diagnostics-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const cliPath = join(root, "read.mjs"),
+    diagnosticsFile = join(root, "failures.json");
+  await writeFile(
+    cliPath,
+    `import { readHandle } from ${JSON.stringify(new URL("../dist/search.js", import.meta.url).href)};
+import { hash } from ${JSON.stringify(new URL("../dist/common.js", import.meta.url).href)};
+const scenario = process.argv[3];
+const sourceText = 'line one\\nline two\\n', contentHash = hash(Buffer.from(sourceText));
+const file = { id: 'file', kind: 'file', path: 'code.ts', configHash: 'config', sourceText, contentHash };
+const chunk = { id: 'chunk', kind: 'chunk', fileId: 'file', contentHash, startByte: 0, endByte: 9 };
+const settings = { endpoint: 'http://127.0.0.1:9', project: 'fixture' };
+const handle = { ...settings, repository: { configHash: 'config' }, version: { tagName: 'ver-fixture', snapshotId: 'snapshot' }, fileId: 'file', chunkId: 'chunk', chunkHash: hash(chunk), path: 'code.ts', contentHash, startLine: 1, endLine: 1 };
+if (scenario === 'connection') handle.project = 'other';
+if (scenario === 'source') file.sourceText = 'private-source';
+if (scenario === 'range') { chunk.startByte = -1; handle.chunkHash = hash(chunk); }
+const store = {
+  tags: async () => scenario === 'tag' ? [] : [{ name: 'ver-fixture', snapshotId: 'snapshot' }],
+  fetch: async (_ref, ids) => ids[0] === 'file' ? [file] : scenario === 'chunk' ? [] : [chunk],
+};
+try {
+  await readHandle(store, settings, handle, scenario === 'context' ? { context: -1 } : scenario === 'lines' ? { lines: [0, 1] } : {});
+  throw new Error('Expected read to fail.');
+} catch (error) {
+  process.stdout.write('private-source');
+  process.stderr.write('srcx: ' + error.message + (process.argv[4] ? '\\nprivate-key private-path' : ''));
+  process.exitCode = 1;
+}`,
+  );
+  const cases = {
+    connection:
+      "Result belongs to another endpoint/project; restore that connection before reading.",
+    tag: "Pinned Tag is missing or has been recreated.",
+    source: "Original source is missing or its hash does not match.",
+    chunk: "Pinned chunk has changed or is missing.",
+    range: "Invalid source range.",
+    context: "Context must be a nonnegative integer.",
+    lines: "Line range is outside the file.",
+  };
+  for (const [scenario, message] of Object.entries(cases)) {
+    for (const contaminated of [false, true]) {
+      const expected = contaminated
+        ? "[unrecognized stderr omitted]"
+        : `srcx: ${message}`;
+      await assert.rejects(
+        runEvalCli(["read", scenario, ...(contaminated ? ["extra"] : [])], {
+          cliPath,
+          diagnosticsFile,
+          env: process.env,
+        }),
+        (error) => {
+          assert.ok(error.message.includes(expected), error.message);
+          assert.doesNotMatch(error.message, /private-/);
+          return true;
+        },
+      );
+      const recorded = JSON.parse(await readFile(diagnosticsFile, "utf8")).at(
+        -1,
+      );
+      assert.equal(recorded.command, "read");
+      assert.equal(recorded.exitCode, 1);
+      assert.equal(recorded.stderr, expected);
+    }
+  }
+  const raw = await readFile(diagnosticsFile, "utf8");
+  assert.equal(JSON.parse(raw).length, 14);
+  assert.doesNotMatch(raw, /private-/);
+});

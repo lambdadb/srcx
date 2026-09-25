@@ -33,6 +33,13 @@ const messages = new Set([
   "Inventory hash mismatch.",
   "Search returned a record outside the pinned corpus.",
   "Unexpected fetch result.",
+  "Result belongs to another endpoint/project; restore that connection before reading.",
+  "Pinned Tag is missing or has been recreated.",
+  "Original source is missing or its hash does not match.",
+  "Pinned chunk has changed or is missing.",
+  "Invalid source range.",
+  "Context must be a nonnegative integer.",
+  "Line range is outside the file.",
 ]);
 function safeStderr(stderr) {
   // Match the ENTIRE output. Extra SDK/debug lines cause omission, not partial

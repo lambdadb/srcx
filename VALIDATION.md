@@ -19,7 +19,9 @@ or JSON-decode stage, exit/signal metadata and allowlisted stderr. Fixture check
 cover no automatic retry, preservation across multiple failures, secret/source
 omission, private file permissions, malformed output, output overflow and log-write
 failure. This cannot recover stderr from old live failures. Node 24.15.0 passed
-**74 tests**, typecheck, formatting and version checks for this follow-up.
+**75 tests**, typecheck, formatting and version checks for this follow-up.
+The read-side regression invokes the actual `readHandle` for seven failure paths
+and verifies both safe-message retention and omission of contaminated stderr.
 
 A separate offline preparation imported pinned Click 8.1.8 and Cobra v1.9.1 Git
 sources into local managed-small build artifacts, without service calls or

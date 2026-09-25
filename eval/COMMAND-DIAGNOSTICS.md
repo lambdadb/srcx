@@ -15,7 +15,9 @@ all bytes produced by the child. JSON decode failures record exit 0 and never
 include the parser exception, which can quote stdout.
 
 Sanitization uses an allowlist of complete messages: the current LambdaDB adapter
-operation/HTTP errors and selected fixed vector/source-integrity errors. Unknown
+operation/HTTP errors and fixed vector/source-integrity errors, including all
+seven `readHandle` guards (connection identity, Tag, source, chunk, byte range,
+context and line range). Unknown
 output, additional debug lines, paths, API bodies and arbitrary exception text
 are replaced by `[unrecognized stderr omitted]`. This is intentional omission,
 not a promise to recover every underlying error. Neither raw output, argv,
@@ -31,4 +33,7 @@ missing stderr, and no live service reliability claim follows from fixture tests
 
 Tests exercise HTTP 429 without retry, vector hydration failures, stderr with
 source/secret material, signal termination, malformed JSON, output overflow,
-append preservation, file permissions and diagnostic persistence failure.
+append preservation, file permissions and diagnostic persistence failure. A
+subprocess regression invokes the actual `readHandle` with controlled faults to
+verify all seven messages survive; adding arbitrary text to any of them causes
+the entire stderr to be omitted.
