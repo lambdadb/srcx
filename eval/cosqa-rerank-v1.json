@@ -1,0 +1,24 @@
+{
+  "format": 1,
+  "model": "Qwen/Qwen3-Reranker-0.6B",
+  "revision": "e61197ed45024b0ed8a2d74b80b4d909f1255473",
+  "device": "mps",
+  "dtype": "float32",
+  "attention": "sdpa",
+  "batchSize": 1,
+  "instruction": "Given a code search query, retrieve code passages that answer the query.",
+  "document": "{text}",
+  "score": "yes logit minus no logit at the final prompt token",
+  "duplicates": "one score per query and exact title/text pair; expand to all original IDs",
+  "ties": "preserve original semantic rank",
+  "truncation": false,
+  "limits": {
+    "queries": 500,
+    "candidatesPerQuery": 100,
+    "pairs": 50000,
+    "inputTokens": 20000000,
+    "tokensPerPair": 8192,
+    "wallSeconds": 3600,
+    "paidApiUsd": 0
+  }
+}

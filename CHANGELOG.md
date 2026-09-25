@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Evaluate fixed-candidate CosQA semantic reranking with local Qwen, shared
+  duplicate scores, stable ties and separate official-ID/content metrics.
+
 - Cross-check the retained CosQA lexical baseline with an independent offline
   BM25 ranker and the same StandardAnalyzer tokenization.
 
