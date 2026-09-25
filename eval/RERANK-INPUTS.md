@@ -79,3 +79,26 @@ Human question/evidence decisions remain pending in the
 [review worksheet](TRANSFER-REVIEW.md). Candidate preparation can proceed while
 that review is pending; this command does not promote the labels to a reviewed
 benchmark or complete the experiment manifest.
+
+## Verified preparation
+
+Adapter commit: `82fd4d728dc27b7c99aff27620cf5c79a58b66b1`; Node `v24.15.0`.
+The retained output is under ignored `.srcx/rerank-inputs-v1/` in the candidate
+preparation worktree. SHA-256 hashes of the output bytes:
+
+| File              | SHA-256                                                            |
+| ----------------- | ------------------------------------------------------------------ |
+| `inputs.json`     | `d344eeeafc723dfe07cdc24edfa1ab07085fa6670236ff9c5ec94156c61fe531` |
+| `evaluation.json` | `a4a58e229bf7c047f18a253b69fad30a271af9a535fb2d860b4cf4d80416b6ce` |
+| `manifest.json`   | `f3a0b83ca390e3f96a0bdd81becef7d4db9bd03e13150e1941c9113b6607297a` |
+
+All model input keys were checked against the allowlist. Relocating copies of
+both retained roots reproduced all three files byte for byte. Both original
+plans, reports, build metadata and record files retained their bytes and
+modification times. The new adapter rejects an altered report before loading its
+plan or source; existing output directories remain untouched on a repeated write.
+
+Local validation passed 83 tests, typecheck, formatting, version checks and three
+installed-package checks. Tests cover source fidelity, label/rank/handle omission,
+empty/short pools, missing/duplicate rows, changed reads/handles/metrics and output
+preservation. These checks establish input integrity, not reranking quality.
