@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add a bounded local Qwen reranking diagnostic with frozen inputs, durable
+  per-pair reservations and offline source-selection reporting.
+
 - Prepare offline reranking inputs from verified retained Click/Cobra candidates,
   with separate evaluator labels, original ranks and source provenance.
 

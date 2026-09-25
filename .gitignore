@@ -7,3 +7,4 @@ dist/
 .srcx/
 coverage/
 .DS_Store
+__pycache__/
