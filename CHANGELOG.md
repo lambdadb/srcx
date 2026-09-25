@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Prepare offline reranking inputs from verified retained Click/Cobra candidates,
+  with separate evaluator labels, original ranks and source provenance.
+
 - Add a pending human review worksheet and fixed-candidate reranking experiment plan.
 
 - Run bounded, explicitly unreviewed Click/Cobra retrieval diagnostics with managed small and unchanged source labels.

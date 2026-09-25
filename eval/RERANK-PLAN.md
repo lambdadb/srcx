@@ -1,10 +1,11 @@
 # Fixed-candidate selection experiment plan
 
-Status: **preparation only**. No reranker has been selected or implemented and no
-reranking requests have been made. The next deliverables are the completed
-[question/evidence review](TRANSFER-REVIEW.md), a frozen experiment manifest and
-an offline candidate adapter. This document describes intended behavior, not
-existing CLI flags or a completed experiment.
+Status: **preparation only**. The [offline candidate adapter](RERANK-INPUTS.md)
+is available and reproduces the retained baseline. No reranker has been selected
+or implemented and no reranking requests have been made. The remaining
+deliverables are the completed [question/evidence review](TRANSFER-REVIEW.md),
+a frozen experiment manifest and a scorer integration. The procedure below
+specifies the full experiment; candidate preparation alone does not complete it.
 
 ## Question and scope
 
