@@ -9,9 +9,21 @@ import numpy as np
 spec = importlib.util.spec_from_file_location("cosqa_bm25", Path("scripts/cosqa-bm25-check.py"))
 check = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(check)
+audit_spec = importlib.util.spec_from_file_location("audit", Path("scripts/cosqa-bm25-audit.py"))
+audit = importlib.util.module_from_spec(audit_spec)
+audit_spec.loader.exec_module(audit)
 
 
 class CosqaBm25Test(unittest.TestCase):
+    def test_content_sensitivity_preserves_positions_and_requires_exact_equality(self):
+        result = audit.content_success(
+            {"q1": ["other", "duplicate", "gold"], "q2": ["near"]},
+            {"q1": {"gold": 1}, "q2": {"gold": 1}},
+            {"gold": ("", "code"), "duplicate": ("", "code"),
+             "other": ("", "unrelated"), "near": ("", "code ")},
+        )
+        self.assertEqual(result, {"hitAt10": 0.5, "hitAt100": 0.5, "mrrAt100": 0.25})
+
     def test_independent_bm25_formula_and_repeated_query_terms(self):
         model = bm25s.BM25(**check.PARAMETERS)
         model.index([["cat", "cat"], ["dog"], ["bird"]], show_progress=False)

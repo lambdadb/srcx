@@ -1,5 +1,7 @@
 # Independent CosQA BM25 cross-check
 
+[Completed results and duplicate/tie limitations](COSQA-BM25-RESULTS.md).
+
 ## Question and fixed protocol
 
 Check whether the low [LambdaDB lexical baseline](PUBLIC-BENCHMARK-RESULTS.md)
