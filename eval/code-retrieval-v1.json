@@ -1,0 +1,106 @@
+{
+  "format": 1,
+  "name": "code-retrieval-v1",
+  "scope": "CoIR CosQA and MTEB CodeSearchNet Python/Go; not a full CoIR score",
+  "reference": {
+    "repository": "embeddings-benchmark/mteb",
+    "commit": "28aea4854684b7e848881dc9ef3fe5847c1a1673",
+    "tasks": [
+      "mteb/tasks/retrieval/code/cos_qa_retrieval.py",
+      "mteb/tasks/retrieval/code/code_search_net_retrieval.py"
+    ]
+  },
+  "split": "test",
+  "tasks": [
+    {
+      "id": "cosqa",
+      "dataset": "CoIR-Retrieval/cosqa",
+      "revision": "bc5efb7e9d437246ce393ed19d772e08e4a79535",
+      "files": {
+        "corpus": {
+          "path": "corpus/corpus-00000-of-00001.parquet",
+          "sha256": "ae1ad54bfe4fdb73f203b9b85b400be8dbc5d84db2ca1bfa8fd9866f8d13980b",
+          "rows": 20604
+        },
+        "queries": {
+          "path": "queries/queries-00000-of-00001.parquet",
+          "sha256": "052b54069b0553ea89e61a15bdce26f35265adeec337c0d9b7e30c2d4d1e1d30",
+          "rows": 20604
+        },
+        "qrels": {
+          "path": "data/test-00000-of-00001.parquet",
+          "sha256": "95fe31bf2bc16fb55053275a15d374da0f22e5f0aa53c5c83dd350e6a39ab38f",
+          "rows": 500
+        }
+      },
+      "task": "CosQA",
+      "subset": "default",
+      "expectedQueries": 500
+    },
+    {
+      "id": "codesearchnet-python",
+      "dataset": "mteb/CodeSearchNetRetrieval",
+      "revision": "68e8f0731a656fa4bd5b7c81936d95ad48a39bfe",
+      "files": {
+        "corpus": {
+          "path": "python-corpus/test-00000-of-00001.parquet",
+          "sha256": "c3ffed7d172b9ef900d0c41a5081a42ff364f0e93ae156154bf314609709c962",
+          "rows": 1000
+        },
+        "queries": {
+          "path": "python-queries/test-00000-of-00001.parquet",
+          "sha256": "ddd3115b111f46cae60474225502e10093b8758a839e9ec23233231165f746a2",
+          "rows": 1000
+        },
+        "qrels": {
+          "path": "python-qrels/test-00000-of-00001.parquet",
+          "sha256": "53a35604523810cc7672633000abe8b190acd52501a838f9bd8884f2e2e62f06",
+          "rows": 1000
+        }
+      },
+      "task": "CodeSearchNetRetrieval",
+      "subset": "python",
+      "expectedQueries": 1000
+    },
+    {
+      "id": "codesearchnet-go",
+      "dataset": "mteb/CodeSearchNetRetrieval",
+      "revision": "68e8f0731a656fa4bd5b7c81936d95ad48a39bfe",
+      "files": {
+        "corpus": {
+          "path": "go-corpus/test-00000-of-00001.parquet",
+          "sha256": "965b6899308478ef9c1bed8f8e8854adb552fd2fd0d6ae64ec23a50e1c15465e",
+          "rows": 1000
+        },
+        "queries": {
+          "path": "go-queries/test-00000-of-00001.parquet",
+          "sha256": "bd1e0e79e22ad46c63708c7b2fd340b9a248e568167978e7bfbf6a9193a36c3e",
+          "rows": 1000
+        },
+        "qrels": {
+          "path": "go-qrels/test-00000-of-00001.parquet",
+          "sha256": "c566ba2fb40f8d3e0fd96a0aac99f9b28f053e51c5fe9cd67f093c264b460bb6",
+          "rows": 1000
+        }
+      },
+      "task": "CodeSearchNetRetrieval",
+      "subset": "go",
+      "expectedQueries": 1000
+    }
+  ],
+  "modes": ["lexical", "semantic", "hybrid"],
+  "retrieveK": 100,
+  "embedding": "text-embedding-3-small",
+  "dimensions": 1536,
+  "representation": "title + single space + text if title is nonempty, otherwise text; no chunking or enrichment",
+  "limits": {
+    "documentTokens": 6000000,
+    "queryEmbeddingTokens": 1000000,
+    "searches": 7500,
+    "queryEmbeddings": 5000,
+    "tokensPerDocument": 8191,
+    "publicationSeconds": 1200,
+    "failedSearches": 10
+  },
+  "metrics": ["ndcg_cut_10", "recall_10", "recall_100", "recip_rank"]
+}
