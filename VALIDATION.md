@@ -2,6 +2,13 @@
 
 Date: 2026-09-25 (Asia/Seoul).
 
+## Independent CosQA BM25 cross-check
+
+The [independent cross-check](eval/COSQA-BM25-RESULTS.md) reproduces lexical
+quality after aligning score ties and documents duplicate-ID sensitivity in the
+official task. Its supplemental content-equivalence metrics are distinct from
+the unchanged official-label baseline.
+
 ## Public code retrieval baseline
 
 At frozen executable `03ac468`, the pinned CoIR CosQA and MTEB CodeSearchNet

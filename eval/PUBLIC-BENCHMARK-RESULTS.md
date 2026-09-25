@@ -38,6 +38,12 @@ fixed-candidate reranker could address that ranking gap; it cannot recover the
 remaining **11.6%** missing from the candidate pool. This is motivation for a
 separate experiment, not evidence that a particular reranker will improve it.
 
+The subsequent [independent BM25 check](COSQA-BM25-RESULTS.md) reproduced lexical
+quality after aligning score ties and found many exact duplicate CosQA texts
+with distinct IDs. Semantic's advantage survives an exact-content sensitivity
+check, but part of the apparent ranking gap reflects which duplicate ID appears
+first. A reranker experiment must specify duplicate/tie handling before execution.
+
 ## Paired nDCG@10 outcomes
 
 Counts are better / worse / equal for the same query, using unrounded scores.

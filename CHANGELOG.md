@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Cross-check the retained CosQA lexical baseline with an independent offline
+  BM25 ranker and the same StandardAnalyzer tokenization.
+
 - Add pinned CoIR CoSQA and MTEB CodeSearchNet Python/Go retrieval baselines,
   sharing srcx query construction and using trec_eval metrics on official labels.
 
