@@ -158,6 +158,11 @@ compares small and large on both frozen suites, including lexical controls.
 [Results](https://github.com/lambdadb/srcx/blob/develop/eval/MODEL-COMPARISON-RESULTS.md)
 show mixed gains and regressions; small remains the initial managed choice.
 
+[Transfer evaluation preparation](https://github.com/lambdadb/srcx/blob/develop/eval/TRANSFER-EVAL.md) adds source-verified,
+unreviewed Python/Go questions; no live retrieval has been run on them.
+New evaluation roots retain [safe command failure diagnostics](https://github.com/lambdadb/srcx/blob/develop/eval/COMMAND-DIAGNOSTICS.md)
+for explicit recovery.
+
 ## Explicit live acceptance run
 
 The live harness accepts `LAMBDADB_BASE_URL`, `LAMBDADB_PROJECT_NAME`, and

@@ -1,8 +1,7 @@
 // Checkout-only CLI evaluation. prepare is offline; run imports pinned public
 // source into normal Collections. Format 3 adds paid managed embedding requests.
 import assert from "node:assert/strict";
-import { parseArgs, promisify } from "node:util";
-import { execFile } from "node:child_process";
+import { parseArgs } from "node:util";
 import { readFile, readdir, mkdir, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { atomic, hash, optionalJson } from "../dist/common.js";
@@ -31,7 +30,7 @@ import {
   summarizeModes,
 } from "./cli-eval-lib.mjs";
 
-const exec = promisify(execFile);
+import { runEvalCli } from "./eval-command.mjs";
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
@@ -53,31 +52,17 @@ const env = {
 };
 // SDK debug output is not evaluation evidence and may contain credentials.
 delete env.LAMBDADB_DEBUG;
-async function cli(args) {
-  try {
-    const started = performance.now();
-    const { stdout } = await exec(
-      process.execPath,
-      [resolve("dist/cli.js"), ...args],
-      { env, encoding: "utf8", maxBuffer: 32 * 1024 * 1024 },
-    );
-    return {
-      value: JSON.parse(stdout),
-      stdout,
-      durationMs: performance.now() - started,
-    };
-  } catch (e) {
-    // Do not echo child-process argv, environment, raw SDK bodies or source.
-    throw new Error(
-      `CLI ${args[0]} failed (exit ${e.code ?? "unknown"}). Retain this run and inspect its journals before --resume.`,
-    );
-  }
-}
+const cli = (args) =>
+  runEvalCli(args, {
+    env,
+    diagnosticsFile: join(root, "command-failures.json"),
+  });
 async function fingerprint() {
   const paths = [
     "package.json",
     "package-lock.json",
     "scripts/cli-eval.mjs",
+    "scripts/eval-command.mjs",
     "scripts/cli-eval-lib.mjs",
     "scripts/retrieval-eval-lib.mjs",
     ...(await readdir("dist"))
