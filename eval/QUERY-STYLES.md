@@ -5,6 +5,8 @@ useful semantic retrieval. It changes questions only: the same two pinned source
 commits, source chunks, managed OpenAI small model, default RRF, ten results and
 five reads remain fixed. See [the original protocol](RETRIEVAL-MODES.md).
 
+Observed results are recorded in [QUERY-STYLE-RESULTS.md](QUERY-STYLE-RESULTS.md).
+
 ## Frozen questions
 
 [query-styles-v2.json](query-styles-v2.json) contains eight new implementation

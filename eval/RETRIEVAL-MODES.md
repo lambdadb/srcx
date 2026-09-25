@@ -9,6 +9,11 @@ hit order, scores and non-vector payloads are preserved.
 Observed results and the transport issue found during execution are recorded in
 [RETRIEVAL-MODE-RESULTS.md](RETRIEVAL-MODE-RESULTS.md).
 
+The separate [query-style diagnostic](QUERY-STYLES.md) uses new paired tasks to
+test identifier, natural-language and mixed queries with this same search setup.
+It preserves this original suite and its results. [Model candidates](EMBEDDING-MODELS.md)
+are research for a later comparison, not models measured in these runs.
+
 ## Frozen inputs and labels
 
 [retrieval-modes-v1.json](retrieval-modes-v1.json) reuses the 16 questions and pinned

@@ -144,6 +144,12 @@ full stdout accounting, command timings and bounded embedding request estimates.
 `npm run eval:modes:prepare` is offline; live execution is explicit and incurs
 managed embedding and LambdaDB usage.
 
+The [query-style diagnostic](https://github.com/lambdadb/srcx/blob/develop/eval/QUERY-STYLES.md)
+pairs identifiers, natural-language descriptions and mixed questions on eight new
+tasks. It adds rank-prefix and stdout-budget measurements without changing the
+model or ranking. [Embedding model candidates](https://github.com/lambdadb/srcx/blob/develop/eval/EMBEDDING-MODELS.md)
+separately describe possible follow-up comparisons and integration requirements.
+
 ## Explicit live acceptance run
 
 The live harness accepts `LAMBDADB_BASE_URL`, `LAMBDADB_PROJECT_NAME`, and

@@ -34,6 +34,25 @@ for per-mode metrics, inspected misses, input/usage accounting, source revisions
 report hashes and evidence limits; [protocol](eval/RETRIEVAL-MODES.md) documents
 reproduction and effects.
 
+## Query-style supplement
+
+At harness commit `65c8e7060366f4df846c9b2bc08270e7337f0df1`, 72 searches tested
+eight new tasks with identifier, natural-language and mixed formulations using
+the same managed small model and the same two immutable publications. All
+**696 result handles and 356 reads** matched source/version facts. Complete
+first-five evidence by lexical/semantic/hybrid was **7/8, 7/8, 7/8** for identifiers,
+**0/8, 3/8, 1/8** for natural descriptions and **5/8, 7/8, 6/8** for mixed queries.
+These are eight paired tasks, not 24 independent judgments. Semantic helped on
+this diagnostic; the original keyword-heavy result must not be generalized.
+
+The frozen protocol adds verified candidate coverage at ranks 1/3/5/10, the first
+complete prefix, stdout tokens and offline token-budget prefixes. No model,
+ranking, read-selection or product default changed. The original suite/results
+and incomplete run remain intact. A completed rerun preserved report bytes and
+timestamp without service calls. Node 22.14.0 and 24.15.0 passed **69 tests**;
+typecheck, formatting and frozen-harness CI passed. See [results and cases](eval/QUERY-STYLE-RESULTS.md),
+[protocol](eval/QUERY-STYLES.md), and [unmeasured model candidates](eval/EMBEDDING-MODELS.md).
+
 ## Managed OpenAI embedding acceptance
 
 The opt-in managed preset passed a separate synthetic live run at application and

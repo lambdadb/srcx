@@ -9,6 +9,8 @@
 
 ### Added
 
+- Paired identifier/natural-language/mixed-query diagnostics on eight new tasks,
+  with verified candidate-rank coverage and offline stdout-budget analysis.
 - Bounded actual-CLI lexical/semantic/hybrid evaluation on identical managed
   corpora, with reviewed and original labels, per-question regressions, stdout
   token counts, command timings and durable request reservations.
