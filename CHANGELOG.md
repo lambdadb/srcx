@@ -9,6 +9,15 @@
 
 ### Added
 
+- Opt-in managed `text-embedding-3-large` (3072 dimensions) in separate pinned
+  Collections, with paired small/large evaluation and unchanged small identities.
+
+- Paired identifier/natural-language/mixed-query diagnostics on eight new tasks,
+  with verified candidate-rank coverage and offline stdout-budget analysis.
+- Bounded actual-CLI lexical/semantic/hybrid evaluation on identical managed
+  corpora, with reviewed and original labels, per-question regressions, stdout
+  token counts, command timings and durable request reservations.
+
 - Opt-in LambdaDB managed OpenAI `text-embedding-3-small` Collections, offline
   embedding input previews, and explicit semantic/RRF hybrid search modes.
 - Candidate validation of generated vectors separately from exact source payloads,
@@ -31,6 +40,9 @@
   `refs/tags/...` selectors.
 
 ### Fixed
+
+- Fetch omitted managed vectors from query responses through the same immutable
+  Tag, preserving hit order/scores and requiring exact non-vector payload equality.
 
 - Reject an unprepared CLI evaluation run before creating its root/lock so a
   subsequent offline preparation can use the same path.

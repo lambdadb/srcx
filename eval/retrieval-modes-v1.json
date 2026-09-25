@@ -1,0 +1,421 @@
+{
+  "format": 3,
+  "name": "retrieval-modes-v1",
+  "repositories": {
+    "srcx": "github.com/lambdadb/srcx",
+    "lambdadb-cli": "github.com/lambdadb/lambdadb-cli"
+  },
+  "labelStatus": "Assistant-reviewed diagnostic labels, revised after inspecting the previous lexical run and before this three-mode run. Two related public TypeScript repositories; not independent human labels or a held-out benchmark. Original labels are scored separately.",
+  "settings": {
+    "preset": "managed-openai-small",
+    "searchLimit": 10,
+    "readLimit": 5,
+    "context": 0,
+    "selection": "ranked-prefix",
+    "modes": ["lexical", "semantic", "hybrid"],
+    "order": "rotate-by-question",
+    "limits": {
+      "documentInputTokens": 400000,
+      "queryEmbeddingRequests": 64,
+      "queryInputTokens": 10000,
+      "searchRequests": 96
+    }
+  },
+  "queries": [
+    {
+      "id": "srcx-alias-name",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "identifier",
+      "query": "releaseAlias",
+      "rationale": "Locate the deterministic mapping from a full Git tag ref to its bounded LambdaDB Alias name.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/releases.ts",
+            "startByte": 254,
+            "endByte": 332,
+            "startLine": 10,
+            "endLine": 10,
+            "sha256": "9b3e5f914ae9c931613fe40b6b0ca00d253c1927ab54ad7e2e77750b4519f12c",
+            "excerpt": "export const releaseAlias = (ref: string) => `rel-${hash(ref).slice(0, 40)}`;\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "srcx-remote-identity",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "identifier",
+      "query": "normalizeRemote",
+      "rationale": "Locate URL and SCP-like Git remote normalization, including GitHub case handling.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/git.ts",
+            "startByte": 6353,
+            "endByte": 7265,
+            "startLine": 204,
+            "endLine": 233,
+            "sha256": "abfc7ffe64b06121e54be589a11d4b33f8f0811a54981dbbd8c17fa54af05275",
+            "excerpt": "export function normalizeRemote(raw: string): string {\n  const value = raw.trim();\n  let host: string, path: string;\n  if (value.includes(\"://\")) {\n    const u = new URL(value);\n    invariant(\n      [\"ssh:\", \"https:\", \"http:\", \"git:\"].includes(u.protocol) &&\n        !u.search &&\n        !u.hash,\n      \"Unsupported remote URL.\",\n    );\n    host = u.host.toLowerCase();\n    path = u.pathname;\n  } else {\n    const m = /^(?:[^@/:]+@)?([^/:]+):(.+)$/.exec(value);\n    invariant(\n      m,\n      \"Remote must be a network Git URL; local-path remotes need explicit support.\",\n    );\n    host = m[1]!.toLowerCase();\n    path = m[2]!;\n  }\n  path = path.replace(/^\\/+|\\/+$/g, \"\").replace(/\\.git$/, \"\");\n  invariant(\n    host && path && !path.split(\"/\").some((x) => !x || x === \".\" || x === \"..\"),\n    \"Invalid remote identity.\",\n  );\n  if (host === \"github.com\") path = path.toLowerCase();\n  return `${host}/${path}`;\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "srcx-ambiguous-ref",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "behavior",
+      "query": "same name branch tag ambiguous explicit refs",
+      "rationale": "Explain how to select a Git branch versus tag when both use the same short name; either the validation logic or the usage documentation is sufficient.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/git.ts",
+            "startByte": 1398,
+            "endByte": 2198,
+            "startLine": 45,
+            "endLine": 68,
+            "sha256": "d12c7d9a2721c70ffeb2bafd3a00cdc5613d381b0b492b687cf009867815e97d",
+            "excerpt": "  if (ref.startsWith(\"refs/\")) {\n    invariant(\n      ref.startsWith(\"refs/heads/\") || ref.startsWith(\"refs/tags/\"),\n      \"Only heads/tags refs are supported.\",\n    );\n    invariant(await exists(ref), \"Ref not found.\");\n    if (ref.startsWith(\"refs/heads/\")) branch = ref;\n  } else {\n    const heads = await exists(`refs/heads/${ref}`),\n      tags = await exists(`refs/tags/${ref}`);\n    invariant(\n      !(heads && tags),\n      \"Ambiguous branch/tag name: use refs/heads/... or refs/tags/...\",\n    );\n    if (heads) {\n      qualified = `refs/heads/${ref}`;\n      branch = qualified;\n    } else if (tags) qualified = `refs/tags/${ref}`;\n    else\n      invariant(\n        /^[0-9a-fA-F]{4,64}$/.test(ref),\n        \"Unknown ref; only local branch/tag names and commit OIDs are accepted.\",\n      );\n  }\n"
+          }
+        ],
+        [
+          {
+            "path": "README.md",
+            "startByte": 2139,
+            "endByte": 2531,
+            "startLine": 59,
+            "endLine": 64,
+            "sha256": "aeb1276e80af997d21d1734792317ea9314db89c1fb4b5cfe399316518d822f7",
+            "excerpt": "The output directory must be new and its parent must exist. The command resolves\nthe ref once, reads Git tree/blob objects, and ignores working-tree edits. Local\nbranches, lightweight/annotated commit tags, and commit OIDs are accepted. Branch\nand tag names that collide require `refs/heads/...` or `refs/tags/...`. No automatic\nfetch, history replay, or revision expressions are supported.\n\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "srcx-read-integrity",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "behavior",
+      "query": "result belongs another endpoint project original source hash",
+      "rationale": "Explain both checks that prevent reading a result against the wrong connection or accepting changed original file bytes. Both checks are required.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/search.ts",
+            "startByte": 5747,
+            "endByte": 5914,
+            "startLine": 196,
+            "endLine": 199,
+            "sha256": "c753c7db3afbd93d904efb5565425e879a75dbca31a1894790a9ca24d0462eb8",
+            "excerpt": "  invariant(\n    h.endpoint === s.endpoint && h.project === s.project,\n    \"Result belongs to another endpoint/project; restore that connection before reading.\",\n  );\n"
+          },
+          {
+            "path": "src/search.ts",
+            "startByte": 6119,
+            "endByte": 6519,
+            "startLine": 206,
+            "endLine": 215,
+            "sha256": "c455576434207a4fcd670c6ae83fedb6f0aa46c79042abb591273ca28ae2bd24",
+            "excerpt": "  const file = await one(store, tag(v.tagName), h.fileId);\n  invariant(\n    file?.kind === \"file\" &&\n      file.configHash === h.repository.configHash &&\n      file.path === h.path &&\n      typeof file.sourceText === \"string\" &&\n      file.contentHash === h.contentHash &&\n      hash(Buffer.from(file.sourceText)) === h.contentHash,\n    \"Original source is missing or its hash does not match.\",\n  );\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "srcx-pending-release",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "behavior",
+      "query": "moved ref intent pending stale target",
+      "rationale": "Explain why synchronization persists a moved release intent before changing the Alias, and how resolution blocks pending release targets.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/releases.ts",
+            "startByte": 904,
+            "endByte": 1388,
+            "startLine": 25,
+            "endLine": 39,
+            "sha256": "50e393023b4998af7ad7243ae44908add9e1e18acdc50dc909f7a86be09345d3",
+            "excerpt": "    let control: Doc = {\n      id: releaseId(release.ref),\n      kind: \"manifest\",\n      role: \"git-ref\",\n      schemaVersion: 1,\n      configHash: binding.configHash,\n      repoId: binding.repoId,\n      indexId: binding.indexId,\n      gitRef: release.ref,\n      desiredOid: release.oid,\n      aliasName: name,\n      status: \"pending\",\n    };\n    // Save moved-ref intent first so interrupted sync cannot expose the stale target as current.\n    await store.upsert(\"main\", [control]);\n"
+          },
+          {
+            "path": "src/releases.ts",
+            "startByte": 3994,
+            "endByte": 4131,
+            "startLine": 120,
+            "endLine": 123,
+            "sha256": "6bc52a89b4381151a92e40f6f89e79133bc05fa80c1e391fcde90b132481a7ad",
+            "excerpt": "  invariant(\n    control.status === \"available\",\n    \"Git tag target is pending; import its desired commit and run git sync-tags.\",\n  );\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "srcx-literal-query",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "behavior",
+      "query": "query syntax literal skipSyntax path language filter",
+      "rationale": "Find the query construction showing literal analyzed query text and chunk/path/language filters.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/search.ts",
+            "startByte": 2288,
+            "endByte": 2771,
+            "startLine": 71,
+            "endLine": 86,
+            "sha256": "b6c030a373a780e5a09476f11f63ba50886222795d58570fb44387178ec86901",
+            "excerpt": "  const literal = (field: string, value: string) => ({\n    queryString: { query: value, defaultField: field, skipSyntax: true },\n    occur: \"filter\",\n  });\n  return {\n    bool: [\n      literal(\"kind\", \"chunk\"),\n      {\n        queryString: { query, defaultField: \"searchText\", skipSyntax: true },\n        occur: \"must\",\n      },\n      ...(filters.path ? [literal(\"path\", filters.path)] : []),\n      ...(filters.language ? [literal(\"language\", filters.language)] : []),\n    ],\n  };\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "srcx-local-preview",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "documentation",
+      "query": "dry-run committed Git tree dirty working files output artifact",
+      "rationale": "Find the documented offline preview commands and the guarantee that they use Git objects rather than working-tree edits.",
+      "evidenceSets": [
+        [
+          {
+            "path": "README.md",
+            "startByte": 1781,
+            "endByte": 2531,
+            "startLine": 48,
+            "endLine": 64,
+            "sha256": "9b965d2a73af40e97c1d697bfc4c574f76f95a30242cf0595b67c692c6e64045",
+            "excerpt": "## Preview a committed version without credentials\n\n```sh\nnode dist/cli.js import --path /path/to/repo --ref main --dry-run \\\n  --output /tmp/srcx-build-a\n\n# Compare a second selected commit with the first artifact.\nnode dist/cli.js import --path /path/to/repo --ref <full-commit-B> --dry-run \\\n  --previous /tmp/srcx-build-a --output /tmp/srcx-build-b\n```\n\nThe output directory must be new and its parent must exist. The command resolves\nthe ref once, reads Git tree/blob objects, and ignores working-tree edits. Local\nbranches, lightweight/annotated commit tags, and commit OIDs are accepted. Branch\nand tag names that collide require `refs/heads/...` or `refs/tags/...`. No automatic\nfetch, history replay, or revision expressions are supported.\n\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "srcx-excluded-files",
+      "repository": "srcx",
+      "commit": "8c0d1656d4d66a6461a32e9072b2e5f7fda9cec1",
+      "category": "documentation",
+      "query": "excluded paths symlinks submodules LFS binary invalid UTF-8",
+      "rationale": "Find the documented file inclusion/exclusion accounting and the lossless representation of excluded paths.",
+      "evidenceSets": [
+        [
+          {
+            "path": "README.md",
+            "startByte": 2531,
+            "endByte": 3037,
+            "startLine": 65,
+            "endLine": 71,
+            "sha256": "dfc1c1dad745f468dadddfe7455d1f96afc0de38d428a3f49289c46e1e5826d9",
+            "excerpt": "Each artifact contains `build.json` (inventory, configuration, counts, hashes,\nchange/deletion plan) and `records.jsonl` (exact file records and retrieval chunks).\nArtifacts contain source code; keep them with the same access policy as the repo.\nEvery tree entry is accounted for, including explicit exclusions for symlinks,\nsubmodules, LFS pointers, dependencies/build output, binary/invalid UTF-8 data,\ninvalid UTF-8 paths, and files above 1 MiB. Excluded paths are preserved losslessly\nin `pathBase64`.\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-parse-ref",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "identifier",
+      "query": "parseRef",
+      "rationale": "Locate parsing and validation of branch:NAME, tag:NAME and alias:NAME read refs.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/input.ts",
+            "startByte": 2001,
+            "endByte": 2346,
+            "startLine": 44,
+            "endLine": 51,
+            "sha256": "62a63041705923b15eade098b938f4793e97d25c58b96c291febc544a5271a5f",
+            "excerpt": "export function parseRef(value: string): ReadRef {\n  const [kind, refName, extra] = value.split(':');\n  if (!['branch', 'tag', 'alias'].includes(kind ?? '') || extra !== undefined) {\n    throw new InputError('Ref must be branch:NAME, tag:NAME or alias:NAME.');\n  }\n  return { kind: kind as ReadRef['kind'], name: name(refName, 'Ref name') };\n}\n\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-jsonl-reader",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "identifier",
+      "query": "readJsonl",
+      "rationale": "Locate JSONL parsing, blank-line handling, row numbering and document ID validation.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/input.ts",
+            "startByte": 3906,
+            "endByte": 5183,
+            "startLine": 79,
+            "endLine": 105,
+            "sha256": "a7c70679959a58022ca3eed4643abd61e15129db34d83493a5f86282cb4d1d95",
+            "excerpt": "export async function readJsonl(path: string): Promise<DocumentRow[]> {\n  const text = await readText(path);\n  const rows: DocumentRow[] = [];\n  // Do not allocate an array entry for every physical line (including blank ones).\n  let offset = 0;\n  let lineNumber = 0;\n  while (offset < text.length) {\n    const newline = text.indexOf('\\n', offset);\n    const end = newline === -1 ? text.length : newline;\n    const line = text.slice(offset, end);\n    offset = end + 1;\n    lineNumber++;\n    if (!line.trim()) continue;\n    if (rows.length >= MAX_INPUT_DOCUMENTS) {\n      throw new InputError(`JSONL exceeds the ${MAX_INPUT_DOCUMENTS}-document local limit at line ${lineNumber}. Split the file first.`);\n    }\n    let doc: Record<string, unknown>;\n    try { doc = object(JSON.parse(line), 'Document'); }\n    catch { throw new InputError(`JSONL line ${lineNumber} must be a JSON object.`); }\n    if ('id' in doc && (typeof doc.id !== 'string' || doc.id.length === 0)) {\n      throw new InputError(`JSONL line ${lineNumber} has an invalid id; use a nonempty string or omit it.`);\n    }\n    rows.push({ line: lineNumber, doc, bytes: Buffer.byteLength(JSON.stringify(doc)) });\n  }\n  if (rows.length === 0) throw new InputError('JSONL input contains no documents.');\n  return rows;\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-conflicting-query-ref",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "behavior",
+      "query": "query file ref conflicts explicit target size null",
+      "rationale": "Explain rejection of a query file ref that conflicts with --ref and normalization of a null query size.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/input.ts",
+            "startByte": 2346,
+            "endByte": 3427,
+            "startLine": 52,
+            "endLine": 69,
+            "sha256": "3dacf76f868c1f5f3bc2f55440463ab28bb02328cd81fe7d590260c225700965",
+            "excerpt": "export function queryInput(body: Record<string, unknown>, ref: ReadRef): QueryCollectionInput {\n  if (body.ref !== undefined) {\n    const supplied = object(body.ref, 'File ref');\n    if (Object.keys(supplied).some(k => !['kind', 'name'].includes(k)) || supplied.kind !== ref.kind || supplied.name !== ref.name) {\n      throw new InputError('File ref conflicts with --ref. Use the same explicit target in both.');\n    }\n  }\n  const input: Record<string, unknown> = { ...body, ref };\n  // Public API accepts null size, while SDK 0.5.1 only accepts undefined/number.\n  if (input.size === null) delete input.size;\n  if (input.size !== undefined && (!Number.isInteger(input.size) || Number(input.size) < 1 || Number(input.size) > 100)) {\n    throw new InputError('Query size must be an integer from 1 to 100, null or omitted.');\n  }\n  try { queryCollectionRequestBodyToJSON(input as QueryCollectionInput); }\n  catch { throw new InputError('Invalid query request. Check request fields and types; consistentRead:true requires a branch ref.'); }\n  return input as QueryCollectionInput;\n}\n\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-key-precedence",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "behavior",
+      "query": "API key environment variable precedence missing invalid fallback",
+      "rationale": "Explain API-key variable selection and missing/invalid value rejection. Either the full settings/resolveConfig implementation or the documented precedence table plus resolveConfig validation is sufficient.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/config.ts",
+            "startByte": 2887,
+            "endByte": 4395,
+            "startLine": 62,
+            "endLine": 84,
+            "sha256": "defe8e166ac50a181b88c18bae0e2f21113e98870e264d982859a7876f3a69bc",
+            "excerpt": "export async function settings(options: Options, creating = false): Promise<Required<Settings>> {\n  const saved = await loadSettings(configPath(options), !creating && !!(options.config ?? process.env.LAMBDADB_CONFIG));\n  const selectedEndpoint = options.endpoint ?? process.env.LAMBDADB_ENDPOINT ?? saved.endpoint;\n  const project = options.project ?? process.env.LAMBDADB_PROJECT ?? saved.project;\n  if (!selectedEndpoint || !project) throw new InputError('Endpoint and project are required. Run configure or set LAMBDADB_ENDPOINT and LAMBDADB_PROJECT.');\n  // Project names are encoded as a single SDK URL segment, with no implicit playground fallback.\n  if (!/^[a-zA-Z0-9_-]+$/.test(project)) throw new InputError('Project must contain only letters, digits, underscores or hyphens.');\n  return {\n    endpoint: endpoint(selectedEndpoint), project,\n    apiKeyEnv: environmentName(options.apiKeyEnv ?? process.env.LAMBDADB_API_KEY_ENV ?? saved.apiKeyEnv ?? 'LAMBDADB_API_KEY'),\n  };\n}\n\nexport async function resolveConfig(options: Options): Promise<Config> {\n  const selected = await settings(options);\n  const apiKey = process.env[selected.apiKeyEnv];\n  if (!apiKey || !apiKey.trim() || /[\\r\\n]/.test(apiKey)) throw new InputError('The selected API-key environment variable is missing or invalid. Supply it through your shell or CI secret manager.');\n  return {\n    ...selected, apiKey,\n    timeoutMs: integer(options.timeoutMs ?? process.env.LAMBDADB_TIMEOUT_MS ?? '30000', 'Timeout', 1, 3600000),\n  };\n}\n\n"
+          }
+        ],
+        [
+          {
+            "path": "README.md",
+            "startByte": 3731,
+            "endByte": 4098,
+            "startLine": 104,
+            "endLine": 109,
+            "sha256": "c7df421094fb8d79f08afc705701de343df266dea8ee383adadd99f62b32c1ff",
+            "excerpt": "| Setting | Precedence, highest first |\n| --- | --- |\n| Endpoint | `--endpoint`, `LAMBDADB_ENDPOINT`, saved `endpoint` |\n| Project | `--project`, `LAMBDADB_PROJECT`, saved `project` |\n| Key variable name | `--api-key-env`, `LAMBDADB_API_KEY_ENV`, saved `apiKeyEnv`, `LAMBDADB_API_KEY` |\n| Key value | Value of the selected variable only; no fallback to another key |\n"
+          },
+          {
+            "path": "src/config.ts",
+            "startByte": 3873,
+            "endByte": 4394,
+            "startLine": 75,
+            "endLine": 83,
+            "sha256": "3f835968b9f26326fda9b18c44a7f34b577f6389da404fcebb5aaf0d13d93a99",
+            "excerpt": "export async function resolveConfig(options: Options): Promise<Config> {\n  const selected = await settings(options);\n  const apiKey = process.env[selected.apiKeyEnv];\n  if (!apiKey || !apiKey.trim() || /[\\r\\n]/.test(apiKey)) throw new InputError('The selected API-key environment variable is missing or invalid. Supply it through your shell or CI secret manager.');\n  return {\n    ...selected, apiKey,\n    timeoutMs: integer(options.timeoutMs ?? process.env.LAMBDADB_TIMEOUT_MS ?? '30000', 'Timeout', 1, 3600000),\n  };\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-immutable-input",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "behavior",
+      "query": "read input regular file UTF-8 limit immutable snapshot",
+      "rationale": "Find how an input file is bounded, decoded as strict UTF-8 and fully read before submission.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/input.ts",
+            "startByte": 491,
+            "endByte": 1452,
+            "startLine": 11,
+            "endLine": 31,
+            "sha256": "4d04b2e6f5cd37f94ddb48c0b72772f0d7a4ed14a43809c815a539d1ee56b43c",
+            "excerpt": "export async function readText(path: string, limit = MAX_INPUT_BYTES): Promise<string> {\n  let file;\n  try { file = await open(path, 'r'); }\n  catch { throw new InputError('Cannot open input file.'); }\n  try {\n    if (!(await file.stat()).isFile()) throw new InputError('Input must be a regular file.');\n    // Read one immutable in-memory input snapshot; never submit a partially validated file.\n    const chunks: Buffer[] = [];\n    let size = 0;\n    for await (const chunk of file.createReadStream({ autoClose: false })) {\n      size += chunk.length;\n      if (size > limit) throw new InputError(`Input exceeds the ${limit}-byte local limit. Split the file first.`);\n      chunks.push(chunk as Buffer);\n    }\n    return new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks));\n  } catch (error) {\n    if (error instanceof InputError) throw error;\n    throw new InputError('Cannot read input as UTF-8.');\n  } finally { await file.close(); }\n}\n\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-command-deadline",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "behavior",
+      "query": "command deadline sequential requests abort transfer cleanup",
+      "rationale": "Find how one command deadline covers SDK and transfer requests and how timers/listeners are cleaned up.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/runtime.ts",
+            "startByte": 160,
+            "endByte": 1882,
+            "startLine": 4,
+            "endLine": 40,
+            "sha256": "164d5a7db8f9b985712b006652260d28c657adb2d8f2a59221272651bd5199e4",
+            "excerpt": "export function runtime(config: Config) {\n  // A no-op logger still makes SDK 0.5.1 clone and drain request/response bodies.\n  // Disable its environment-controlled logger before construction instead.\n  delete process.env.LAMBDADB_DEBUG;\n  const controller = new AbortController();\n  const interrupt = () => controller.abort();\n  // Keep the command deadline alive across sequential SDK requests and transfers.\n  const deadline = setTimeout(() => controller.abort(new DOMException('Command deadline exceeded', 'TimeoutError')), config.timeoutMs);\n  deadline.unref();\n  process.once('SIGINT', interrupt);\n  process.once('SIGTERM', interrupt);\n  const options: ClientRequestOptions = {\n    signal: controller.signal, timeoutMs: config.timeoutMs,\n    retries: {\n      strategy: 'backoff', retryConnectionErrors: true,\n      backoff: { initialInterval: 200, maxInterval: 500, exponent: 1.5, maxElapsedTime: Math.min(2000, config.timeoutMs) },\n    },\n  };\n  // Bind the command signal at fetch dispatch as well as in SDK options, instead\n  // of relying only on the SDK's cloned Request signal chain.\n  // Keep authenticated API and unauthenticated transfer clients separate.\n  const fetcher: Fetcher = (input, init) => fetch(input, { ...init, signal: controller.signal });\n  const client = new LambdaDBClient({\n    baseUrl: config.endpoint, projectName: config.project, projectApiKey: config.apiKey,\n    timeoutMs: config.timeoutMs,\n    httpClient: new HTTPClient({ fetcher }),\n    transferClient: new HTTPClient({ fetcher }),\n  });\n  return {\n    client, options,\n    close() {\n      clearTimeout(deadline);\n      process.removeListener('SIGINT', interrupt);\n      process.removeListener('SIGTERM', interrupt);\n    },\n  };\n}\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-brew-runtime",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "documentation",
+      "query": "Homebrew Node runtime upgrade uninstall",
+      "rationale": "Find the Homebrew runtime requirement and explicit upgrade/uninstall commands.",
+      "evidenceSets": [
+        [
+          {
+            "path": "README.md",
+            "startByte": 1028,
+            "endByte": 1313,
+            "startLine": 38,
+            "endLine": 42,
+            "sha256": "995ed00a27b26a103b56f5e0c6a3a915e0242fe0d91fcd21959596546cc40815",
+            "excerpt": "The [LambdaDB tap](https://github.com/lambdadb/homebrew-tap) installs the stable CLI\nand its Node 24 runtime. No separate Node/npm setup is needed. Update with\n`brew update` followed by `brew upgrade lambdadb/tap/lambdadb-cli`; remove with\n`brew uninstall lambdadb/tap/lambdadb-cli`.\n\n"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lambdadb-cli-doctor-limits",
+      "repository": "lambdadb-cli",
+      "commit": "513af6e4d262edd380013c86d51a20aad16274d7",
+      "category": "documentation",
+      "query": "doctor authentication collection list access not write readiness",
+      "rationale": "Find the documented limits of doctor: authentication/list access does not verify write permission or query readiness.",
+      "evidenceSets": [
+        [
+          {
+            "path": "README.md",
+            "startByte": 4716,
+            "endByte": 5270,
+            "startLine": 124,
+            "endLine": 131,
+            "sha256": "824cd173f9f5edbe2b94ae8627ea126a0dd1dbdb407c5fb32d94508e641680bb",
+            "excerpt": "`doctor` validates configuration and uses `listCollections({size: 1})` to check\nauthentication and project collection-list access. Success does not prove write\npermissions, collection readiness, or search visibility. Failure provides a safe\nerror category and a recovery hint. SDK debug logging is disabled even when\n`LAMBDADB_DEBUG` is set. Error bodies, raw SDK errors and presigned response URLs\nare not printed. The active key is redacted if echoed inside returned data.\nOther document data remains visible; redirect results to appropriate storage.\n\n"
+          }
+        ]
+      ]
+    }
+  ],
+  "revisions": [
+    {
+      "query": "srcx-excluded-files",
+      "change": "Exclude the trailing empty line, retaining all explanatory source text."
+    },
+    {
+      "query": "lambdadb-cli-key-precedence",
+      "change": "Accept documented variable precedence plus resolveConfig value validation as an alternative to the full implementation."
+    }
+  ]
+}

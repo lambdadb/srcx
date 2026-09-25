@@ -58,17 +58,32 @@ export const MANAGED_PRESET: Preset = {
     sourceField: "embeddingText",
   },
 };
+export const MANAGED_LARGE_PRESET: Preset = {
+  ...MANAGED_PRESET,
+  embedding: {
+    ...MANAGED_PRESET.embedding!,
+    model: "text-embedding-3-large",
+    dimensions: 3072,
+  },
+};
 export function presetFor(embedding = "none"): Preset {
   invariant(
-    ["none", "text-embedding-3-small"].includes(embedding),
-    "Embedding must be none or text-embedding-3-small.",
+    ["none", "text-embedding-3-small", "text-embedding-3-large"].includes(
+      embedding,
+    ),
+    "Embedding must be none, text-embedding-3-small or text-embedding-3-large.",
   );
-  return embedding === "none" ? PRESET : MANAGED_PRESET;
+  if (embedding === "none") return PRESET;
+  return embedding === "text-embedding-3-large"
+    ? MANAGED_LARGE_PRESET
+    : MANAGED_PRESET;
 }
 export function supportedPreset(preset: unknown): preset is Preset {
   return (
     preset !== undefined &&
-    [hash(PRESET), hash(MANAGED_PRESET)].includes(hash(preset))
+    [hash(PRESET), hash(MANAGED_PRESET), hash(MANAGED_LARGE_PRESET)].includes(
+      hash(preset),
+    )
   );
 }
 export function indexConfigs(preset: Preset = PRESET) {

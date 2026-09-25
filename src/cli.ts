@@ -100,7 +100,7 @@ repo
       "--embedding <model>",
       "Managed model (source text is sent to the provider on import)",
     )
-      .choices(["none", "text-embedding-3-small"])
+      .choices(["none", "text-embedding-3-small", "text-embedding-3-large"])
       .default("none"),
   )
   .action(async (o) => {
@@ -149,7 +149,7 @@ cli
     new Option(
       "--embedding <model>",
       "Preset for --dry-run --path; connected imports use the repository preset",
-    ).choices(["none", "text-embedding-3-small"]),
+    ).choices(["none", "text-embedding-3-small", "text-embedding-3-large"]),
   )
   .option("--output <directory>", "New artifact directory")
   .option(

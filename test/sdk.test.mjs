@@ -182,3 +182,91 @@ test("managed list hydration fetches the same Tag and rejects missing or changed
   failure = "changed";
   await assert.rejects(collect(), /payloads disagree/);
 });
+
+test("query hydration preserves hit order and scores, fetching only missing managed vectors", async (t) => {
+  let failure;
+  const requests = [];
+  const docs = [
+    {
+      id: "missing",
+      kind: "chunk",
+      embeddingStatus: "managed",
+      embeddingText: "fixture",
+    },
+    { id: "skip", kind: "chunk", embeddingStatus: "skipped" },
+    {
+      id: "present",
+      kind: "chunk",
+      embeddingStatus: "managed",
+      embeddingText: "other",
+      embedding: [0.3, 0.4],
+    },
+  ];
+  const server = createServer(async (req, res) => {
+    let raw = "";
+    for await (const part of req) raw += part;
+    const body = JSON.parse(raw);
+    requests.push({ url: req.url, body });
+    let hits = docs.map((doc, i) => ({
+      collection: "managed",
+      doc,
+      score: 9 - i,
+    }));
+    if (req.url.endsWith("/docs/fetch"))
+      hits =
+        failure === "missing"
+          ? []
+          : [
+              {
+                collection: "managed",
+                doc: {
+                  ...docs[0],
+                  embedding: [0.1, 0.2],
+                  ...(failure === "changed" ? { embeddingText: "wrong" } : {}),
+                },
+              },
+            ];
+    res.setHeader("Content-Type", "application/json");
+    res.end(
+      JSON.stringify({
+        docs: hits,
+        total: hits.length,
+        took: 1,
+        isDocsInline: true,
+      }),
+    );
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  process.env.SRCX_QUERY_FIXTURE_KEY = "fixture";
+  t.after(() => delete process.env.SRCX_QUERY_FIXTURE_KEY);
+  const store = new LambdaRemote({
+    endpoint: `http://127.0.0.1:${server.address().port}`,
+    project: "fixture",
+    apiKeyEnv: "SRCX_QUERY_FIXTURE_KEY",
+  }).store("managed");
+  const query = () =>
+    store.query("pinned", { queryString: { query: "fixture" } }, 3);
+  const hits = await query();
+  assert.deepEqual(
+    hits.map((h) => [h.doc.id, h.score]),
+    [
+      ["missing", 9],
+      ["skip", 8],
+      ["present", 7],
+    ],
+  );
+  assert.deepEqual(hits[0].doc.embedding, [0.1, 0.2]);
+  assert.deepEqual(hits[2].doc, docs[2]);
+  assert.equal(requests.length, 2);
+  assert.deepEqual(requests[1].body.ids, ["missing"]);
+  for (const r of requests) {
+    assert.deepEqual(r.body.ref, { kind: "tag", name: "pinned" });
+    assert.equal(r.body.includeVectors, true);
+    assert.equal(r.body.consistentRead, false);
+  }
+  failure = "missing";
+  await assert.rejects(query(), /missing from fetch/);
+  failure = "changed";
+  await assert.rejects(query(), /payloads disagree/);
+});

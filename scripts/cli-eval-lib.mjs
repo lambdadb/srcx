@@ -12,14 +12,33 @@ export const PUBLIC_REPOSITORIES = {
   "lambdadb-cli": "github.com/lambdadb/lambdadb-cli",
 };
 export function validateCliSuite(suite) {
-  assert.equal(suite.format, 2);
+  assert.ok([2, 3].includes(suite.format));
   assert.deepEqual(suite.repositories, PUBLIC_REPOSITORIES);
+  assert.ok(
+    suite.format === 3
+      ? ["managed-openai-small", "managed-openai-large"].includes(
+          suite.settings.preset,
+        )
+      : suite.settings.preset === "cli-default",
+  );
   assert.deepEqual(suite.settings, {
-    preset: "cli-default",
+    preset: suite.settings.preset,
     searchLimit: 10,
     readLimit: 5,
     context: 0,
     selection: "ranked-prefix",
+    ...(suite.format === 3
+      ? {
+          modes: ["lexical", "semantic", "hybrid"],
+          order: "rotate-by-question",
+          limits: {
+            documentInputTokens: 400000,
+            queryEmbeddingRequests: 64,
+            queryInputTokens: 10000,
+            searchRequests: 96,
+          },
+        }
+      : {}),
   });
   assert.ok(suite.queries.length >= 16 && suite.queries.length <= 40);
   const ids = new Set();
@@ -57,6 +76,30 @@ export function validateCliSuite(suite) {
     assert.ok(
       suite.queries.filter((q) => q.repository === repository).length >= 8,
     );
+  if (suite.queries.some((q) => q.queryStyle !== undefined)) {
+    const groups = new Map();
+    for (const q of suite.queries) {
+      assert.ok(["identifier", "natural", "mixed"].includes(q.queryStyle));
+      assert.match(q.taskId, /^[a-z0-9-]+$/);
+      const group = groups.get(q.taskId) ?? [];
+      group.push(q);
+      groups.set(q.taskId, group);
+    }
+    for (const group of groups.values()) {
+      assert.equal(group.length, 3);
+      assert.deepEqual(
+        new Set(group.map((q) => q.queryStyle)),
+        new Set(["identifier", "natural", "mixed"]),
+      );
+      for (const q of group)
+        for (const key of ["repository", "commit", "evidenceSets"])
+          assert.deepEqual(
+            q[key],
+            group[0][key],
+            "Query styles must share a task and labels.",
+          );
+    }
+  }
 }
 export function verifyCliEvidence(query, files) {
   for (const evidence of query.evidenceSets) {
@@ -215,4 +258,106 @@ export function summarizeCli(rows) {
       ]),
     ),
   };
+}
+
+/** Rotate command order deterministically; labels never choose the read prefix. */
+export function querySchedule(suite) {
+  const modes = suite.settings.modes ?? ["lexical"];
+  return suite.queries.flatMap((q, i) =>
+    [...modes.slice(i % modes.length), ...modes.slice(0, i % modes.length)].map(
+      (mode) => ({ query: q, mode }),
+    ),
+  );
+}
+/** Reserve upper bounds durably before requests; unknown outcomes are never refunded. */
+export function reserveUsage(usage, limits, amount) {
+  const next = { ...usage };
+  for (const [key, cap] of Object.entries(limits)) {
+    const current = usage[key] ?? 0,
+      add = amount[key] ?? 0;
+    assert.ok(
+      Number.isSafeInteger(current) &&
+        current >= 0 &&
+        Number.isSafeInteger(add) &&
+        add >= 0,
+    );
+    assert.ok(
+      current + add <= cap,
+      `Run limit exceeded: ${key}; retain evidence and inspect usage before recovery.`,
+    );
+    next[key] = current + add;
+  }
+  assert.ok(Object.keys(amount).every((key) => Object.hasOwn(limits, key)));
+  return next;
+}
+export function summarizeModes(rows, suite) {
+  const schedule = querySchedule(suite);
+  const key = (id, mode) => `${id}:${mode}`;
+  assert.equal(rows.length, schedule.length, "Incomplete comparison.");
+  assert.deepEqual(
+    new Set(rows.map((r) => key(r.id, r.mode))),
+    new Set(schedule.map((s) => key(s.query.id, s.mode))),
+  );
+  const median = (values) => {
+    const v = [...values].sort((a, b) => a - b),
+      m = Math.floor(v.length / 2);
+    return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
+  };
+  const modes = Object.fromEntries(
+    suite.settings.modes.map((mode) => {
+      const selected = rows.filter((r) => r.mode === mode);
+      assert.ok(
+        selected.every((r) =>
+          [r.search.durationMs, ...r.reads.map((x) => x.durationMs)].every(
+            (n) => Number.isFinite(n) && n >= 0,
+          ),
+        ),
+      );
+      return [
+        mode,
+        {
+          ...summarizeCli(selected),
+          originalLabels: summarizeCli(
+            selected.map((r) => ({ ...r, metrics: r.originalMetrics })),
+          ),
+          medianSearchMs: median(selected.map((r) => r.search.durationMs)),
+          medianCommandMs: median(
+            selected.map(
+              (r) =>
+                r.search.durationMs +
+                r.reads.reduce((n, x) => n + x.durationMs, 0),
+            ),
+          ),
+        },
+      ];
+    }),
+  );
+  const comparisons = Object.fromEntries(
+    suite.settings.modes
+      .filter((m) => m !== "lexical")
+      .map((mode) => {
+        const changed = suite.queries.map((q) => {
+          const a = rows.find((r) => r.id === q.id && r.mode === "lexical"),
+            b = rows.find((r) => r.id === q.id && r.mode === mode);
+          return {
+            id: q.id,
+            repository: q.repository,
+            coverageDelta: b.metrics.coverage - a.metrics.coverage,
+            completeBefore: a.metrics.complete,
+            completeAfter: b.metrics.complete,
+            outputTokenDelta: b.metrics.outputTokens - a.metrics.outputTokens,
+          };
+        });
+        return [
+          mode,
+          {
+            coverageWins: changed.filter((r) => r.coverageDelta > 0).length,
+            coverageLosses: changed.filter((r) => r.coverageDelta < 0).length,
+            unchanged: changed.filter((r) => r.coverageDelta === 0).length,
+            queries: changed,
+          },
+        ];
+      }),
+  );
+  return { modes, comparisons };
 }

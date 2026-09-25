@@ -12,6 +12,79 @@ concurrency, or retrieval-quality benchmark. npm publication evidence is recorde
 separately below. The persistent Git branch changes have a separate synthetic
 live run recorded next; the earlier live runs do not validate this new path.
 
+## Retrieval mode comparison
+
+At application/harness commit `de5a23bbc2f0712d134066354b4313420d21fccd`, the
+actual CLI completed 48 searches across the same two managed corpora and fixed
+16-question suite. All **456 results/handles** and **236 reads** matched pinned
+source and version facts. Revised-label complete evidence was lexical **16/16**,
+semantic **8/16**, and hybrid **13/16**; unchanged original labels scored 14/16,
+8/16, and 11/16. These are diagnostic coverage measurements, not human answer grades.
+
+All three hybrid regressions contained the required evidence in search's top ten,
+but outside the first five reads. Keep lexical as the default pending fresh-task
+ranking evaluation. The run also exposed a query response omitting one managed
+vector; same-Tag fetch hydration now preserves non-vector payload equality and
+hit order/scores. The failed attempt remains separate from the complete fresh run.
+
+Node 22/24 passed **67 tests**, typechecking and installed-package CLI checks after
+the fix. The completed live report was revalidated without new service calls, and
+its bytes/timestamp were unchanged. See [full results](eval/RETRIEVAL-MODE-RESULTS.md)
+for per-mode metrics, inspected misses, input/usage accounting, source revisions,
+report hashes and evidence limits; [protocol](eval/RETRIEVAL-MODES.md) documents
+reproduction and effects.
+
+## Query-style supplement
+
+At harness commit `65c8e7060366f4df846c9b2bc08270e7337f0df1`, 72 searches tested
+eight new tasks with identifier, natural-language and mixed formulations using
+the same managed small model and the same two immutable publications. All
+**696 result handles and 356 reads** matched source/version facts. Complete
+first-five evidence by lexical/semantic/hybrid was **7/8, 7/8, 7/8** for identifiers,
+**0/8, 3/8, 1/8** for natural descriptions and **5/8, 7/8, 6/8** for mixed queries.
+These are eight paired tasks, not 24 independent judgments. Semantic helped on
+this diagnostic; the original keyword-heavy result must not be generalized.
+
+The frozen protocol adds verified candidate coverage at ranks 1/3/5/10, the first
+complete prefix, stdout tokens and offline token-budget prefixes. No model,
+ranking, read-selection or product default changed. The original suite/results
+and incomplete run remain intact. A completed rerun preserved report bytes and
+timestamp without service calls. Node 22.14.0 and 24.15.0 passed **69 tests**;
+typecheck, formatting and frozen-harness CI passed. See [results and cases](eval/QUERY-STYLE-RESULTS.md),
+[protocol](eval/QUERY-STYLES.md), and [embedding model research](eval/EMBEDDING-MODELS.md).
+
+## Managed small versus large comparison
+
+At frozen harness `6fa65b541dc50debdfa4f9a6297301b2cb3c2b53`, small (1536 dimensions)
+and large (3072 dimensions) completed 240 searches over identical pinned source/chunk inputs.
+All **2,304 result handles and 1,184 reads** passed source/version validation.
+Style-suite complete top-five evidence was semantic **17/24 → 16/24** and hybrid
+**14/24 → 16/24**; natural semantic improved **3/8 → 4/8**. The separate regression
+set scored semantic **8/16 → 8/16** and hybrid **13/16 → 12/16**. All 40 lexical
+candidate lists matched across models. Small coverage repeated the earlier runs.
+
+An initial large attempt stopped twice with an unknown CLI search error; its
+19 partial rows and two successful diagnostic queries remain excluded. A fresh
+isolated run reused the same publications and completed without changing the
+frozen protocol. All four completed reports revalidated without service calls
+and retained their bytes/timestamps. Keep small as the initial managed choice
+and large opt-in; these familiar diagnostic tasks do not establish a model winner.
+
+Node 22.14.0 and 24.15.0 passed **72 tests**, typecheck and installed-package CLI
+checks covering lexical/small/large. Formatting/version checks and frozen-code
+CI passed. [Full results](eval/MODEL-COMPARISON-RESULTS.md) record per-query changes,
+report hashes, original-label scores, all five roots' reserved usage, and limits;
+[protocol](eval/MODEL-COMPARISON.md) records the predeclared comparison.
+
+Review follow-up: resume and completed replay now reject saved rows whose category
+is missing or differs from the frozen question, even when the stored summary was
+recomputed to match the corruption. The subprocess regression first reproduced
+the acceptance bug, then passed with the guard; valid replay and rejected reports
+both preserve their bytes. Node 24.15.0 passed **73 tests** after this change.
+The four completed model reports have no category mismatches and remain unchanged.
+Their frozen harness remains the revision recorded above; the new harness requires
+fresh run roots rather than rewriting historical runtime fingerprints.
+
 ## Managed OpenAI embedding acceptance
 
 The opt-in managed preset passed a separate synthetic live run at application and

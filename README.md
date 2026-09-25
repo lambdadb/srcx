@@ -79,9 +79,13 @@ baseline is available to the test/build API, not as a public storage backend.
 
 ## Opt into managed embeddings
 
-LambdaDB can generate OpenAI `text-embedding-3-small` vectors (1536 dimensions,
-cosine) for meaningful code, tests and prose. Imports-only and structural chunks
-remain lexical. The CLI uses LambdaDB credentials; it does not need an OpenAI key.
+Supported models are `text-embedding-3-small` (1536 dimensions) and
+`text-embedding-3-large` (3072 dimensions), both cosine. Use either name with
+`--embedding`; each has a separate pinned preset and Collection. Existing small
+Collections keep their identity. Changing models requires a separate import.
+
+LambdaDB generates vectors for meaningful code, tests and prose. Imports-only
+and structural chunks remain lexical. The CLI uses LambdaDB credentials; it does not need an OpenAI key.
 Source text sent for embedding and semantic/hybrid queries pass through LambdaDB
 to OpenAI and incur usage charges. See [LambdaDB managed embeddings](https://docs.lambdadb.ai/guides/collections/managed-embeddings).
 
@@ -92,7 +96,7 @@ srcx import --path /path/to/repo --ref main --dry-run \
 
 # Creates a separate Collection; existing lexical Collections stay usable.
 srcx repo add --path /path/to/repo --embedding text-embedding-3-small
-# Use the exact collection value returned above, especially with two presets.
+# Use the exact collection value returned above, especially with multiple presets.
 srcx import --repo <collection> --ref main
 srcx search --repo <collection> --version main --query "retry failed writes" --mode hybrid
 srcx search --repo <collection> --version main --query "retry failed writes" --mode semantic
@@ -137,6 +141,22 @@ The [default CLI workflow evaluation](https://github.com/lambdadb/srcx/blob/deve
 adds a second public repository and verifies real `search` → `read` results with
 the unchanged CLI preset. It uses normal repository Collections and separate local
 state; see its documented effects before opting into the live run.
+
+The [retrieval mode comparison](https://github.com/lambdadb/srcx/blob/develop/eval/RETRIEVAL-MODES.md) runs lexical, semantic and
+hybrid against the same managed corpora. It retains original and reviewed labels,
+full stdout accounting, command timings and bounded embedding request estimates.
+`npm run eval:modes:prepare` is offline; live execution is explicit and incurs
+managed embedding and LambdaDB usage.
+
+The [query-style diagnostic](https://github.com/lambdadb/srcx/blob/develop/eval/QUERY-STYLES.md)
+pairs identifiers, natural-language descriptions and mixed questions on eight new
+tasks. It adds rank-prefix and stdout-budget measurements without changing the
+model or ranking. [Embedding model candidates](https://github.com/lambdadb/srcx/blob/develop/eval/EMBEDDING-MODELS.md)
+separately describe possible follow-up comparisons and integration requirements.
+The [managed model comparison](https://github.com/lambdadb/srcx/blob/develop/eval/MODEL-COMPARISON.md)
+compares small and large on both frozen suites, including lexical controls.
+[Results](https://github.com/lambdadb/srcx/blob/develop/eval/MODEL-COMPARISON-RESULTS.md)
+show mixed gains and regressions; small remains the initial managed choice.
 
 ## Explicit live acceptance run
 

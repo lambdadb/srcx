@@ -12,6 +12,7 @@ import { publish, published, gitBranchName } from "../dist/publish.js";
 import {
   PRESET,
   MANAGED_PRESET,
+  MANAGED_LARGE_PRESET,
   indexConfigs,
   materialize,
 } from "../dist/build.js";
@@ -40,7 +41,9 @@ async function cliContract(t, preset) {
       previous: f.buildA,
     });
   }
-  const store = managed ? new ManagedStore() : new MemoryStore();
+  const store = managed
+    ? new ManagedStore(preset.embedding.dimensions)
+    : new MemoryStore();
   const collection = "code-review";
   const binding = {
     repoId: "review-repo",
@@ -300,7 +303,7 @@ async function cliContract(t, preset) {
     f.b,
     "--dry-run",
     "--embedding",
-    managed ? "text-embedding-3-small" : "none",
+    managed ? preset.embedding.model : "none",
     "--output",
     join(f.root, "cli-preview"),
   ]);
@@ -371,3 +374,6 @@ async function cliContract(t, preset) {
 for (const preset of [PRESET, MANAGED_PRESET])
   test(`CLI ${preset.embedding ? "managed" : "lexical"} resumes, imports, searches and reads pinned versions`, (t) =>
     cliContract(t, preset));
+
+test("CLI managed large imports, searches and pins reads with 3072-dimensional vectors", (t) =>
+  cliContract(t, MANAGED_LARGE_PRESET));
