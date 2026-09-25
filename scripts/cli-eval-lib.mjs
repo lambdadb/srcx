@@ -11,11 +11,33 @@ export const PUBLIC_REPOSITORIES = {
   srcx: "github.com/lambdadb/srcx",
   "lambdadb-cli": "github.com/lambdadb/lambdadb-cli",
 };
+export const TRANSFER_REPOSITORIES = {
+  click: "github.com/pallets/click",
+  cobra: "github.com/spf13/cobra",
+};
 export function validateCliSuite(suite) {
-  assert.ok([2, 3].includes(suite.format));
-  assert.deepEqual(suite.repositories, PUBLIC_REPOSITORIES);
+  assert.ok([2, 3, 4].includes(suite.format));
+  const transfer = suite.format === 4;
+  if (transfer) {
+    const names = Object.keys(suite.repositories);
+    assert.equal(
+      names.length,
+      1,
+      "Transfer runs isolate one public repository.",
+    );
+    assert.ok(Object.hasOwn(TRANSFER_REPOSITORIES, names[0]));
+    assert.deepEqual(suite.repositories, {
+      [names[0]]: TRANSFER_REPOSITORIES[names[0]],
+    });
+    assert.equal(
+      suite.labelStatus,
+      "development-diagnostic-not-independently-reviewed",
+    );
+    assert.match(suite.draftHash, /^[a-f0-9]{64}$/);
+    assert.equal(suite.settings.preset, "managed-openai-small");
+  } else assert.deepEqual(suite.repositories, PUBLIC_REPOSITORIES);
   assert.ok(
-    suite.format === 3
+    suite.format >= 3
       ? ["managed-openai-small", "managed-openai-large"].includes(
           suite.settings.preset,
         )
@@ -27,25 +49,33 @@ export function validateCliSuite(suite) {
     readLimit: 5,
     context: 0,
     selection: "ranked-prefix",
-    ...(suite.format === 3
+    ...(suite.format >= 3
       ? {
           modes: ["lexical", "semantic", "hybrid"],
           order: "rotate-by-question",
           limits: {
-            documentInputTokens: 400000,
-            queryEmbeddingRequests: 64,
-            queryInputTokens: 10000,
-            searchRequests: 96,
+            documentInputTokens: transfer ? 600000 : 400000,
+            queryEmbeddingRequests: transfer ? 32 : 64,
+            queryInputTokens: transfer ? 2000 : 10000,
+            searchRequests: transfer ? 48 : 96,
           },
         }
       : {}),
   });
-  assert.ok(suite.queries.length >= 16 && suite.queries.length <= 40);
+  assert.ok(
+    transfer
+      ? suite.queries.length === 8
+      : suite.queries.length >= 16 && suite.queries.length <= 40,
+  );
   const ids = new Set();
   for (const q of suite.queries) {
     assert.ok(/^[a-z0-9-]+$/.test(q.id) && !ids.has(q.id));
     ids.add(q.id);
-    assert.ok(Object.hasOwn(PUBLIC_REPOSITORIES, q.repository));
+    assert.ok(Object.hasOwn(suite.repositories, q.repository));
+    if (transfer) {
+      assert.ok(["identifier", "natural", "mixed"].includes(q.queryStyle));
+      assert.equal(q.taskId, q.id);
+    }
     assert.match(q.commit, /^[a-f0-9]{40}$/);
     assert.ok(["identifier", "behavior", "documentation"].includes(q.category));
     assert.ok(
@@ -69,14 +99,16 @@ export function validateCliSuite(suite) {
             e.endByte > e.startByte,
         );
         assert.match(e.sha256, /^[a-f0-9]{64}$/);
+        if (transfer) assert.equal(e.excerpt, undefined);
+        else assert.equal(typeof e.excerpt, "string");
       }
     }
   }
-  for (const repository of Object.keys(PUBLIC_REPOSITORIES))
+  for (const repository of Object.keys(suite.repositories))
     assert.ok(
       suite.queries.filter((q) => q.repository === repository).length >= 8,
     );
-  if (suite.queries.some((q) => q.queryStyle !== undefined)) {
+  if (!transfer && suite.queries.some((q) => q.queryStyle !== undefined)) {
     const groups = new Map();
     for (const q of suite.queries) {
       assert.ok(["identifier", "natural", "mixed"].includes(q.queryStyle));
@@ -107,11 +139,12 @@ export function verifyCliEvidence(query, files) {
     for (const e of evidence) {
       const raw = Buffer.from(files.get(e.path).sourceText);
       const text = raw.subarray(e.startByte, e.endByte).toString();
-      assert.equal(
-        e.excerpt,
-        text,
-        "Review excerpt differs from evidence bytes.",
-      );
+      if (e.excerpt !== undefined)
+        assert.equal(
+          e.excerpt,
+          text,
+          "Review excerpt differs from evidence bytes.",
+        );
     }
   }
 }

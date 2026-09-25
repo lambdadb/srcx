@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Run bounded, explicitly unreviewed Click/Cobra retrieval diagnostics with managed small and unchanged source labels.
+
 - Retain allowlisted CLI evaluation failure diagnostics without raw output or credentials.
 - Prepare an offline, unreviewed Click/Cobra question set with pinned source evidence.
 - Default CLI search/read evaluation across two pinned public repositories, with

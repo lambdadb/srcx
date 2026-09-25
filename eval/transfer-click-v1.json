@@ -1,0 +1,237 @@
+{
+  "format": 4,
+  "name": "transfer-click-v1",
+  "repositories": {
+    "click": "github.com/pallets/click"
+  },
+  "labelStatus": "development-diagnostic-not-independently-reviewed",
+  "draftHash": "793d10a9e90bb3eef25dfd2e70e3ca907c36acd4047feb2d34eb5f7f9d7950a9",
+  "settings": {
+    "preset": "managed-openai-small",
+    "searchLimit": 10,
+    "readLimit": 5,
+    "context": 0,
+    "selection": "ranked-prefix",
+    "modes": ["lexical", "semantic", "hybrid"],
+    "order": "rotate-by-question",
+    "limits": {
+      "documentInputTokens": 600000,
+      "queryEmbeddingRequests": 32,
+      "queryInputTokens": 2000,
+      "searchRequests": 48
+    }
+  },
+  "queries": [
+    {
+      "id": "click-value-precedence",
+      "repository": "click",
+      "queryStyle": "natural",
+      "query": "Which code decides whether an option value comes from command arguments, the environment, a context default map, or the declared default?",
+      "rationale": "Ordered fallbacks and the recorded parameter source.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/click/core.py",
+            "startLine": 2278,
+            "endLine": 2297,
+            "startByte": 87167,
+            "endByte": 87796,
+            "sha256": "a3043ccc544e4719895679b5a369b88bbe3ea49429dc87ee46c35d39bf1d2ebc",
+            "sourceUrl": "https://github.com/pallets/click/blob/934813e4d421071a1b3db3973c02fe2721359a6e/src/click/core.py#L2278-L2297"
+          }
+        ]
+      ],
+      "commit": "934813e4d421071a1b3db3973c02fe2721359a6e",
+      "category": "behavior",
+      "taskId": "click-value-precedence"
+    },
+    {
+      "id": "click-required-callback",
+      "repository": "click",
+      "queryStyle": "mixed",
+      "query": "process_value required callback order",
+      "rationale": "Conversion and missing-required validation happen before the callback.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/click/core.py",
+            "startLine": 2358,
+            "endLine": 2367,
+            "startByte": 89926,
+            "endByte": 90270,
+            "sha256": "00f32a812a22d8343316f0987659b4339b67ca01320c036bac8f89d0acac71f0",
+            "sourceUrl": "https://github.com/pallets/click/blob/934813e4d421071a1b3db3973c02fe2721359a6e/src/click/core.py#L2358-L2367"
+          }
+        ]
+      ],
+      "commit": "934813e4d421071a1b3db3973c02fe2721359a6e",
+      "category": "behavior",
+      "taskId": "click-required-callback"
+    },
+    {
+      "id": "click-prompt-suppression",
+      "repository": "click",
+      "queryStyle": "natural",
+      "query": "Why does an option with interactive prompting enabled avoid asking for input during tolerant parsing?",
+      "rationale": "Both prompting branches are guarded by resilient parsing.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/click/core.py",
+            "startLine": 2936,
+            "endLine": 2971,
+            "startByte": 110812,
+            "endByte": 112243,
+            "sha256": "d4fddf57a5ec8198a33b57268222a28da1f59a9ed55b275f9b4e4175034eab58",
+            "sourceUrl": "https://github.com/pallets/click/blob/934813e4d421071a1b3db3973c02fe2721359a6e/src/click/core.py#L2936-L2971"
+          }
+        ]
+      ],
+      "commit": "934813e4d421071a1b3db3973c02fe2721359a6e",
+      "category": "behavior",
+      "taskId": "click-prompt-suppression"
+    },
+    {
+      "id": "click-normalized-command",
+      "repository": "click",
+      "queryStyle": "mixed",
+      "query": "resolve_command token_normalize_func fallback",
+      "rationale": "A second command lookup uses a normalized name only when the initial lookup fails.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/click/core.py",
+            "startLine": 1731,
+            "endLine": 1744,
+            "startByte": 66803,
+            "endByte": 67384,
+            "sha256": "f9a8e6045df4a41cf7193d73f915c77b54679b15e8df9866148d266c264afd10",
+            "sourceUrl": "https://github.com/pallets/click/blob/934813e4d421071a1b3db3973c02fe2721359a6e/src/click/core.py#L1731-L1744"
+          }
+        ]
+      ],
+      "commit": "934813e4d421071a1b3db3973c02fe2721359a6e",
+      "category": "behavior",
+      "taskId": "click-normalized-command"
+    },
+    {
+      "id": "click-atomic-output",
+      "repository": "click",
+      "queryStyle": "natural",
+      "query": "Where are file writes redirected to a temporary sibling and then moved over the destination when the stream closes?",
+      "rationale": "Requires both temporary-file creation and final replacement.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/click/_compat.py",
+            "startLine": 413,
+            "endLine": 451,
+            "startByte": 12916,
+            "endByte": 14132,
+            "sha256": "394e0d62f817b1995b914cf3f3d13d3ff159f326a98c4beea1666ab81f09f5a8",
+            "sourceUrl": "https://github.com/pallets/click/blob/934813e4d421071a1b3db3973c02fe2721359a6e/src/click/_compat.py#L413-L451"
+          },
+          {
+            "path": "src/click/_compat.py",
+            "startLine": 465,
+            "endLine": 470,
+            "startByte": 14452,
+            "endByte": 14657,
+            "sha256": "7be553b407ceb3a4d96482711e39f51d78deb525bfad29a6285997697bd986f4",
+            "sourceUrl": "https://github.com/pallets/click/blob/934813e4d421071a1b3db3973c02fe2721359a6e/src/click/_compat.py#L465-L470"
+          }
+        ]
+      ],
+      "commit": "934813e4d421071a1b3db3973c02fe2721359a6e",
+      "category": "behavior",
+      "taskId": "click-atomic-output"
+    },
+    {
+      "id": "click-lazy-file",
+      "repository": "click",
+      "queryStyle": "mixed",
+      "query": "File.resolve_lazy_flag LazyFile.open deferred write",
+      "rationale": "Requires the lazy policy and the actual cached/deferred open implementation.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/click/types.py",
+            "startLine": 695,
+            "endLine": 702,
+            "startByte": 22631,
+            "endByte": 22913,
+            "sha256": "7fa4cf9182ed11e93e52c77b42f3b407e7bb6139096cfca51bb840727e9acfa3",
+            "sourceUrl": "https://github.com/pallets/click/blob/934813e4d421071a1b3db3973c02fe2721359a6e/src/click/types.py#L695-L702"
+          },
+          {
+            "path": "src/click/types.py",
+            "startLine": 716,
+            "endLine": 727,
+            "startByte": 23242,
+            "endByte": 23595,
+            "sha256": "a58290bb2ff51e495b1394a91b30bd2f443c20e1091aca9ed5b379fbf718dc58",
+            "sourceUrl": "https://github.com/pallets/click/blob/934813e4d421071a1b3db3973c02fe2721359a6e/src/click/types.py#L716-L727"
+          },
+          {
+            "path": "src/click/utils.py",
+            "startLine": 148,
+            "endLine": 164,
+            "startByte": 4166,
+            "endByte": 4787,
+            "sha256": "4dcbdae36e4d2f17a92c8c835069369c09781b2344229ec101b51030c88b8b65",
+            "sourceUrl": "https://github.com/pallets/click/blob/934813e4d421071a1b3db3973c02fe2721359a6e/src/click/utils.py#L148-L164"
+          }
+        ]
+      ],
+      "commit": "934813e4d421071a1b3db3973c02fe2721359a6e",
+      "category": "behavior",
+      "taskId": "click-lazy-file"
+    },
+    {
+      "id": "click-bool-convert",
+      "repository": "click",
+      "queryStyle": "identifier",
+      "query": "BoolParamType.convert",
+      "rationale": "Boolean string normalization and accepted spellings.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/click/types.py",
+            "startLine": 598,
+            "endLine": 613,
+            "startByte": 19548,
+            "endByte": 20034,
+            "sha256": "1d63374ac7511bba2d0db423bdae441955af4b5ef4e9ebeac1584abeff619d48",
+            "sourceUrl": "https://github.com/pallets/click/blob/934813e4d421071a1b3db3973c02fe2721359a6e/src/click/types.py#L598-L613"
+          }
+        ]
+      ],
+      "commit": "934813e4d421071a1b3db3973c02fe2721359a6e",
+      "category": "identifier",
+      "taskId": "click-bool-convert"
+    },
+    {
+      "id": "click-ansi-strip",
+      "repository": "click",
+      "queryStyle": "identifier",
+      "query": "should_strip_ansi",
+      "rationale": "Explicit color overrides automatic terminal/Jupyter detection.",
+      "evidenceSets": [
+        [
+          {
+            "path": "src/click/_compat.py",
+            "startLine": 496,
+            "endLine": 503,
+            "startByte": 15309,
+            "endByte": 15595,
+            "sha256": "3a87e2c0842137c4cc3b5e720944d3218af9949bc5f39a83c5b9a2cd7d855309",
+            "sourceUrl": "https://github.com/pallets/click/blob/934813e4d421071a1b3db3973c02fe2721359a6e/src/click/_compat.py#L496-L503"
+          }
+        ]
+      ],
+      "commit": "934813e4d421071a1b3db3973c02fe2721359a6e",
+      "category": "identifier",
+      "taskId": "click-ansi-strip"
+    }
+  ]
+}
