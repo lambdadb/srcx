@@ -2,6 +2,18 @@
 
 ## Current state
 
+As of 2026-09-26, the verified `dev` package is `0.1.0-dev.17`, built from
+`98be125d45128a9395544b0925df591c0da08b39` by the successful
+[develop publication](https://github.com/lambdadb/srcx/actions/runs/36178586841).
+The downloaded registry tarball matches its SHA-512 integrity and installed
+`gitHead`. The npm provenance statement identifies the same commit, workflow
+and run; inspecting that statement is separate from cryptographic verification
+of its signature. See [first-use validation](VALIDATION.md#installed-dev-package-first-use)
+for the clean consumer and live CLI checks. `dev` is mutable; these claims apply
+to the exact version above, not future publications.
+
+Bootstrap history:
+
 The initial `@functional-systems/srcx@0.1.0-dev.1` package was published publicly
 from reviewed commit `f94f947bf593b2f8498c07e130933b0ab444f868`. Its exact tarball
 passed clean-install and live LambdaDB checks. The local bootstrap has no GitHub
@@ -12,8 +24,8 @@ The package-specific Trusted Publisher is configured for `lambdadb/srcx` and
 `publish.yaml`, with direct publication allowed. `NPM_DEV_PUBLISH_ENABLED=true`.
 The first successful [OIDC publication](https://github.com/lambdadb/srcx/actions/runs/36035063463/attempts/3)
 produced `0.1.0-dev.3` from the same commit and moved `dev` to that version.
-Provenance identifies this repository, workflow, commit, and run. The current
-`latest` remains the bootstrap prerelease `0.1.0-dev.1`; it is not a stable release.
+Provenance identifies this repository, workflow, commit, and run. At the September 26 registry check,
+`latest` remained the bootstrap prerelease `0.1.0-dev.1`; it is not a stable release.
 See [VALIDATION.md](VALIDATION.md) for registry and consumer verification.
 
 This workflow follows [LambdaDB CLI](https://github.com/lambdadb/lambdadb-cli/blob/develop/RELEASING.md).
@@ -54,7 +66,7 @@ GitHub permissions and no LambdaDB service keys.
 Publication packs once, tests that exact tarball through a clean installation,
 and publishes the same file with provenance. Do not replace it with a repacked
 artifact after testing. The package includes runtime JavaScript, source maps and
-their source files, and public docs/license; it excludes tests, workflows,
+their source files, the optional Qwen worker/requirements, and public docs/license; it excludes tests, workflows,
 scripts, `.env`, and `.srcx` state. Production dependencies supply the parser
 WASM assets; package tests exercise parsing with install scripts disabled.
 

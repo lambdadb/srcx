@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Refresh implemented/remaining scope and verify the published dev.17 package
+  through a fresh npm consumer and bounded live first-use workflow.
+
 - Add opt-in local Qwen search reranking with bounded candidate pools, pinned
   source evidence, separate scores and per-command timing.
 

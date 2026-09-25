@@ -2,6 +2,61 @@
 
 Date: 2026-09-26 (Asia/Seoul).
 
+## Installed dev package first use
+
+On 2026-09-26, the public `@functional-systems/srcx@0.1.0-dev.17` tarball from
+source `98be125d45128a9395544b0925df591c0da08b39` passed a fresh npm consumer
+installation and **23 CLI commands** covering local setup and live LambdaDB. The corresponding
+[develop CI and publication](https://github.com/lambdadb/srcx/actions/runs/36178586841)
+completed successfully. The registry `dev` tag selected dev.17 at inspection;
+`latest` still selected the bootstrap dev.1, not a stable release.
+
+The downloaded tarball's SHA-512 matched npm metadata, and its installed package
+version/`gitHead` matched the intended source. Both npm attestation subjects
+matched those tarball bytes; the provenance statement identified the expected
+repository, commit, workflow and run. The attestation signature was not
+independently verified in this local check.
+
+The consumer used `npm install --ignore-scripts` in a new prefix, an isolated
+`SRCX_CONFIG`/`SRCX_STATE_DIR`, and the installed `.bin/srcx` rather than the
+checkout build. The existing Python 3.12 environment and cached Qwen model were
+reused explicitly; all 34 pinned Python package versions and their active
+installed dependency constraints matched. This was not a clean Python/model
+installation, CPU/CUDA validation, or a new ranking benchmark.
+
+| Check                           | Observed result                                                                                                      |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Version/help, configure, doctor | Expected dev.17 version/options; fresh connection settings; authentication/read check passed                         |
+| Preview, register, discover     | New synthetic Git repository; lexical preview had two files, two chunks, 44 tokens; one isolated Collection created  |
+| Commit A import/search/read     | Validated publication, matching lexical result and exact original file                                               |
+| Optional local Qwen             | Real cached model, finite reranker score, matching source read; 4.56 s external CLI wall time                        |
+| Git tag mapping                 | `v1` Alias resolved to commit A                                                                                      |
+| Commit B import/search/read     | Changed source visible; deleted-file query returned no hits; A result handle still read exact A source               |
+| Managed semantic/hybrid         | One search/read per mode against an existing immutable Collection of public srcx source; selected source matched Git |
+
+The two synthetic commits were A `0d3bdc318ad1079339a46bc67cd7037f0ebfc3cc`
+and B `9d652332bf1d29545970ccda2d823b8d4d1f627f`. Import commands took 90.45 s
+and 41.44 s, including index visibility and Tag validation. These are single
+integration measurements; they are not import-throughput or latency guarantees.
+
+Usage was **one new lexical Collection, two imports, six searches and two managed
+query embeddings**, with no new document embeddings or model downloads. All
+commands completed; no failed-command replay was needed. Synthetic remote
+resources and local artifacts remain available for inspection.
+
+Retained evidence lives under `.srcx/first-use/` in the first-use worktree:
+
+- `run/report.json`: reservations, command timings, versions and checks;
+  SHA-256 `10652c0cbf485e39be576f37b196873e66b284b6f07d3f2c5a86ebf72a7ff7ea`.
+- `package/functional-systems-srcx-0.1.0-dev.17.tgz`: exact tested registry artifact;
+  SHA-256 `ec75eedd8c9031d5de3cace38f90f84ccf46f9b9723b13cbfc2e73ae9c7edde7`.
+- `registry.json`, `dist-tags.json`, `attestations.json`, `python-runtime.json`,
+  bounded `acceptance.mjs`, command outputs, fixture source and result handles.
+
+The documentation follow-up changes no runtime code, search defaults, published
+package versions or deployment configuration. Later docs-only dev builds are
+separate artifacts; the above live evidence remains attached to dev.17.
+
 ## Local reranker integration
 
 The opt-in `search --rerank qwen` path was exercised with the cached
@@ -503,19 +558,30 @@ Those temporary paths are run-specific and are not committed fixtures.
 
 ## Implementation choices and remaining scope
 
-The initial connected preset is lexical (`embedding=none`). The internal embedding
-interface verifies eligibility/cache behavior only; production provider selection,
-semantic/hybrid querying, pricing, and evaluation remain open. Public imports
-reject a vector-enabled build to prevent fixture vectors from reaching LambdaDB.
+Implemented CLI behavior:
 
-Git branch imports reuse a fixed `git-*` Branch with its last validated immutable
-baseline; SHA/tag-only imports retain frozen `work-*` writers. Automatic Git
-observation, failed-workspace recovery, branch rename/deletion handling, Alias
-pruning, and garbage collection are not yet implemented. Failed/candidate
-resources and build artifacts are retained. A single importing host is required;
-the local lock is not a distributed lease. Remote pending ownership prevents
-accidental adoption from fresh local state but is not a distributed compare-and-set
-or lease protocol.
+- Lexical search remains the default. Separate managed Collections support
+  OpenAI `text-embedding-3-small` (1536 dimensions) and `text-embedding-3-large`
+  (3072 dimensions), with explicit semantic and RRF hybrid search. The CLI rejects
+  arbitrary fixture/custom vector presets, not the supported managed presets.
+- Optional local Qwen reranking uses a pinned model revision, bounded candidates,
+  verified source and stable ties. It requires separate Python/model setup;
+  startup and full-command latency are reported above. Jev comparison is deferred.
+- Git branch imports reuse a fixed `git-*` Branch with its last validated immutable
+  baseline; SHA/tag imports retain frozen `work-*` writers. Explicit `--resume`
+  reconciles the same pending import through its journal. Observed Git tags map
+  to Aliases, including multiple names for one published commit.
+- Local diagnostics, public retrieval baselines and the fixed-candidate CoSQA
+  reranking comparison are complete within their documented bounds. They do not
+  establish universal relevance gains, production throughput or agent-task success.
+
+Remaining operational scope: automatic Git observation, recovery of abandoned
+workspaces without their required journal, branch rename/deletion handling,
+authoritative Alias pruning, retention/garbage collection, and configuration
+migration. Failed/candidate resources and local build artifacts are retained.
+A single importing host is required: local locks and remote pending ownership
+are not a distributed compare-and-set or lease protocol. UI, MCP and hosted SaaS
+remain outside the first CLI scope. No stable/rc or Homebrew release is claimed.
 
 Parsing uses the pinned packaged grammars. Unsupported/new syntax can fall back
 and is recorded; no claim of complete language-version coverage is made. There is
