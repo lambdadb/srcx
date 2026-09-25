@@ -8,6 +8,9 @@ No human review or real-user question provenance is implied. The original draft
 remains unchanged and rejected by the live runner. Format 4 makes the limited
 execution status explicit; it is not a promotion to a reviewed benchmark.
 
+[Completed results](TRANSFER-RESULTS.md) retain hashes, usage, per-task ranks and
+inspected gains/losses. Both runs finished without retry.
+
 ## Frozen before execution
 
 Use [Click](transfer-click-v1.json) and [Cobra](transfer-cobra-v1.json) in separate
