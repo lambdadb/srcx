@@ -1,3 +1,4 @@
+import { englishDefaultEnv } from "./eval-default-fixture.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, writeFile, mkdtemp, rm } from "node:fs/promises";
@@ -173,13 +174,14 @@ test("managed prepare pins source-only artifacts, original labels and budgets; d
   await writeFile(suiteFile, JSON.stringify(next));
   await writeFile(refFile, JSON.stringify(ref));
   const output = join(root, "run");
+  const env = await englishDefaultEnv(root);
   const invoke = (...args) =>
     spawnSync(
       process.execPath,
       ["scripts/cli-eval.mjs", ...args, "--root", output],
       {
         encoding: "utf8",
-        env: { ...process.env, LAMBDADB_BASE_URL: "invalid" },
+        env: { ...env, LAMBDADB_BASE_URL: "invalid" },
       },
     );
   const prepared = invoke(
@@ -205,6 +207,7 @@ test("managed prepare pins source-only artifacts, original labels and budgets; d
         await readFile(join(a.path, "build.json"), "utf8"),
       );
       assert.deepEqual(build.preset, MANAGED_PRESET);
+      assert.deepEqual(build.preset.analyzers, ["standard"]);
       const docs = (await readFile(join(a.path, "records.jsonl"), "utf8"))
         .trim()
         .split("\n")

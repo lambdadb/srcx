@@ -7,7 +7,8 @@ import { spawnSync } from "node:child_process";
 import { hash } from "../dist/common.js";
 import { chunk, tokens, CHUNKER } from "../dist/chunk.js";
 import { materialize, PRESET, validateBuild, records } from "../dist/build.js";
-import { fixture } from "./fixture.mjs";
+import { englishDefaultEnv } from "./eval-default-fixture.mjs";
+import { fixture, git } from "./fixture.mjs";
 import {
   evidenceCoverage,
   scoreQuery,
@@ -187,4 +188,51 @@ test("suite fixes source versions and an old runtime cannot resume before connec
   );
   assert.equal(run.status, 1);
   assert.match(run.stderr, /Runtime\/harness changed/);
+});
+
+test("chunking evaluator prepares standard presets despite an English product default", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  const suite = JSON.parse(await readFile("eval/srcx-lexical-v1.json", "utf8"));
+  git(f.path, "remote", "set-url", "origin", `https://${suite.repository}.git`);
+  for (const q of suite.queries) {
+    q.commit = f.a;
+    q.evidence = [
+      {
+        path: "code.ts",
+        startByte: 0,
+        endByte: Buffer.byteLength(f.original),
+        sha256: hash(Buffer.from(f.original)),
+      },
+    ];
+  }
+  const suiteFile = join(f.root, "suite.json"),
+    output = join(f.root, "evaluation");
+  await writeFile(suiteFile, JSON.stringify(suite));
+  const prepared = spawnSync(
+    process.execPath,
+    [
+      "scripts/retrieval-eval.mjs",
+      "prepare",
+      "--root",
+      output,
+      "--repo",
+      f.path,
+      "--suite",
+      suiteFile,
+    ],
+    {
+      encoding: "utf8",
+      env: await englishDefaultEnv(f.root),
+    },
+  );
+  assert.equal(prepared.status, 0, prepared.stderr);
+  const plan = JSON.parse(await readFile(join(output, "plan.json"), "utf8"));
+  for (const variant of Object.values(plan.variants))
+    for (const directory of Object.values(variant.artifacts)) {
+      const build = JSON.parse(
+        await readFile(join(directory, "build.json"), "utf8"),
+      );
+      assert.deepEqual(build.preset.analyzers, ["standard"]);
+    }
 });

@@ -9,10 +9,16 @@ configuration/Collection identities). Registration/discovery tests cover canonic
 reattachment and schema drift; build tests reject reuse of a different analyzer
 baseline while preserving the source/chunk text.
 
-On Node 24.15.0, typecheck, formatting/version checks, all 111 tests and the packed
+On Node 24.15.0, typecheck, formatting/version checks, all 113 tests and the packed
 npm consumer passed. Its five CLI checks include a managed-large English/Korean
 preset, offline preview parity, and invalid/connected analyzer-override rejection.
 Publication tests verify readiness without depending on analyzed text matches.
+
+The chunking, CLI-mode and public-benchmark evaluators explicitly pin standard
+analysis, including CLI preview/registration arguments and remote schema checks.
+Regression checks simulate an English product default and verify that prepared
+artifacts and benchmark Collection schemas still use standard. These checks run
+offline and do not rerun the retained ranking experiments.
 
 A bounded live run on 2026-09-26 used synthetic source, two Collections and three
 imports, with no embeddings or reranker. At commit `10936fe` (before restoring the
