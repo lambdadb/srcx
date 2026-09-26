@@ -621,11 +621,15 @@ unless an explicit generated/size rule excludes them.
 | --- | --- |
 | Submodule | Record gitlink OID/path; no recursive import |
 | LFS pointer | Record metadata; no payload download or pointer indexing |
+| Image asset | Exclude known image extensions case-insensitively before chunking or embedding, including text SVG and portable pixel maps; retain inventory reason `image-extension` |
 | Symlink | Record target bytes; never follow or index as source |
 | Oversized file | Exclude with actual bytes and configured limit |
 | Invalid UTF-8 content/path | Record a diagnostic and lossless path identity; do not decode lossily |
 | Empty text file | File record, zero chunks |
 | Unsupported language or parse failure | Include bounded fallback chunks and distinguish the reason |
+
+Inline SVG markup in actual source files (for example, TSX components) remains
+source. The image exclusion policy participates in the immutable preset identity.
 
 Preserve raw UTF-8 bytes, BOM, CRLF, case, Unicode, and final newlines. Byte ranges
 are authoritative `[startByte, endByte)`; display lines are one-based/inclusive.

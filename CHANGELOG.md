@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Exclude image assets, including text SVG and portable pixel maps, before
+  indexing or embedding. Match image extensions case-insensitively, preserve
+  exclusion metadata, and keep inline SVG in source files searchable. Include
+  the source policy change in preset identity.
+
 - Fix Shell indexing crashes on Bash comparisons such as `[[ "$value" == 1 ]]`
   by bundling a runtime-compatible, checksum-pinned Bash grammar with its license.
   Include the grammar in preset identity and installed-package validation.

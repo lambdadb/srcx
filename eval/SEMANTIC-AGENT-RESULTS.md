@@ -134,10 +134,24 @@ The two concrete follow-ups are therefore:
    or lexically searchable need not require embedding every asset chunk. Measure
    any change on new tasks; do not reuse these four as an untouched holdout.
 
-Neither follow-up was implemented or tested as a product change in this report.
+Neither follow-up was implemented during the agent comparison above.
 The earlier [public retrieval benchmark](PUBLIC-BENCHMARK-RESULTS.md), which found
 semantic gains, remains valid within its own protocol; it bypassed normal Git
 import/chunking and did not measure agent investigations.
+
+### Subsequent image-policy correction
+
+Image extensions, including SVG and text pixel maps, are now excluded before
+source records, chunking and embedding. Inline SVG in actual source files remains
+included. This changes the source-policy identity; the original evaluation runtime
+and results are archived unchanged.
+
+A credential-free rebuild of the same Requests commit excluded
+`ext/requests-logo.svg`: 122 included files became 121, 1,864 managed chunks became
+1,081, and 806,268 estimated embedding tokens became 179,548 (77.7% fewer).
+The image emitted no source or chunk records. This is an offline input reduction,
+not a rerun of the agent comparison or proof of improved vector recall. The
+original remote Collection/Tag and the unresolved retrieval discrepancy are retained.
 
 ## Usage, integrity and retained evidence
 
@@ -169,5 +183,6 @@ import/chunking and did not measure agent investigations.
 
 Private `.srcx/semantic-agent-pilot/REPORT.md` links the raw JSONL events, answers,
 criteria, invocation prompts, per-call outputs, manifest, fingerprints, guard checks,
-source checkout and workspace archive. Source and task evidence are retained;
-no broad source-policy or search-default change was made.
+source checkout and workspace archive. Source and task evidence are retained.
+No source-policy or search-default change was made during the agent runs; the
+subsequent image-policy correction is reported separately above.

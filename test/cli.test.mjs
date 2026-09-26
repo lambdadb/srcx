@@ -5,7 +5,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { join, resolve } from "node:path";
 import { rm, readFile, writeFile } from "node:fs/promises";
-import { fixture, git } from "./fixture.mjs";
+import { fixture, git, imageFiles } from "./fixture.mjs";
 import { fakeQwen } from "./rerank-fixture.mjs";
 import { languageFiles } from "./language-fixtures.mjs";
 import { MemoryStore } from "./memory-store.mjs";
@@ -374,6 +374,11 @@ async function cliContract(t, preset) {
   assert.equal(preview.uploaded, false);
   assert.equal(preview.counts.chunks, f.buildB.counts.chunks);
   assert.equal(preview.configHash, f.buildB.configHash);
+  for (const path of imageFiles) {
+    const entry = preview.coverage.find((item) => item.path === path);
+    assert.equal(entry.status, "excluded", path);
+    assert.equal(entry.reason, "image-extension", path);
+  }
   if (managed) assert.ok(preview.counts.managed > 0);
   assert.equal(
     preview.coverage.find((entry) => entry.path === "code.ts").parseStatus,

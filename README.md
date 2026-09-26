@@ -142,9 +142,12 @@ Each artifact contains `build.json` (inventory, configuration, counts, hashes,
 change/deletion plan) and `records.jsonl` (exact file records and retrieval chunks).
 Artifacts contain source code; keep them with the same access policy as the repo.
 Every tree entry is accounted for, including explicit exclusions for symlinks,
-submodules, LFS pointers, dependencies/build output, binary/invalid UTF-8 data,
+submodules, LFS pointers, dependencies/build output, image assets (including SVG), binary/invalid UTF-8 data,
 invalid UTF-8 paths, and files above 1 MiB. Excluded paths are preserved losslessly
 in `pathBase64`.
+Image extensions are matched case-insensitively and excluded before chunking or
+embedding, even when their payload is readable text. Source files containing
+inline images, such as a TSX component with SVG markup, remain included.
 
 Java, TypeScript/TSX, JavaScript/JSX, Python, Go, Rust, C/C++, Shell and SQL use
 pinned Tree-sitter WASM grammars.

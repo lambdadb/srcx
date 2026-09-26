@@ -1,5 +1,19 @@
 # Validation record
 
+## Image exclusion
+
+Image assets are excluded by case-insensitive extension before source records,
+chunking or embedding, including SVG and text pixel maps. Source and installed
+CLI checks cover image exclusion for lexical and managed presets; TSX containing
+inline SVG still produces managed chunks. The regression fails against the
+archived pre-fix runtime. All 125 tests, six installed-package checks, typecheck,
+version and formatting checks passed on Node 24.15.0.
+
+A credential-free rebuild of the same Requests commit used in the semantic pilot
+excluded the logo SVG: managed input fell from 806,268 to 179,548 estimated tokens
+(77.7%), and managed chunks from 1,864 to 1,081. No remote import, agent rerun or
+retrieval improvement was measured. Previous results and their runtime are retained.
+
 ## Semantic agent investigation
 
 [The semantic follow-up](eval/SEMANTIC-AGENT-RESULTS.md) covers twelve fresh sessions

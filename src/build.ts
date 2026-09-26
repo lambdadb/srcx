@@ -223,9 +223,13 @@ function exclude(path: string): string | undefined {
   )
     return "dependency-or-build-output";
   if (
-    /\.(png|jpe?g|gif|ico|pdf|zip|gz|jar|class|woff2?|mp[34]|exe|dll|so|dylib|wasm)$/i.test(
+    /\.(svgz?|png|apng|jpe?g|jfif|gif|webp|avif|bmp|dib|tiff?|ico|icns|heic|heif|jxl|psd|ai|eps|pnm|pbm|pgm|ppm|xbm|xpm)$/i.test(
       path,
     )
+  )
+    return "image-extension";
+  if (
+    /\.(pdf|zip|gz|jar|class|woff2?|mp[34]|exe|dll|so|dylib|wasm)$/i.test(path)
   )
     return "binary-extension";
   if (/\.(min\.(js|css)|map)$/.test(path)) return "generated-output";

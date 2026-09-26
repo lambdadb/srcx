@@ -21,7 +21,7 @@ export const CHUNKER = {
   maxTokens: 1500,
   fallbackOverlap: 0.1,
   enrichment: "path-scope-symbol-v1",
-  policy: "source-v1",
+  policy: "source-v2",
 } as const;
 export type Span = {
   startByte: number;
