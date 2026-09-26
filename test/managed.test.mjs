@@ -32,11 +32,11 @@ const settings = {
 test("large has a distinct pinned identity, preserves chunk inputs and rejects small vectors/baselines", async (t) => {
   assert.equal(
     hash(PRESET),
-    "63dd66e8009ed9d53ad700dee4495e41498a04030365a2efa2049deed96275e9",
+    "58afce7fb297db7bd355f158a5372384a2300988aae68decf45dac5af88e3b88",
   );
   assert.equal(
     hash(MANAGED_PRESET),
-    "3638c5a53ef498d8e5f6cacf5d03f81641aa9fb7a077876ba4a6c430a40b3a3a",
+    "8de5abccf88030a7ddaedbc251c6ea750c7a72513db8a1a5bbfe63fc677aa8ce",
   );
   assert.equal(presetFor("text-embedding-3-large"), MANAGED_LARGE_PRESET);
   assert.ok(supportedPreset(MANAGED_LARGE_PRESET));

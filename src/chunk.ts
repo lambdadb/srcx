@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { Parser, Language, type Node } from "web-tree-sitter";
 import { getEncoding } from "js-tiktoken";
@@ -11,6 +12,8 @@ export const CHUNKER = {
   version: 2,
   parser: "web-tree-sitter@0.25.10",
   grammars: "tree-sitter-wasms@0.1.13",
+  sqlGrammar:
+    "tree-sitter-wasm@2.0.2/sql/b77530893b1dd6d1d4814eacf34d25bcbe4a12ec9a25a8c45b320d447265f42b",
   tokenizer: "js-tiktoken@1.0.21/cl100k_base",
   targetTokens: 800,
   maxTokens: 1500,
@@ -46,13 +49,23 @@ async function language(name: string): Promise<Language> {
   let l = languages.get(name);
   if (!l) {
     l = await Language.load(
-      require.resolve(`tree-sitter-wasms/out/tree-sitter-${name}.wasm`),
+      name === "sql"
+        ? fileURLToPath(
+            new URL(
+              "../runtime/grammars/tree-sitter-sql.wasm",
+              import.meta.url,
+            ),
+          )
+        : require.resolve(
+            `tree-sitter-wasms/out/tree-sitter-${name === "shell" ? "bash" : name}.wasm`,
+          ),
     );
     languages.set(name, l);
   }
   return l;
 }
 export function detectLanguage(path: string): string {
+  if (path.endsWith(".C")) return "cpp";
   const ext = path.split(".").at(-1)?.toLowerCase();
   return (
     (
@@ -61,6 +74,17 @@ export function detectLanguage(path: string): string {
         pyi: "python",
         go: "go",
         rs: "rust",
+        c: "c",
+        h: "c",
+        cc: "cpp",
+        cpp: "cpp",
+        cxx: "cpp",
+        hh: "cpp",
+        hpp: "cpp",
+        hxx: "cpp",
+        sh: "shell",
+        bash: "shell",
+        sql: "sql",
         java: "java",
         ts: "typescript",
         tsx: "tsx",
@@ -183,6 +207,126 @@ function goUnits(root: Node): Unit[] {
     units.push(unit);
   }
   return units;
+}
+
+/** Walk declarators rather than parameter/type names (including pointer returns). */
+function declaratorName(n: Node | null): string | undefined {
+  if (!n) return undefined;
+  if (
+    /^(identifier|field_identifier|type_identifier|qualified_identifier|destructor_name|operator_name)$/.test(
+      n.type,
+    )
+  )
+    return n.text;
+  return declaratorName(
+    n.childForFieldName("declarator") ??
+      (n.type === "parenthesized_declarator" ? n.firstNamedChild : null),
+  );
+}
+
+function cUnits(root: Node): Unit[] {
+  const units: Unit[] = [];
+  function visit(n: Node, scope?: string, start = n.startIndex): void {
+    if (n.type === "template_declaration") {
+      const declaration = n.namedChildren
+        .filter((c): c is Node => !!c && c.type !== "template_parameter_list")
+        .at(-1);
+      if (declaration) {
+        visit(declaration, scope, start);
+        return;
+      }
+    }
+    const body = n.childForFieldName("body");
+    const symbol =
+      n.childForFieldName("name")?.text ??
+      declaratorName(n.childForFieldName("declarator"));
+    const unit: Unit = {
+      start,
+      end: n.endIndex,
+      kind: n.type === "preproc_include" ? "imports" : classify(n.type),
+      scope,
+      symbol: symbol?.slice(0, 200),
+    };
+    if (body && /^(declaration_list|field_declaration_list)$/.test(body.type)) {
+      const nested = [scope, symbol].filter(Boolean).join("::") || undefined;
+      units.push({ ...unit, end: body.startIndex + 1 });
+      for (const child of body.namedChildren) if (child) visit(child, nested);
+      units.push({
+        start: body.endIndex - 1,
+        end: n.endIndex,
+        kind: "structural",
+        scope: nested,
+      });
+    } else if (/^preproc_(if|ifdef|elif|else|elifdef)$/.test(n.type)) {
+      // Preserve directives and both branches without evaluating the build configuration.
+      const condition =
+        n.childForFieldName("condition") ?? n.childForFieldName("name");
+      const children = n.namedChildren.filter(
+        (c): c is Node => !!c && c.id !== condition?.id,
+      );
+      if (!children.length) {
+        units.push(unit);
+        return;
+      }
+      units.push({ ...unit, end: children[0]!.startIndex });
+      for (const child of children) visit(child, scope);
+      const end = children.at(-1)!.endIndex;
+      if (end < n.endIndex)
+        units.push({ start: end, end: n.endIndex, kind: "structural", scope });
+    } else {
+      if (n.type === "function_definition")
+        unit.signature = n.text
+          .slice(0, body ? body.startIndex - n.startIndex : undefined)
+          .trim()
+          .slice(0, 240);
+      units.push(unit);
+    }
+  }
+  for (const n of root.namedChildren) if (n) visit(n);
+  return units;
+}
+
+function shellUnits(root: Node): Unit[] {
+  return root.namedChildren
+    .filter((n): n is Node => !!n)
+    .map((n) => {
+      const body = n.childForFieldName("body");
+      return {
+        start: n.startIndex,
+        end: n.endIndex,
+        kind: classify(n.type),
+        symbol:
+          n.type === "function_definition"
+            ? n.childForFieldName("name")?.text.slice(0, 200)
+            : undefined,
+        signature:
+          n.type === "function_definition"
+            ? n.text
+                .slice(0, body ? body.startIndex - n.startIndex : undefined)
+                .trim()
+                .slice(0, 240)
+            : undefined,
+      };
+    });
+}
+
+function sqlUnits(root: Node): Unit[] {
+  return root.namedChildren
+    .filter((n): n is Node => !!n)
+    .map((n) => {
+      const declaration = n.firstNamedChild;
+      // Object names describe DDL declarations, not every table referenced by a query.
+      const object = declaration?.type.startsWith("create_")
+        ? declaration.namedChildren.find((c) => c?.type === "object_reference")
+        : undefined;
+      return {
+        start: n.startIndex,
+        end: n.nextSibling?.type === ";" ? n.nextSibling.endIndex : n.endIndex,
+        kind: n.type === "comment" ? "documentation" : "statement",
+        symbol: object?.childForFieldName("name")?.text.slice(0, 200),
+        scope: object?.childForFieldName("schema")?.text.slice(0, 160),
+      };
+    });
 }
 
 function rustUnits(root: Node): Unit[] {
@@ -363,6 +507,10 @@ export async function chunk(
       "python",
       "go",
       "rust",
+      "c",
+      "cpp",
+      "shell",
+      "sql",
     ].includes(lang)
   ) {
     const grammar = await language(lang);
@@ -402,6 +550,9 @@ export async function chunk(
         if (lang === "python") units = pythonUnits(tree.rootNode);
         else if (lang === "go") units = goUnits(tree.rootNode);
         else if (lang === "rust") units = rustUnits(tree.rootNode);
+        else if (lang === "c" || lang === "cpp") units = cUnits(tree.rootNode);
+        else if (lang === "shell") units = shellUnits(tree.rootNode);
+        else if (lang === "sql") units = sqlUnits(tree.rootNode);
         else visit(tree.rootNode);
         // Attach every gap (punctuation, BOM, comments, whitespace) without altering source bytes.
         let cursor = 0;
@@ -441,7 +592,8 @@ export async function chunk(
     const prev = merged.at(-1);
     if (
       prev &&
-      (!["python", "go", "rust"].includes(lang) ||
+      lang !== "sql" &&
+      (!["python", "go", "rust", "c", "cpp", "shell"].includes(lang) ||
         (!prev.symbol && !u.symbol)) &&
       prev.kind !== "function" &&
       u.kind === prev.kind &&

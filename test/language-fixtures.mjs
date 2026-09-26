@@ -32,3 +32,61 @@ mod inner {
 mod empty {}
 extern "C" { fn foreign(); }
 `.replaceAll("\n", "\r\n");
+
+export const c =
+  "\uFEFF" +
+  `#include <stdio.h>
+typedef struct Node { int value; } Node;
+static int *read_value(int x) { /* 안녕😀 */ return 0; }
+int (*factory(void))(int) { return 0; }
+#if FEATURE
+int enabled(void) { return 1; }
+#else
+int disabled(void) { return 0; }
+#endif
+`.replaceAll("\n", "\r\n");
+
+export const cpp =
+  "\uFEFF" +
+  `#include <vector>
+namespace app {
+template<class T> class Box {
+public:
+  T get() const { /* 안녕😀 */ return value; }
+private:
+  T value;
+};
+int Box<int>::run(int x) { return x; }
+}
+extern "C" { int foreign(void) { return 0; } }
+`.replaceAll("\n", "\r\n");
+
+export const shell = `#!/usr/bin/env bash
+# 안녕😀
+function build() { printf '%s\\n' "hi;bye"; }
+run() {
+cat <<'EOF'
+hi; there 😀
+EOF
+}
+if true; then echo hi; fi
+`;
+
+export const sql =
+  "\uFEFF" +
+  `-- 안녕😀
+CREATE TABLE public.users (id INT PRIMARY KEY, name TEXT);
+INSERT INTO public.users VALUES (1, 'hi;bye');
+WITH x AS (SELECT 1) SELECT * FROM x;
+CREATE FUNCTION hello() RETURNS text AS $$ SELECT 'hi;bye'; $$ LANGUAGE SQL;
+`.replaceAll("\n", "\r\n");
+
+export const languageFiles = [
+  ["client.py", python, "python"],
+  ["client.go", go, "go"],
+  ["client.rs", rust, "rust"],
+  ["client.c", c, "c"],
+  ["client.cpp", cpp, "cpp"],
+  ["build.sh", shell, "shell"],
+  ["schema.sql", sql, "sql"],
+];

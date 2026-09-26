@@ -2,8 +2,9 @@
 
 ## Unreleased
 
-- Add Python/Go/Rust syntax chunking with decorators, class/receiver/impl/trait
-  scopes, Rust attributes/doc comments and bounded source-preserving splits.
+- Add Python/Go/Rust/C/C++/Shell/SQL syntax chunking with language-specific
+  declaration, function and statement boundaries, symbol/scope metadata and
+  bounded source-preserving splits. Bundle the pinned SQL grammar with licenses.
 
 - Distinguish Qwen setup, cache, device, input-size and timeout failures with
   actionable messages while keeping raw worker diagnostics private.

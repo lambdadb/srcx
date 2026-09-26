@@ -2,7 +2,16 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { chunk, CHUNKER } from "../dist/chunk.js";
 import { lineAt } from "../dist/common.js";
-import { python, go, rust } from "./language-fixtures.mjs";
+import {
+  python,
+  go,
+  rust,
+  c,
+  cpp,
+  shell,
+  sql,
+  languageFiles,
+} from "./language-fixtures.mjs";
 import { fixture, git } from "./fixture.mjs";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -116,12 +125,11 @@ test("Python/Go/Rust long functions keep metadata through token splitting; parse
   }
 });
 
-test("Python/Go/Rust metadata reaches lexical and managed build payloads", async (t) => {
+test("All added language metadata reaches lexical and managed build payloads", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
-  await writeFile(join(f.path, "client.py"), python);
-  await writeFile(join(f.path, "client.go"), go);
-  await writeFile(join(f.path, "client.rs"), rust);
+  for (const [path, source] of languageFiles)
+    await writeFile(join(f.path, path), source);
   git(f.path, "add", ".");
   git(f.path, "commit", "-qm", "languages");
   for (const [i, preset] of [
@@ -137,19 +145,18 @@ test("Python/Go/Rust metadata reaches lexical and managed build payloads", async
     });
     const docs = [];
     for await (const d of records(b.directory))
-      if (["client.py", "client.go", "client.rs"].includes(d.path))
-        docs.push(d);
-    assert.ok(
-      docs.every(
-        (d) =>
-          d.language ===
-          (d.path.endsWith(".py")
-            ? "python"
-            : d.path.endsWith(".go")
-              ? "go"
-              : "rust"),
-      ),
-    );
+      if (languageFiles.some(([path]) => path === d.path)) docs.push(d);
+    for (const [path, source, language] of languageFiles) {
+      const file = docs.find((d) => d.kind === "file" && d.path === path);
+      assert.equal(file.sourceText, source);
+      assert.equal(file.language, language);
+      assert.ok(
+        docs.some(
+          (d) =>
+            d.kind === "chunk" && d.path === path && d.language === language,
+        ),
+      );
+    }
     assert.ok(
       docs.some(
         (d) =>
@@ -202,4 +209,140 @@ test("Rust keeps attributes, docs, generic impl/trait scopes, modules and unexpa
   );
   assert.ok(!result.spans.some((s) => s.symbol === "generated"));
   assert.ok(result.spans.some((s) => s.chunkKind === "imports"));
+});
+
+test("C/C++ preserve declarators, templates, scopes and both preprocessor branches", async () => {
+  for (const [path, source] of [
+    ["client.c", c],
+    ["client.cpp", cpp],
+  ]) {
+    const result = await chunk(source, path);
+    assert.equal(result.parseStatus, "parsed");
+    coverage(source, result);
+    if (path.endsWith(".c")) {
+      for (const name of [
+        "Node",
+        "read_value",
+        "factory",
+        "enabled",
+        "disabled",
+      ])
+        assert.ok(
+          result.spans.some((s) => s.symbol === name),
+          name,
+        );
+      assert.match(
+        result.spans.find((s) => s.symbol === "factory").signature,
+        /factory\(void\)/,
+      );
+    } else {
+      assert.equal(
+        result.spans.find((s) => s.symbol === "get").scope,
+        "app::Box",
+      );
+      assert.match(
+        result.spans.find((s) => s.symbol === "Box").searchText,
+        /template<class T>/,
+      );
+      assert.equal(
+        result.spans.find((s) => s.symbol === "Box<int>::run").scope,
+        "app",
+      );
+      assert.ok(result.spans.some((s) => s.symbol === "foreign"));
+    }
+  }
+  for (const [path, language] of [
+    ["a.h", "c"],
+    ["a.hpp", "cpp"],
+    ["a.hh", "cpp"],
+    ["a.hxx", "cpp"],
+    ["a.cc", "cpp"],
+    ["a.cxx", "cpp"],
+    ["a.C", "cpp"],
+  ])
+    assert.equal((await chunk("int value;", path)).language, language);
+});
+
+test("Shell keeps quoted commands, heredocs and compound statements intact", async () => {
+  const result = await chunk(shell, "build.sh");
+  assert.equal(result.language, "shell");
+  assert.equal(result.parseStatus, "parsed");
+  coverage(shell, result);
+  const run = result.spans.find((s) => s.symbol === "run");
+  assert.match(run.searchText, /cat <<'EOF'\nhi; there 😀\nEOF\n}/);
+  assert.match(
+    result.spans.find((s) => s.symbol === "build").searchText,
+    /hi;bye/,
+  );
+  assert.ok(
+    result.spans.some((s) =>
+      s.searchText.includes("if true; then echo hi; fi"),
+    ),
+  );
+  assert.equal((await chunk(shell, "build.bash")).language, "shell");
+});
+
+test("SQL keeps statements, CTEs and dollar-quoted function bodies intact", async () => {
+  const result = await chunk(sql, "schema.sql");
+  assert.equal(result.language, "sql");
+  assert.equal(result.parseStatus, "parsed");
+  coverage(sql, result);
+  const statements = result.spans.filter((s) => s.chunkKind === "statement");
+  assert.equal(statements.length, 4);
+  assert.equal(statements[0].symbol, "users");
+  assert.equal(statements[0].scope, "public");
+  assert.match(statements[1].searchText, /VALUES \(1, 'hi;bye'\);/);
+  assert.match(
+    statements[2].searchText,
+    /WITH x AS \(SELECT 1\) SELECT \* FROM x;/,
+  );
+  assert.equal(statements[3].symbol, "hello");
+  assert.match(
+    statements[3].searchText,
+    /\$\$ SELECT 'hi;bye'; \$\$ LANGUAGE SQL;/,
+  );
+});
+
+test("Additional languages retain metadata when oversized and preserve invalid source", async () => {
+  for (const [path, source, broken, kind] of [
+    [
+      "large.c",
+      "int large(void) {\n" + 'puts("안녕😀");\n'.repeat(1000) + "}\n",
+      "int broken( {",
+      "function",
+    ],
+    [
+      "large.cpp",
+      "void large() {\n" + 'print("안녕😀");\n'.repeat(1000) + "}\n",
+      "class Broken {",
+      "function",
+    ],
+    [
+      "large.sh",
+      "large() {\n" + 'echo "안녕😀"\n'.repeat(1000) + "}\n",
+      "broken() {",
+      "function",
+    ],
+    [
+      "large.sql",
+      "CREATE TABLE large (" +
+        Array.from({ length: 1000 }, (_, i) => `column_${i} TEXT`).join(",\n") +
+        ");",
+      "SELECT * FROM (",
+      "statement",
+    ],
+  ]) {
+    const result = await chunk(source, path);
+    assert.equal(result.parseStatus, "parsed", path);
+    coverage(source, result);
+    assert.ok(
+      result.spans.filter((s) => s.symbol === "large" && s.chunkKind === kind)
+        .length > 1,
+      path,
+    );
+    const bad = await chunk(broken, path);
+    assert.equal(bad.parseStatus, "parse-error-fallback", path);
+    coverage(broken, bad);
+    assert.deepEqual((await chunk("", path)).spans, []);
+  }
 });

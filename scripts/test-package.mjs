@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -35,7 +36,14 @@ try {
       .filter((file) => file.path.startsWith("runtime/"))
       .map((file) => file.path)
       .sort(),
-    ["runtime/qwen.py", "runtime/requirements.txt"],
+    [
+      "runtime/grammars/README.md",
+      "runtime/grammars/tree-sitter-sql.LICENSE",
+      "runtime/grammars/tree-sitter-sql.wasm",
+      "runtime/grammars/tree-sitter-wasm.LICENSE",
+      "runtime/qwen.py",
+      "runtime/requirements.txt",
+    ],
   );
   for (const file of inventory.files) {
     assert.ok(
@@ -72,6 +80,18 @@ try {
       pkg.gitHead,
       "Development artifact must identify the verified source commit.",
     );
+  const sqlGrammar = readFileSync(
+    join(
+      consumer,
+      "node_modules",
+      pkg.name,
+      "runtime/grammars/tree-sitter-sql.wasm",
+    ),
+  );
+  assert.equal(
+    createHash("sha256").update(sqlGrammar).digest("hex"),
+    "b77530893b1dd6d1d4814eacf34d25bcbe4a12ec9a25a8c45b320d447265f42b",
+  );
   const bin = join(consumer, "node_modules", pkg.name, "dist/cli.js");
   if (process.platform !== "win32") {
     const executable = join(consumer, "node_modules", ".bin", "srcx");

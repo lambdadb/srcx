@@ -7,7 +7,7 @@ import { join, resolve } from "node:path";
 import { rm, readFile, writeFile } from "node:fs/promises";
 import { fixture, git } from "./fixture.mjs";
 import { fakeQwen } from "./rerank-fixture.mjs";
-import { python, go, rust } from "./language-fixtures.mjs";
+import { languageFiles } from "./language-fixtures.mjs";
 import { MemoryStore } from "./memory-store.mjs";
 import { ManagedStore } from "./managed-store.mjs";
 import { publish, published, gitBranchName } from "../dist/publish.js";
@@ -415,17 +415,13 @@ for (const preset of [PRESET, MANAGED_PRESET])
 test("CLI managed large imports, searches and pins reads with 3072-dimensional vectors", (t) =>
   cliContract(t, MANAGED_LARGE_PRESET));
 
-test("installed CLI resolves Python/Go/Rust grammars and preserves source metadata", async (t) => {
+test("installed CLI resolves all added grammars and preserves source metadata", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
-  for (const [name, source] of [
-    ["client.py", python],
-    ["client.go", go],
-    ["client.rs", rust],
-  ])
+  for (const [name, source] of languageFiles)
     await writeFile(join(f.path, name), source);
   git(f.path, "add", ".");
-  git(f.path, "commit", "-qm", "Python and Go");
+  git(f.path, "commit", "-qm", "language fixtures");
   const commit = git(f.path, "rev-parse", "HEAD");
   const { stdout } = await promisify(execFile)(
     process.execPath,
@@ -444,7 +440,7 @@ test("installed CLI resolves Python/Go/Rust grammars and preserves source metada
   );
   const preview = JSON.parse(stdout);
   assert.equal(preview.uploaded, false);
-  for (const path of ["client.py", "client.go", "client.rs"])
+  for (const [path] of languageFiles)
     assert.equal(
       preview.coverage.find((e) => e.path === path).parseStatus,
       "parsed",
@@ -453,30 +449,23 @@ test("installed CLI resolves Python/Go/Rust grammars and preserves source metada
     .trim()
     .split("\n")
     .map((line) => JSON.parse(line));
-  assert.ok(
-    docs.some(
-      (d) =>
-        d.language === "python" && d.symbol === "fetch" && d.scope === "Client",
-    ),
-  );
-  assert.ok(
-    docs.some(
-      (d) => d.language === "go" && d.symbol === "Get" && d.scope === "Box",
-    ),
-  );
-  assert.ok(
-    docs.some(
-      (d) =>
-        d.language === "rust" &&
-        d.symbol === "get" &&
-        d.scope === "Store<T> as Read",
-    ),
-  );
-  for (const [path, source] of [
-    ["client.py", python],
-    ["client.go", go],
-    ["client.rs", rust],
+  for (const [language, symbol, scope] of [
+    ["python", "fetch", "Client"],
+    ["go", "Get", "Box"],
+    ["rust", "get", "Store<T> as Read"],
+    ["c", "factory", undefined],
+    ["cpp", "get", "app::Box"],
+    ["shell", "run", undefined],
+    ["sql", "users", "public"],
   ])
+    assert.ok(
+      docs.some(
+        (d) =>
+          d.language === language && d.symbol === symbol && d.scope === scope,
+      ),
+      language,
+    );
+  for (const [path, source] of languageFiles)
     assert.equal(
       docs.find((d) => d.kind === "file" && d.path === path).sourceText,
       source,
