@@ -183,6 +183,11 @@ or fallback. Empty candidate pools skip model execution. Existing search default
 and managed embedding usage rules remain unchanged; wider pools increase source
 verification work. See the [integration validation](VALIDATION.md#local-reranker-integration).
 
+For practical search → read → change-planning examples, see the
+[developer workflow pilot](https://github.com/lambdadb/srcx/blob/develop/eval/DEVELOPER-WORKFLOW-PILOT.md).
+It follows three maintenance investigations through related source and tests,
+including the limitations of previews and optional reranking.
+
 ## Evaluate retrieval quality
 
 The internal [lexical chunking pilot](https://github.com/lambdadb/srcx/blob/develop/eval/README.md) compares syntax-aware and
