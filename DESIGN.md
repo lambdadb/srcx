@@ -664,8 +664,8 @@ is not an unconditional one-function-per-chunk rule.
 
 ### Initial boundary and size rules
 
-The implementation adds Python/Go/Rust/C/C++/Shell using the existing pinned WASM
-grammars and SQL using a bundled, checksum-pinned grammar (see
+The implementation adds Python/Go/Rust/C/C++ using the existing pinned WASM
+grammars and Shell/SQL using bundled, checksum-pinned grammars (see
 `runtime/grammars/README.md`).
 Python splits top-level declarations and class bodies, keeps decorators with their
 function/class, and records nested class scopes. Go keeps functions/methods,

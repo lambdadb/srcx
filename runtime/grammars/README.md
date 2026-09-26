@@ -24,3 +24,25 @@ Run language and installed-package tests when updating the grammar.
 
 Supported syntax is defined by this grammar, not by a database connection or
 server dialect setting. Unsupported/error parses use whole-file text fallback.
+
+## Bundled Bash grammar
+
+`tree-sitter-bash.wasm` is extracted unchanged from the same verified
+`tree-sitter-wasm@2.0.2` archive, member
+`package/out/bash/tree-sitter-bash.wasm`.
+
+- Binary SHA-256: `5daf3f2ac1cea01a64cfd6878ef7d247310925a4c62238eb4b8c1feb5dce355a`.
+- Grammar source: <https://github.com/tree-sitter/tree-sitter-bash>.
+- The distributor declares `tree-sitter-bash@^0.25.1`; the binary checksum is the
+  exact pin, not that floating source range.
+- MIT notices: `tree-sitter-bash.LICENSE` (upstream v0.25.1 notice) and the shared
+  `tree-sitter-wasm.LICENSE`.
+
+The previous `tree-sitter-wasms@0.1.13` Bash binary crashes with the pinned
+`web-tree-sitter@0.25.10` runtime on `[[ "$value" == 1 ]]`, reporting
+`resolved is not a function`. The bundled binary parses that comparison and the
+full `lambdadb-cli/scripts/test-homebrew.sh` that exposed the failure. A Shell
+fixture runs both directly and through the installed npm package; packaging also
+checks both bundled grammar hashes and license presence. `CHUNKER.shellGrammar`
+participates in config/build identity, so changed parsing cannot reuse an old
+preset identity. No compatibility layer or runtime grammar download is added.

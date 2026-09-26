@@ -1,5 +1,24 @@
 # Validation record
 
+## Bash grammar runtime compatibility
+
+Preparing the agent workflow pilot exposed a real import failure in the public
+`lambdadb-cli` repository at `513af6e4d262edd380013c86d51a20aad16274d7`:
+`scripts/test-homebrew.sh` aborted local materialization with
+`TypeError: resolved is not a function`. A minimal `[[ "$value" == 1 ]]`
+comparison reproduces it with the previous Bash grammar/runtime combination.
+The replacement grammar is bundled with its license and pinned checksum in
+`CHUNKER.shellGrammar`; other language runtimes remain unchanged.
+
+The regression fixture fails before the replacement and passes afterward,
+preserving complete source-byte coverage and syntax spans. The same fixture is
+included in installed-package import checks. On Node 24.15.0, all 124 tests,
+six installed-package tests, formatting/version checks and typecheck passed.
+The two public pilot corpora also passed local materialization after the fix:
+139 files/928 chunks for srcx and 38 files/200 chunks for lambdadb-cli, with no
+embeddings. These checks establish indexing/packaging correctness, not an agent
+accuracy or efficiency improvement.
+
 ## Agent skill installation
 
 The npm artifact includes `skills/srcx-search/SKILL.md`. The `skills` command

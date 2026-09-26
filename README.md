@@ -161,8 +161,8 @@ pinned Tree-sitter WASM grammars.
 
 `.h` files use the C grammar deterministically; C++ headers should use a listed
 C++ extension for syntax chunking. Shell does not infer extensionless scripts from
-shebangs or claim Zsh/Fish/PowerShell support. SQL uses the bundled
-[grammar artifact](runtime/grammars/README.md); dialect-specific syntax unsupported
+shebangs or claim Zsh/Fish/PowerShell support. Shell and SQL use bundled
+[grammar artifacts](runtime/grammars/README.md); SQL dialect-specific syntax unsupported
 by that grammar falls back to text. SQL strings and supported dollar-quoted bodies
 are parsed as part of their containing statement, not split at each semicolon.
 Rust macros/`cfg` and C/C++ preprocessor conditions are not expanded or evaluated;

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Fix Shell indexing crashes on Bash comparisons such as `[[ "$value" == 1 ]]`
+  by bundling a runtime-compatible, checksum-pinned Bash grammar with its license.
+  Include the grammar in preset identity and installed-package validation.
+
 - Bundle the srcx-search agent skill in npm and add `skills install`, `update`,
   `remove` and `status` for Codex and Claude Code, with user/project scopes,
   explicit setup and preservation of customized or unowned files. Removing an
