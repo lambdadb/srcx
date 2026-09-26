@@ -15,6 +15,15 @@ import {
   type Doc,
   optionalJson,
 } from "./common.js";
+import {
+  FILE_POLICY,
+  normalizeFilePolicy,
+  hardExclusion,
+  privateKeyContent,
+  fileDecision,
+  type FilePolicy,
+  type FileDecision,
+} from "./file-policy.js";
 export const ANALYZERS = ["english", "japanese", "korean", "standard"] as const;
 export type Analyzer = (typeof ANALYZERS)[number];
 export function normalizeAnalyzers(value: unknown): Analyzer[] {
@@ -42,6 +51,7 @@ export type Preset = {
   /** Internal evaluation override; the CLI keeps its original enrichment. */
   enrichment?: "path-only-v1";
   maxFileBytes: number;
+  filePolicy: FilePolicy;
   embedding: {
     model: string;
     dimensions: number;
@@ -57,6 +67,7 @@ export const PRESET: Preset = {
   chunker: CHUNKER,
   mode: "syntax",
   maxFileBytes: 1024 * 1024,
+  filePolicy: FILE_POLICY,
   embedding: null,
 };
 /** Embedding variants share the same chunking behavior. */
@@ -82,6 +93,7 @@ export const MANAGED_LARGE_PRESET: Preset = {
 export function presetFor(
   embedding = "none",
   analyzers: readonly string[] = PRESET.analyzers,
+  filePolicy: unknown = FILE_POLICY,
 ): Preset {
   invariant(
     ["none", "text-embedding-3-small", "text-embedding-3-large"].includes(
@@ -96,17 +108,21 @@ export function presetFor(
         ? MANAGED_LARGE_PRESET
         : MANAGED_PRESET;
   const normalized = normalizeAnalyzers(analyzers);
-  return hash(normalized) === hash(base.analyzers)
-    ? base
-    : { ...base, analyzers: normalized };
+  const configured = {
+    ...base,
+    analyzers: normalized,
+    filePolicy: normalizeFilePolicy(filePolicy),
+  };
+  return hash(configured) === hash(base) ? base : configured;
 }
 export function supportedPreset(preset: unknown): preset is Preset {
   if (!preset || typeof preset !== "object" || Array.isArray(preset))
     return false;
   try {
     const analyzers = normalizeAnalyzers((preset as Preset).analyzers);
+    const filePolicy = normalizeFilePolicy((preset as Preset).filePolicy);
     return [PRESET, MANAGED_PRESET, MANAGED_LARGE_PRESET].some(
-      (base) => hash({ ...base, analyzers }) === hash(preset),
+      (base) => hash({ ...base, analyzers, filePolicy }) === hash(preset),
     );
   } catch {
     return false;
@@ -154,6 +170,8 @@ export type InventoryItem = {
   bytes: number;
   status: "included" | "excluded";
   reason?: string;
+  retrieval?: "lexical" | "semantic";
+  policyReason?: string;
   targetBase64?: string;
   fileId?: string;
   chunkIds?: string[];
@@ -215,22 +233,6 @@ export async function loadBuild(directory: string): Promise<Build> {
   b.directory = resolve(directory);
   return b;
 }
-function exclude(path: string): string | undefined {
-  if (
-    /(^|\/)(node_modules|vendor|vendored|dist|build|target|coverage|\.git|\.next)(\/|$)/.test(
-      path,
-    )
-  )
-    return "dependency-or-build-output";
-  if (
-    /\.(png|jpe?g|gif|ico|pdf|zip|gz|jar|class|woff2?|mp[34]|exe|dll|so|dylib|wasm)$/i.test(
-      path,
-    )
-  )
-    return "binary-extension";
-  if (/\.(min\.(js|css)|map)$/.test(path)) return "generated-output";
-  return undefined;
-}
 export async function materialize(args: {
   identity: Identity;
   ref: string;
@@ -245,7 +247,8 @@ export async function materialize(args: {
     configHash = hash(preset),
     prev = args.previous;
   invariant(
-    hash(preset.analyzers) === hash(normalizeAnalyzers(preset.analyzers)) &&
+    hash(preset.filePolicy) === hash(normalizeFilePolicy(preset.filePolicy)) &&
+      hash(preset.analyzers) === hash(normalizeAnalyzers(preset.analyzers)) &&
       hash(preset.chunker) === hash(CHUNKER) &&
       ["syntax", "window"].includes(preset.mode) &&
       (preset.enrichment === undefined ||
@@ -317,7 +320,10 @@ export async function materialize(args: {
         item.targetBase64 = (await blobs.read(e)).toString("base64");
         continue;
       }
-      const reason = exclude(e.path);
+      const pathDecision = fileDecision(e.path, preset.filePolicy);
+      const reason =
+        hardExclusion(e.path) ??
+        (pathDecision.action === "exclude" ? pathDecision.reason : undefined);
       if (reason) {
         item.reason = reason;
         continue;
@@ -350,6 +356,11 @@ export async function materialize(args: {
         item.reason = "lfs-pointer";
         continue;
       }
+      if (privateKeyContent(source)) {
+        item.reason = "private-key-content";
+        continue;
+      }
+      const decision = fileDecision(e.path, preset.filePolicy, source);
       const parsed = await chunk(
         source,
         e.path,
@@ -378,6 +389,8 @@ export async function materialize(args: {
       }
       Object.assign(item, {
         status: "included",
+        retrieval: decision.action,
+        policyReason: decision.reason,
         contentHash,
         fileId,
         chunkIds: [],
@@ -404,7 +417,9 @@ export async function materialize(args: {
             ? "structural-only"
             : "embedding-disabled",
         };
-        const eligible = !["imports", "structural"].includes(span.chunkKind);
+        const eligible =
+          decision.action === "semantic" &&
+          !["imports", "structural"].includes(span.chunkKind);
         if (preset.embedding && eligible) {
           const inputHash = hash([preset.embedding, span.searchText]);
           if (preset.embedding.managed) {
@@ -443,9 +458,11 @@ export async function materialize(args: {
           }
         } else {
           doc.embeddingSkipReason = preset.embedding
-            ? span.chunkKind === "imports"
-              ? "imports-only"
-              : "structural-only"
+            ? decision.action === "lexical"
+              ? decision.reason
+              : span.chunkKind === "imports"
+                ? "imports-only"
+                : "structural-only"
             : "embedding-disabled";
           item.skipped!++;
         }
@@ -545,7 +562,10 @@ export async function validateBuild(b: Build): Promise<void> {
     "Build commit identity mismatch; rebuild from the intended Git commit.",
   );
   invariant(
-    hash(b.preset.analyzers) === hash(normalizeAnalyzers(b.preset.analyzers)) &&
+    hash(b.preset.filePolicy) ===
+      hash(normalizeFilePolicy(b.preset.filePolicy)) &&
+      hash(b.preset.analyzers) ===
+        hash(normalizeAnalyzers(b.preset.analyzers)) &&
       hash(b.preset) === b.configHash &&
       hash(b.inventory) === b.inventoryHash,
     "Build metadata hash mismatch.",
@@ -559,6 +579,7 @@ export async function validateBuild(b: Build): Promise<void> {
       .filter((e) => e.status === "included")
       .map((e) => [e.fileId!, e]),
   );
+  let activeDecision: FileDecision | undefined;
   const completedFiles = new Set<string>();
   const finish = () => {
     if (activeFile) {
@@ -598,6 +619,19 @@ export async function validateBuild(b: Build): Promise<void> {
       end = 0;
       count = 0;
       const entry = expectedFile.get(doc.id);
+      activeDecision = fileDecision(
+        doc.path as string,
+        b.preset.filePolicy,
+        doc.sourceText as string,
+      );
+      invariant(
+        !hardExclusion(doc.path as string) &&
+          !privateKeyContent(doc.sourceText as string) &&
+          activeDecision.action !== "exclude" &&
+          entry?.retrieval === activeDecision.action &&
+          entry?.policyReason === activeDecision.reason,
+        "File policy or inventory decision mismatch.",
+      );
       const raw = Buffer.from(doc.sourceText as string);
       invariant(
         entry &&
@@ -648,9 +682,9 @@ export async function validateBuild(b: Build): Promise<void> {
         "Invalid chunk source/position/token binding.",
       );
       if (b.preset.embedding?.managed) {
-        const eligible = !["imports", "structural"].includes(
-          String(doc.chunkKind),
-        );
+        const eligible =
+          activeDecision!.action === "semantic" &&
+          !["imports", "structural"].includes(String(doc.chunkKind));
         invariant(
           eligible
             ? doc.embeddingStatus === "managed" &&
@@ -662,14 +696,18 @@ export async function validateBuild(b: Build): Promise<void> {
                 doc.embeddingText === undefined &&
                 doc.embeddingInputHash === undefined &&
                 doc.embeddingSkipReason ===
-                  (doc.chunkKind === "imports"
-                    ? "imports-only"
-                    : "structural-only"),
+                  (activeDecision!.action === "lexical"
+                    ? activeDecision!.reason
+                    : doc.chunkKind === "imports"
+                      ? "imports-only"
+                      : "structural-only"),
           "Invalid managed embedding input or eligibility.",
         );
       } else if (doc.embeddingStatus === "embedded")
         invariant(
           b.preset.embedding &&
+            activeDecision!.action === "semantic" &&
+            !["imports", "structural"].includes(String(doc.chunkKind)) &&
             Array.isArray(doc.embedding) &&
             doc.embedding.length === b.preset.embedding.dimensions &&
             doc.embedding.every(Number.isFinite),

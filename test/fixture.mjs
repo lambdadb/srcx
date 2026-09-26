@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { identity } from "../dist/git.js";
 import { materialize } from "../dist/build.js";
+export const imageFiles = ["logo.svg", "upper.SVG", "photo.WEBP", "bitmap.ppm"];
 export function git(path, ...args) {
   return execFileSync("git", ["-C", path, ...args], {
     encoding: "utf8",
@@ -40,6 +41,13 @@ export async function fixture() {
   await writeFile(join(path, "name with\t한글\n.txt"), "special path\n");
   await writeFile(join(path, "empty.txt"), "");
   await writeFile(join(path, "binary.txt"), Buffer.from([1, 0, 255]));
+  for (const image of imageFiles)
+    await writeFile(
+      join(path, image),
+      image.endsWith(".ppm")
+        ? "P3\n1 1\n255\n255 0 0\n"
+        : '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0L1 1"/></svg>',
+    );
   await writeFile(
     join(path, "lfs.txt"),
     "version https://git-lfs.github.com/spec/v1\noid sha256:0000\nsize 100\n",

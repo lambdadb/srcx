@@ -280,6 +280,9 @@ test("Shell keeps quoted commands, heredocs and compound statements intact", asy
     ),
   );
   assert.equal((await chunk(shell, "build.bash")).language, "shell");
+  assert.ok(
+    result.spans.some((s) => s.searchText.includes('[[ "$value" == 1 ]]')),
+  );
 });
 
 test("SQL keeps statements, CTEs and dollar-quoted function bodies intact", async () => {
