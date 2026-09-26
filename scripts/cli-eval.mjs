@@ -6,14 +6,7 @@ import { readFile, readdir, mkdir, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { atomic, hash, optionalJson } from "../dist/common.js";
 import { identity, git } from "../dist/git.js";
-import {
-  PRESET,
-  MANAGED_PRESET,
-  MANAGED_LARGE_PRESET,
-  loadBuild,
-  records,
-  validateBuild,
-} from "../dist/build.js";
+import { presetFor, loadBuild, records, validateBuild } from "../dist/build.js";
 import { tokens } from "../dist/chunk.js";
 import { collectionName } from "../dist/repository.js";
 import { validateSettings } from "../dist/settings.js";
@@ -90,10 +83,14 @@ async function corpus(build) {
   return { docs, files };
 }
 function presetForSuite(suite) {
-  if (suite.format < 3) return PRESET;
-  return suite.settings.preset === "managed-openai-large"
-    ? MANAGED_LARGE_PRESET
-    : MANAGED_PRESET;
+  const model =
+    suite.format < 3
+      ? "none"
+      : suite.settings.preset === "managed-openai-large"
+        ? "text-embedding-3-large"
+        : "text-embedding-3-small";
+  // Frozen protocols use standard analysis even if the CLI default changes.
+  return presetFor(model, ["standard"]);
 }
 function compareReference(suite, reference) {
   validateCliSuite(reference);
@@ -169,6 +166,8 @@ async function prepare() {
         "--ref",
         commit,
         "--dry-run",
+        "--analyzers",
+        preset.analyzers.join(","),
         ...(suite.format >= 3 ? ["--embedding", preset.embedding.model] : []),
         "--output",
         output,
@@ -509,6 +508,8 @@ async function run() {
         "add",
         "--path",
         source.path,
+        "--analyzers",
+        preset.analyzers.join(","),
         ...(comparison ? ["--embedding", preset.embedding.model] : []),
       ]);
       assert.equal(repository.repoKey, source.key);

@@ -22,7 +22,7 @@ srcx --help
 ## Run locally
 
 Requires Node.js 22.14+ and Git. The default preset uses lexical search with
-`embedding=none`; no embedding account or paid API is needed.
+`embedding=none` and the `standard` text analyzer; no embedding account or paid API is needed.
 
 ```sh
 npm ci --ignore-scripts
@@ -104,12 +104,45 @@ metadata; nested functions remain inside their containing function. Syntax
 unsupported by the pinned grammars uses recorded whole-file parse fallback.
 Language labels remain available to `--language` filters even after fallback.
 
+## Choose text analyzers
+
+New repositories use `standard` by default. Choose any nonempty combination of
+LambdaDB's supported analyzers: `english`, `korean`, `japanese`, and `standard`.
+These analyze searchable text; they are separate from programming-language
+chunking and the `--language` file filter.
+
+```sh
+srcx repo add --path /path/to/repo --analyzers english,korean
+srcx repo add --path /path/to/repo --analyzers english
+
+# Preview exactly the same settings without credentials or service calls.
+srcx import --path /path/to/repo --ref main --dry-run \
+  --analyzers english,korean --output /tmp/srcx-preview
+```
+
+Order and duplicates do not matter: `korean,english,english` selects the same
+preset as `english,korean`. Unknown names and empty entries are rejected.
+The chosen analyzers are stored in the repository preset, included in its
+configuration hash, and checked against the Collection schema during discovery.
+Different analyzer sets select separate Collections. Connected imports and
+searches use the registered preset; `--analyzers` on import is only accepted with
+`--dry-run --path`. Inspect the selection with `srcx repo show --repo <collection>`.
+
+This pre-release preset now requires an explicit analyzer list. Older descriptors
+and artifacts without it are not accepted; existing Collections are not changed
+in place. A new registration/import uses the chosen preset.
+
+Analyzers affect lexical search and the lexical part of hybrid search. They do
+not translate queries or change the raw text sent to the embedding provider.
+The same selection configures `searchText` and managed `embeddingText` text indexes.
+See [LambdaDB text indexes](https://docs.lambdadb.ai/guides/collections/index-types#text).
+
 ## Opt into managed embeddings
 
 Supported models are `text-embedding-3-small` (1536 dimensions) and
 `text-embedding-3-large` (3072 dimensions), both cosine. Use either name with
-`--embedding`; each has a separate pinned preset and Collection. Existing small
-Collections keep their identity. Changing models requires a separate import.
+`--embedding`; each model/analyzer combination has a separate pinned preset and
+Collection. Changing models requires a separate import.
 
 LambdaDB generates vectors for meaningful code, tests and prose. Imports-only
 and structural chunks remain lexical. The CLI uses LambdaDB credentials; it does not need an OpenAI key.

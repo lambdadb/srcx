@@ -12,8 +12,8 @@ import {
   loadBuild,
   records,
   validateBuild,
-  PRESET,
-  INDEX_CONFIGS,
+  presetFor,
+  indexConfigs,
 } from "../dist/build.js";
 import { LambdaRemote } from "../dist/remote.js";
 import { matchesIndexSchema } from "../dist/repository.js";
@@ -39,6 +39,8 @@ const { values, positionals } = parseArgs({
 });
 const root = resolve(values.root);
 const modes = ["syntax", "window"];
+// Frozen protocol: analyzer selection must not follow product defaults.
+const evalPreset = presetFor("none", ["standard"]);
 const planFile = join(root, "plan.json");
 const reportFile = join(root, "report.json");
 async function fingerprint() {
@@ -92,7 +94,7 @@ async function prepare() {
   };
   await atomic(planFile, plan);
   for (const mode of modes) {
-    const preset = { ...PRESET, mode, enrichment: "path-only-v1" };
+    const preset = { ...evalPreset, mode, enrichment: "path-only-v1" };
     const configHash = hash(preset);
     const variant = {
       collection: `srcx-eval-${runId}-${mode}`,
@@ -297,11 +299,11 @@ async function run() {
           labels,
           "Foreign evaluation Collection.",
         );
-        assert.ok(matchesIndexSchema(existing.indexConfigs));
+        assert.ok(matchesIndexSchema(existing.indexConfigs, evalPreset));
       } else
         await remote.create(
           variant.collection,
-          INDEX_CONFIGS,
+          indexConfigs(evalPreset),
           `srcx public-code lexical pilot; ${mode} chunking; path-only enrichment; no embeddings.`,
           labels,
         );

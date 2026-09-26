@@ -14,6 +14,8 @@ import {
   type Preset,
   PRESET,
   presetFor,
+  normalizeAnalyzers,
+  ANALYZERS,
 } from "./build.js";
 import { invariant, optionalJson } from "./common.js";
 import { LambdaRemote } from "./remote.js";
@@ -54,6 +56,13 @@ const integer = (value: string) => {
     throw new InvalidArgumentError("Integer is too large.");
   return n;
 };
+const analyzerOption = (description: string) =>
+  new Option(
+    "--analyzers <names>",
+    description + ` (${ANALYZERS.join(", ")}; default: standard)`,
+  ).argParser((value) =>
+    normalizeAnalyzers(value.split(",").map((name) => name.trim())),
+  );
 async function connected() {
   const settings = await loadSettings();
   return { settings, remote: new LambdaRemote(settings) };
@@ -96,6 +105,7 @@ repo
   .option("--remote <name>")
   .option("--description <text>")
   .option("--tag <key=value>", "One optional Collection metadata tag")
+  .addOption(analyzerOption("Comma-separated text analyzers"))
   .addOption(
     new Option(
       "--embedding <model>",
@@ -118,7 +128,7 @@ repo
         remote: o.remote,
         description: o.description,
         labels,
-        preset: presetFor(o.embedding),
+        preset: presetFor(o.embedding, o.analyzers),
       }),
     );
   });
@@ -152,6 +162,11 @@ cli
       "Preset for --dry-run --path; connected imports use the repository preset",
     ).choices(["none", "text-embedding-3-small", "text-embedding-3-large"]),
   )
+  .addOption(
+    analyzerOption(
+      "Text analyzers for --dry-run --path; connected imports use the repository preset",
+    ),
+  )
   .option("--output <directory>", "New artifact directory")
   .option(
     "--previous <directory>",
@@ -167,6 +182,10 @@ cli
     invariant(
       !o.embedding || (o.dryRun && o.path),
       "--embedding is only accepted with --dry-run --path; connected imports use the repository preset.",
+    );
+    invariant(
+      !o.analyzers || (o.dryRun && o.path),
+      "--analyzers is only accepted with --dry-run --path; connected imports use the repository preset.",
     );
     invariant(!(o.path && o.repo), "Choose --path or --repo.");
     invariant(
@@ -217,7 +236,7 @@ cli
         await validateBuild(b);
       } else {
         let source;
-        let preset = presetFor(o.embedding);
+        let preset = presetFor(o.embedding, o.analyzers);
         if (o.path) source = await identity(o.path, o.remote);
         else {
           invariant(o.repo, "Use --path for a credential-free dry run.");

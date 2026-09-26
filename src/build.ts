@@ -15,6 +15,17 @@ import {
   type Doc,
   optionalJson,
 } from "./common.js";
+export const ANALYZERS = ["english", "japanese", "korean", "standard"] as const;
+export type Analyzer = (typeof ANALYZERS)[number];
+export function normalizeAnalyzers(value: unknown): Analyzer[] {
+  invariant(
+    Array.isArray(value) &&
+      value.length > 0 &&
+      value.every((name) => ANALYZERS.includes(name)),
+    `Analyzers must be a nonempty list of: ${ANALYZERS.join(", ")}.`,
+  );
+  return [...new Set(value as Analyzer[])].sort();
+}
 export const INDEX_CONFIGS = {
   kind: { type: "keyword" },
   path: { type: "keyword" },
@@ -25,6 +36,7 @@ export const INDEX_CONFIGS = {
 } as const;
 export type Preset = {
   schemaVersion: 1;
+  analyzers: readonly Analyzer[];
   chunker: typeof CHUNKER;
   mode: "syntax" | "window";
   /** Internal evaluation override; the CLI keeps its original enrichment. */
@@ -41,6 +53,7 @@ export type Preset = {
 };
 export const PRESET: Preset = {
   schemaVersion: 1,
+  analyzers: ["standard"],
   chunker: CHUNKER,
   mode: "syntax",
   maxFileBytes: 1024 * 1024,
@@ -66,32 +79,47 @@ export const MANAGED_LARGE_PRESET: Preset = {
     dimensions: 3072,
   },
 };
-export function presetFor(embedding = "none"): Preset {
+export function presetFor(
+  embedding = "none",
+  analyzers: readonly string[] = PRESET.analyzers,
+): Preset {
   invariant(
     ["none", "text-embedding-3-small", "text-embedding-3-large"].includes(
       embedding,
     ),
     "Embedding must be none, text-embedding-3-small or text-embedding-3-large.",
   );
-  if (embedding === "none") return PRESET;
-  return embedding === "text-embedding-3-large"
-    ? MANAGED_LARGE_PRESET
-    : MANAGED_PRESET;
+  const base =
+    embedding === "none"
+      ? PRESET
+      : embedding === "text-embedding-3-large"
+        ? MANAGED_LARGE_PRESET
+        : MANAGED_PRESET;
+  const normalized = normalizeAnalyzers(analyzers);
+  return hash(normalized) === hash(base.analyzers)
+    ? base
+    : { ...base, analyzers: normalized };
 }
 export function supportedPreset(preset: unknown): preset is Preset {
-  return (
-    preset !== undefined &&
-    [hash(PRESET), hash(MANAGED_PRESET), hash(MANAGED_LARGE_PRESET)].includes(
-      hash(preset),
-    )
-  );
+  if (!preset || typeof preset !== "object" || Array.isArray(preset))
+    return false;
+  try {
+    const analyzers = normalizeAnalyzers((preset as Preset).analyzers);
+    return [PRESET, MANAGED_PRESET, MANAGED_LARGE_PRESET].some(
+      (base) => hash({ ...base, analyzers }) === hash(preset),
+    );
+  } catch {
+    return false;
+  }
 }
 export function indexConfigs(preset: Preset = PRESET) {
-  if (!preset.embedding?.managed) return INDEX_CONFIGS;
+  const text = { type: "text" as const, analyzers: [...preset.analyzers] };
+  const indexes = { ...INDEX_CONFIGS, searchText: text };
+  if (!preset.embedding?.managed) return indexes;
   const { managed: _, ...embedding } = preset.embedding;
   return {
-    ...INDEX_CONFIGS,
-    embeddingText: { type: "text", analyzers: ["standard"] },
+    ...indexes,
+    embeddingText: { ...text, analyzers: [...preset.analyzers] },
     embedding: { type: "vector", managedEmbedding: true, embedding },
   };
 }
@@ -217,7 +245,8 @@ export async function materialize(args: {
     configHash = hash(preset),
     prev = args.previous;
   invariant(
-    hash(preset.chunker) === hash(CHUNKER) &&
+    hash(preset.analyzers) === hash(normalizeAnalyzers(preset.analyzers)) &&
+      hash(preset.chunker) === hash(CHUNKER) &&
       ["syntax", "window"].includes(preset.mode) &&
       (preset.enrichment === undefined ||
         preset.enrichment === "path-only-v1") &&
@@ -516,7 +545,9 @@ export async function validateBuild(b: Build): Promise<void> {
     "Build commit identity mismatch; rebuild from the intended Git commit.",
   );
   invariant(
-    hash(b.preset) === b.configHash && hash(b.inventory) === b.inventoryHash,
+    hash(b.preset.analyzers) === hash(normalizeAnalyzers(b.preset.analyzers)) &&
+      hash(b.preset) === b.configHash &&
+      hash(b.inventory) === b.inventoryHash,
     "Build metadata hash mismatch.",
   );
   const seen = new Set<string>();

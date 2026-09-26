@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { MANAGED_PRESET } from "../dist/build.js";
 import { hash } from "../dist/common.js";
 import {
   loadData,
@@ -109,7 +110,9 @@ async function fixture(t) {
     },
   };
   const remote = {
-    create: async () => {
+    create: async (_, indexes) => {
+      assert.deepEqual(indexes.searchText.analyzers, ["standard"]);
+      assert.deepEqual(indexes.embeddingText.analyzers, ["standard"]);
       created++;
     },
     store: () => store,
@@ -214,4 +217,19 @@ test("uncertain search reservations remain charged failures without replay", asy
   assert.equal(f.state.usage.searches, 3);
   assert.equal(state.results.semantic.q1.status, "failed");
   assert.equal(state.results.semantic.q1.error, "interrupted-outcome-unknown");
+});
+
+test("public benchmark pins standard even if the product default becomes English", async (t) => {
+  const f = await fixture(t);
+  const original = MANAGED_PRESET.analyzers;
+  try {
+    MANAGED_PRESET.analyzers = ["english"];
+    const { runBenchmark: run } =
+      await import("../scripts/benchmark-eval-lib.mjs?english-default");
+    await run(f);
+    assert.equal(f.state.status, "complete");
+    assert.equal(f.created(), 1);
+  } finally {
+    MANAGED_PRESET.analyzers = original;
+  }
 });

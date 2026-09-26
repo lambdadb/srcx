@@ -15,6 +15,7 @@ import {
   MANAGED_LARGE_PRESET,
   INDEX_CONFIGS,
   indexConfigs,
+  presetFor,
 } from "../dist/build.js";
 import { fixture } from "./fixture.mjs";
 import { MemoryStore } from "./memory-store.mjs";
@@ -210,4 +211,43 @@ test("managed preset provisions a separate discoverable Collection and rejects e
   assert.equal(matchesIndexSchema(schema, MANAGED_PRESET), false);
   remote.metadata.get(managed.collection).indexConfigs = schema;
   assert.equal((await discover(remote)).partial.length, 1);
+});
+
+test("analyzer sets round-trip through registration and detect schema drift", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  const prior = process.env.SRCX_STATE_DIR;
+  process.env.SRCX_STATE_DIR = join(f.root, "analyzer-state");
+  t.after(() => {
+    if (prior === undefined) delete process.env.SRCX_STATE_DIR;
+    else process.env.SRCX_STATE_DIR = prior;
+  });
+  const remote = new ProvisionRemote();
+  const defaultRepository = await register(remote, { path: f.path });
+  for (const model of [
+    "none",
+    "text-embedding-3-small",
+    "text-embedding-3-large",
+  ]) {
+    const preset = presetFor(model, ["korean", "english", "english"]);
+    const mixed = await register(remote, { path: f.path, preset });
+    assert.notEqual(mixed.collection, defaultRepository.collection);
+    const reordered = await register(remote, {
+      path: f.path,
+      preset: presetFor(model, ["english", "korean"]),
+    });
+    assert.equal(reordered.collection, mixed.collection);
+    assert.deepEqual(
+      (await selectRepository(remote, mixed.collection)).preset.analyzers,
+      ["english", "korean"],
+    );
+    const metadata = remote.metadata.get(mixed.collection);
+    metadata.indexConfigs.searchText.analyzers = ["english"];
+    await assert.rejects(
+      register(remote, { path: f.path, preset }),
+      /schema differs/,
+    );
+    metadata.indexConfigs = indexConfigs(preset);
+  }
+  assert.equal((await discover(remote)).repositories.length, 4);
 });

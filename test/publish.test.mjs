@@ -385,23 +385,26 @@ test("another ref spelling for the same commit reuses the immutable publication"
   );
 });
 
-test("readiness probe preserves complete analyzer tokens such as code.ts", async (t) => {
+test("readiness does not depend on text surviving stop-word analysis", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
   const { store, state, r } = await prepare(f);
   const query = store.query.bind(store);
-  const probes = [];
+  let probes = 0;
   store.query = async (name, q, size) => {
-    const text = q.bool?.find(
-      (c) => c.queryString?.defaultField === "searchText",
-    )?.queryString?.query;
-    if (text) {
-      probes.push(text);
-      if (text === "code") return [];
-    }
+    if (q.bool?.some((c) => c.queryString?.defaultField === "searchText"))
+      return [];
+    probes++;
     return query(name, q, size);
   };
-  await publish({ store, binding: r, build: f.buildA, state, pollMs: 1 });
-  assert.ok(probes.includes("code.ts"));
-  assert.ok(!probes.includes("code"));
+  const version = await publish({
+    store,
+    binding: r,
+    build: f.buildA,
+    state,
+    pollMs: 1,
+    timeoutMs: 500,
+  });
+  assert.ok(version.snapshotId);
+  assert.ok(probes > 0);
 });

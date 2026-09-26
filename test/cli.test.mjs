@@ -14,8 +14,8 @@ import { publish, published, gitBranchName } from "../dist/publish.js";
 import {
   PRESET,
   MANAGED_PRESET,
-  MANAGED_LARGE_PRESET,
   indexConfigs,
+  presetFor,
   materialize,
 } from "../dist/build.js";
 import { atomic, hash } from "../dist/common.js";
@@ -341,6 +341,8 @@ async function cliContract(t, preset) {
     "--dry-run",
     "--embedding",
     managed ? preset.embedding.model : "none",
+    "--analyzers",
+    [...preset.analyzers].reverse().join(","),
     "--output",
     join(f.root, "cli-preview"),
   ]);
@@ -413,7 +415,7 @@ for (const preset of [PRESET, MANAGED_PRESET])
     cliContract(t, preset));
 
 test("CLI managed large imports, searches and pins reads with 3072-dimensional vectors", (t) =>
-  cliContract(t, MANAGED_LARGE_PRESET));
+  cliContract(t, presetFor("text-embedding-3-large", ["english", "korean"])));
 
 test("installed CLI resolves all added grammars and preserves source metadata", async (t) => {
   const f = await fixture();
@@ -470,4 +472,21 @@ test("installed CLI resolves all added grammars and preserves source metadata", 
       docs.find((d) => d.kind === "file" && d.path === path).sourceText,
       source,
     );
+});
+
+test("CLI analyzer flags reject invalid lists and connected overrides before service calls", async () => {
+  for (const args of [
+    ["repo", "add", "--path", ".", "--analyzers", "french"],
+    ["repo", "add", "--path", ".", "--analyzers", ""],
+    ["import", "--path", ".", "--dry-run", "--analyzers", "english,"],
+    ["import", "--repo", "example", "--analyzers", "english,korean"],
+    ["import", "--repo", "example", "--dry-run", "--analyzers", "english"],
+  ]) {
+    await assert.rejects(
+      promisify(execFile)(process.execPath, [cliPath, ...args]),
+      (error) =>
+        error.code === 1 &&
+        /Analyzers must|--analyzers is only/.test(error.stderr),
+    );
+  }
 });

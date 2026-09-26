@@ -3,8 +3,11 @@ import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { hash, atomic } from "../dist/common.js";
 import { tokens } from "../dist/chunk.js";
-import { MANAGED_PRESET, indexConfigs } from "../dist/build.js";
+import { presetFor, indexConfigs } from "../dist/build.js";
 import { retrievalQuery } from "../dist/search.js";
+
+// Match the published protocol and StandardAnalyzer cross-check.
+const benchmarkPreset = presetFor("text-embedding-3-small", ["standard"]);
 
 export async function fingerprint() {
   const paths = [
@@ -32,8 +35,8 @@ export async function loadData(root) {
   const suite = manifest.suite;
   assert.equal(suite.format, 1);
   assert.deepEqual(suite.modes, ["lexical", "semantic", "hybrid"]);
-  assert.equal(suite.embedding, MANAGED_PRESET.embedding.model);
-  assert.equal(suite.dimensions, MANAGED_PRESET.embedding.dimensions);
+  assert.equal(suite.embedding, benchmarkPreset.embedding.model);
+  assert.equal(suite.dimensions, benchmarkPreset.embedding.dimensions);
   assert.equal(suite.retrieveK, 100);
   const tasks = {};
   for (const task of suite.tasks) {
@@ -210,7 +213,7 @@ export async function runBenchmark({
       await save();
       await remote.create(
         current.collection,
-        indexConfigs(MANAGED_PRESET),
+        indexConfigs(benchmarkPreset),
         `srcx ${suite.name}: ${id}`,
         { purpose: "srcx-benchmark", run: state.runId },
       );
