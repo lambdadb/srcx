@@ -2,6 +2,28 @@
 
 Date: 2026-09-26 (Asia/Seoul).
 
+## Developer workflow pilot
+
+The [workflow pilot](https://github.com/lambdadb/srcx/blob/develop/eval/DEVELOPER-WORKFLOW-PILOT.md)
+used installed dev.17 against srcx `7521974a331471b264a695e6f9795bba3e4a7dfd`
+for three assistant-selected maintenance investigations. Five searches and 16
+source-verified reads produced change maps for Qwen diagnostics, Go chunking and
+automatic Git sync. No feature implementation or comparative quality claim is
+part of this record.
+
+One import added 127 files / 699 chunks to the existing managed-small Collection,
+with 283,104 estimated document embedding input tokens. Two query embedding
+requests and one cached Qwen invocation stayed within predeclared bounds. All
+live commands completed without replay. Two separate local failure probes
+confirmed indistinguishable public errors for missing Python and an invalid
+device; raw exceptions remained masked.
+
+Evidence is retained in the workflow-pilot worktree under `.srcx/workflow-pilot/`:
+
+- `plan.json`: SHA-256 `86d929c19ff69faaed6a264198e0b9c15bf32d3b721a31c503a08c4d2e12da39`.
+- `run.json`: SHA-256 `f0ca1a5e6ac12d48e4929959b85b08e846fb239011125cb153aaa6d0babb1359`.
+- `error-probes.json`: SHA-256 `a5fb5c44dc089466cee8a6bba1c4d374c46bba01f9eef24ac739cfeac72b8612`.
+
 ## Installed dev package first use
 
 On 2026-09-26, the public `@functional-systems/srcx@0.1.0-dev.17` tarball from

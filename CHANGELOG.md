@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Record three developer search/read investigations with concrete change maps,
+  bounded live usage and source verification, separate from ranking benchmarks.
+
 - Refresh implemented/remaining scope and verify the published dev.17 package
   through a fresh npm consumer and bounded live first-use workflow.
 
