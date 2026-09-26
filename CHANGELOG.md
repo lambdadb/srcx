@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Explain source-language query selection in README and search help, including
+  agent translation of query intent while preserving exact identifiers and
+  answering in the user's language. Keep multilingual input accepted without
+  adding automatic translation or changing retrieval defaults.
+
 - Keep standard text analysis as the default and add `--analyzers` for any combination of
   LambdaDB's English, Korean, Japanese and standard analyzers. Pin the canonical
   selection in repository/build identity and verify it during discovery. This

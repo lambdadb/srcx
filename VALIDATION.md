@@ -1,5 +1,35 @@
 # Validation record
 
+## Query-language guidance
+
+README and search help explain source-language query selection without rejecting
+non-English input or adding automatic translation. Agent guidance preserves exact
+identifiers and error text, checks the question's premise, reads source evidence
+and answers in the user's language. `--language` help explicitly identifies the
+programming-language filter.
+
+Local Node 24.15.0 checks passed: formatting, version consistency, typecheck,
+113 tests and five installed-package checks. Rendered `search --help` was checked
+for query-language guidance and the programming-language filter description.
+
+A private 2026-09-26 diagnostic used ten new Korean/English question pairs against
+one existing immutable corpus, with English+Korean analysis, lexical top-ten
+retrieval and five zero-context reads. Both query forms were frozen before answer
+implementation inspection; source labels were frozen before retrieval. English
+translation improved labelled-file discovery from 0/10 to 7/10, but complete
+labelled evidence only from 0/10 to 1/10. All labelled spans were present in the
+corpus; all 100 explicit reads matched pinned source bytes and version metadata.
+There were 20 searches, no reindexing, no query embeddings and no reranking.
+
+The same assistant authored queries and labels with prior repository familiarity;
+this is not a blind benchmark. Exact implementation-span coverage can undercount
+other useful evidence. One false-premise question remained in the set. No queries
+or labels were tuned after retrieval. The new set did not run semantic/hybrid or
+measure generated-answer accuracy, automatic translation quality or follow-up
+reads. These results support query-writing guidance, not a language restriction,
+a universal ranking claim or a product-default change. Private source-bearing
+artifacts are retained locally and are not included in this repository.
+
 ## Configurable text analyzers
 
 The pre-release preset defaults to standard and requires a canonical analyzer

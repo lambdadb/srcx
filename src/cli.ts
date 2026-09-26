@@ -345,7 +345,17 @@ cli
   .command("search")
   .requiredOption("--repo <name>")
   .requiredOption("--version <commit-branch-or-release>")
-  .requiredOption("--query <text>")
+  .requiredOption(
+    "--query <text>",
+    "Search text; use the target source language",
+  )
+  .addHelpText(
+    "after",
+    "\nQuery language: any language is accepted; queries are not automatically translated.\n" +
+      "For English code/comments, prefer English terms and preserve identifiers, API names and error messages.\n" +
+      "For Korean documentation, use Korean queries with the korean analyzer.\n" +
+      "Agents can translate the search query while answering in the user's language.\n",
+  )
   .option("--limit <count>", "Maximum hits", integer, 10)
   .addOption(
     new Option(
@@ -367,7 +377,7 @@ cli
     integer,
   )
   .option("--path <path>", "Exact path filter")
-  .option("--language <name>")
+  .option("--language <name>", "Exact programming-language filter")
   .action(async (o) => {
     const started = performance.now();
     candidateLimit(o.limit, o);
