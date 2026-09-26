@@ -19,6 +19,82 @@ srcx --version
 srcx --help
 ```
 
+## Install the agent skill
+
+The npm package includes the [srcx-search skill](skills/srcx-search/SKILL.md).
+After installing the CLI, explicitly select your agent:
+
+```sh
+srcx skills install --agent codex
+# Or, for Claude Code:
+srcx skills install --agent claude
+srcx skills status --agent codex
+```
+
+The default scope is `user`. Installation copies the bundled instructions into
+one of the following local discovery directories:
+
+| Agent       | User scope                              | Project scope                                   |
+| ----------- | --------------------------------------- | ----------------------------------------------- |
+| Codex       | `~/.agents/skills/srcx-search/SKILL.md` | `<project>/.agents/skills/srcx-search/SKILL.md` |
+| Claude Code | `~/.claude/skills/srcx-search/SKILL.md` | `<project>/.claude/skills/srcx-search/SKILL.md` |
+
+These are the documented local skill locations for
+[Codex](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills)
+and [Claude Code](https://code.claude.com/docs/en/skills#where-skills-live).
+Cloud sessions need their own installation; a local user installation does not
+configure remote agents or account-synced skills. The installer targets these
+default locations, not custom agent configuration directories.
+
+To share a skill with a project, select an existing project directory and commit
+the installed file if appropriate for your team:
+
+```sh
+srcx skills install --agent codex --scope project --path /path/to/project
+```
+
+Project scope defaults to the current directory when `--path` is omitted; it does
+not infer the Git root. `--path` is accepted only for project scope. Prefer one
+scope per agent to avoid duplicate skill names. The installer does not change
+`AGENTS.md`, `CLAUDE.md`, agent permissions, shell profiles or credentials, and npm
+installation alone does not place skills in your environment.
+
+Make sure the agent's shell can run `srcx --version`. Configure LambdaDB and
+prepare the repository using the [connected workflow](#connected-workflow) below,
+or use an already indexed repository in the configured project. The agent process
+must inherit the API-key environment variable named by `srcx configure`; no key
+is copied into the skill. `srcx doctor` checks authentication/read access only.
+
+Start a new agent session after installation. Invoke `$srcx-search` in Codex or
+`/srcx-search` in Claude Code, and ask it to investigate an indexed repository at a
+specific branch, release or commit. Skill-aware agents may also select it from its
+description. Installation/status confirms files on disk, not that an agent loaded
+or selected them. Agent policy, disabled skills and custom discovery paths can
+still affect availability.
+
+### Update and remove
+
+```sh
+npm install -g @functional-systems/srcx@dev
+srcx skills update --agent codex
+srcx skills status --agent codex
+srcx skills remove --agent codex
+```
+
+Repeat for each installed agent/scope, supplying the same `--scope project --path`
+when applicable. `update` uses the currently running CLI's bundled skill and does
+not download anything. npm upgrades do not silently update skill copies, and npm
+uninstall does not remove them: run `skills remove` before uninstalling the CLI.
+
+A provenance comment records the package version and content hash. Repeated
+installation is a no-op when the installed copy matches. A different managed
+version requires `update`. Locally edited skills, extra files, unowned skills and
+symlinked managed paths are preserved by refusing the operation; there is no
+force-overwrite flag. Move a customized copy to a separate skill name/location
+before installing a managed copy. Interrupted operations can leave a sibling
+`.srcx-search.srcx-lock` directory: check that no installer is running and preserve
+any staged file before manually removing that lock and retrying.
+
 ## Run locally
 
 Requires Node.js 22.14+ and Git. The default preset uses lexical search with

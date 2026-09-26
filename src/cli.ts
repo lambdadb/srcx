@@ -36,6 +36,7 @@ import {
 import { resolveVersion, syncTags } from "./releases.js";
 import { directHandle, loadHandle, readHandle, search } from "./search.js";
 import { candidateLimit } from "./rerank.js";
+import { manageSkill, SKILL_AGENTS, SKILL_SCOPES } from "./skills.js";
 const cli = new Command()
   .name("srcx")
   .description("Version-aware code search on LambdaDB")
@@ -66,6 +67,30 @@ const analyzerOption = (description: string) =>
 async function connected() {
   const settings = await loadSettings();
   return { settings, remote: new LambdaRemote(settings) };
+}
+const skills = cli
+  .command("skills")
+  .description(
+    "Install and manage the bundled agent skill (no credentials required)",
+  );
+for (const operation of ["install", "update", "remove", "status"] as const) {
+  skills
+    .command(operation)
+    .addOption(
+      new Option("--agent <name>", "Agent to configure")
+        .choices(SKILL_AGENTS)
+        .makeOptionMandatory(),
+    )
+    .addOption(
+      new Option("--scope <scope>", "Installation scope")
+        .choices(SKILL_SCOPES)
+        .default("user"),
+    )
+    .option(
+      "--path <directory>",
+      "Project directory (project scope only; default: current directory)",
+    )
+    .action(async (options) => output(await manageSkill(operation, options)));
 }
 cli
   .command("configure")

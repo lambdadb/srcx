@@ -1,5 +1,41 @@
 # Validation record
 
+## Agent skill installation
+
+The npm artifact includes `skills/srcx-search/SKILL.md`. The `skills` command
+installs, reports, updates and removes the bundled copy for Codex or Claude Code
+in user/project scope. No credentials or network access are needed for those
+operations. A content-hash/package-version footer distinguishes unchanged managed
+copies from custom files; modified/unowned content, extra files and symlinked
+managed paths are preserved. Scope selection does not edit unrelated agent
+settings or infer a project root.
+
+On Node 24.15.0, formatting/version checks, typecheck, all 120 tests and six packed
+CLI tests passed. Lifecycle tests cover both agents and scopes using isolated
+roots, replacement of a previous managed bundle, custom-file preservation,
+symlinks, active locks, invalid options and no-write status/absent removal. Packed
+CLI tests exercise both project destinations without config, then the existing
+loopback workflow covers skill installation, repository discovery, commit
+resolution, search and exact source reads. This is deterministic integration
+validation; a model does not choose the commands in those tests.
+
+The skill-creator validator accepted the skill. Separately, a fresh npm consumer
+installed the tarball and Codex CLI 0.157.1 `skills/list` discovered the installed
+project skill as enabled. Removing it removed it from the actual runtime catalog;
+reinstalling restored it with `forceReload`. This exercised the real discovery
+path without model requests. Claude Code's documented destination and installed
+file lifecycle are covered, but Claude runtime discovery and either agent's
+autonomous skill selection have not been exercised. Default local paths are the
+supported installer targets; custom config directories and cloud/account skill
+sync are outside this installation flow.
+
+There were no live LambdaDB changes, embedding requests, global CLI installation,
+or changes to the developer's personal skill directories. Tests and discovery
+used isolated directories. This validates packaging/discovery, not token savings,
+latency improvements or ranking quality.
+
+Date: 2026-09-26 (Asia/Seoul).
+
 ## Query-language guidance
 
 README and search help explain source-language query selection without rejecting

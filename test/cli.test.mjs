@@ -268,6 +268,30 @@ async function cliContract(t, preset) {
       (await promisify(execFile)(process.execPath, [cliPath, ...args], options))
         .stdout,
     );
+  if (!managed) {
+    // The packaged skill's discovery -> resolve -> search/read command sequence.
+    const skill = await runCli([
+      "skills",
+      "install",
+      "--agent",
+      "codex",
+      "--scope",
+      "project",
+      "--path",
+      f.root,
+    ]);
+    assert.equal(skill.status, "installed");
+    const discovered = await runCli(["repo", "list"]);
+    assert.ok(discovered.repositories.some((r) => r.collection === collection));
+    const resolved = await runCli([
+      "resolve",
+      "--repo",
+      "review",
+      "--ref",
+      f.b,
+    ]);
+    assert.equal(resolved.commitOid, f.b);
+  }
   const hits = await runCli([
     "search",
     "--repo",
