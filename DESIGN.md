@@ -53,7 +53,7 @@ Current recommendations, distinguished from user-confirmed choices:
 | Runtime | TypeScript and a supported Node.js release compatible with the existing SDK |
 | Database | LambdaDB only; no public backend selection or interchangeable database framework |
 | API key | Read `LAMBDADB_API_KEY` by default; optional environment-variable-name override |
-| Syntax | Java, TypeScript/JavaScript and Python/Go; other text uses recorded fallback |
+| Syntax | Java, TypeScript/JavaScript, Python, Go and Rust; other text uses recorded fallback |
 | Source | Exact UTF-8 source inside file documents, with local blob cache |
 | File size | Start with a 1 MiB raw-source limit and explicit exclusions |
 | Embedding | A fixed `none` preset first; with a model, embed meaningful code and prose chunks while recording policy-based skips |
@@ -658,10 +658,13 @@ is not an unconditional one-function-per-chunk rule.
 
 ### Initial boundary and size rules
 
-The implementation adds Python/Go using the existing pinned WASM grammars.
+The implementation adds Python/Go/Rust using the existing pinned WASM grammars.
 Python splits top-level declarations and class bodies, keeps decorators with their
 function/class, and records nested class scopes. Go keeps functions/methods,
 extracts receiver type scopes, and separates named types in grouped declarations.
+Rust splits `impl`, `trait` and inline module bodies, retaining generic type/trait
+scopes and outer attributes/doc comments with each declaration. Macros and `cfg`
+conditions remain authored source; there is no compiler expansion or evaluation.
 Functions larger than the token ceiling use the common bounded text splitter with
 their symbol/scope preserved; nested functions stay in the containing function.
 These rules do not change Java/TypeScript/JavaScript boundaries.

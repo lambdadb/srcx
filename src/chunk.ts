@@ -60,6 +60,7 @@ export function detectLanguage(path: string): string {
         py: "python",
         pyi: "python",
         go: "go",
+        rs: "rust",
         java: "java",
         ts: "typescript",
         tsx: "tsx",
@@ -183,6 +184,80 @@ function goUnits(root: Node): Unit[] {
   }
   return units;
 }
+
+function rustUnits(root: Node): Unit[] {
+  const units: Unit[] = [];
+  function visit(container: Node, scope?: string): void {
+    let prefix: number | undefined;
+    for (const n of container.namedChildren) {
+      if (!n) continue;
+      // Outer attributes/doc comments belong to the following item, not a chunk
+      // containing only cfg/derive metadata. Inner module docs remain separate.
+      if (
+        n.type === "attribute_item" ||
+        /^(\/\/\/(?!\/)|\/\*\*(?!\*))/.test(n.text)
+      ) {
+        prefix ??= n.startIndex;
+        continue;
+      }
+      if (prefix !== undefined && n.type.endsWith("comment")) continue;
+      const body = n.childForFieldName("body");
+      const name = n.childForFieldName("name")?.text;
+      const type = n.childForFieldName("type")?.text;
+      const trait = n.childForFieldName("trait")?.text;
+      const unit: Unit = {
+        start: prefix ?? n.startIndex,
+        end: n.endIndex,
+        kind:
+          n.type === "use_declaration" || n.type === "extern_crate_declaration"
+            ? "imports"
+            : classify(n.type),
+        scope,
+        symbol: (
+          name ??
+          (n.type === "impl_item" ? type : n.childForFieldName("macro")?.text)
+        )?.slice(0, 200),
+      };
+      prefix = undefined;
+      if (body?.type === "declaration_list") {
+        const owner =
+          n.type === "impl_item"
+            ? [type, trait].filter(Boolean).join(" as ")
+            : name;
+        const nested =
+          [scope, owner].filter(Boolean).join("::").slice(0, 160) || undefined;
+        units.push({ ...unit, end: body.startIndex + 1 });
+        visit(body, nested);
+        // Keep closing delimiters with their container, including empty bodies.
+        units.push({
+          start: body.endIndex - 1,
+          end: n.endIndex,
+          kind: "structural",
+          scope: nested,
+        });
+      } else {
+        if (unit.kind === "function")
+          unit.signature = n.text
+            .slice(0, body ? body.startIndex - n.startIndex : undefined)
+            .trim()
+            .slice(0, 240);
+        units.push(unit);
+      }
+    }
+    if (prefix !== undefined)
+      units.push({
+        start: prefix,
+        end:
+          container.type === "declaration_list"
+            ? container.endIndex - 1
+            : container.endIndex,
+        kind: "documentation",
+        scope,
+      });
+  }
+  visit(root);
+  return units;
+}
 /** Bound strings without slicing a surrogate pair; prefer line ends where possible. */
 function splitUnit(
   source: string,
@@ -280,7 +355,15 @@ export async function chunk(
     status = "window-baseline";
     units = [{ start: 0, end: source.length, kind: "fallback" }];
   } else if (
-    ["java", "typescript", "tsx", "javascript", "python", "go"].includes(lang)
+    [
+      "java",
+      "typescript",
+      "tsx",
+      "javascript",
+      "python",
+      "go",
+      "rust",
+    ].includes(lang)
   ) {
     const grammar = await language(lang);
     const parser = new Parser();
@@ -318,6 +401,7 @@ export async function chunk(
         }
         if (lang === "python") units = pythonUnits(tree.rootNode);
         else if (lang === "go") units = goUnits(tree.rootNode);
+        else if (lang === "rust") units = rustUnits(tree.rootNode);
         else visit(tree.rootNode);
         // Attach every gap (punctuation, BOM, comments, whitespace) without altering source bytes.
         let cursor = 0;
@@ -357,7 +441,8 @@ export async function chunk(
     const prev = merged.at(-1);
     if (
       prev &&
-      (!(lang === "python" || lang === "go") || (!prev.symbol && !u.symbol)) &&
+      (!["python", "go", "rust"].includes(lang) ||
+        (!prev.symbol && !u.symbol)) &&
       prev.kind !== "function" &&
       u.kind === prev.kind &&
       u.scope === prev.scope &&

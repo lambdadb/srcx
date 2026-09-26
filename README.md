@@ -70,21 +70,24 @@ submodules, LFS pointers, dependencies/build output, binary/invalid UTF-8 data,
 invalid UTF-8 paths, and files above 1 MiB. Excluded paths are preserved losslessly
 in `pathBase64`.
 
-Java, TypeScript/TSX, JavaScript/JSX, Python (`.py`, `.pyi`) and Go use pinned
+Java, TypeScript/TSX, JavaScript/JSX, Python (`.py`, `.pyi`), Go and Rust (`.rs`) use pinned
 Tree-sitter WASM grammars. Python keeps decorators with functions, records class
 method scopes and preserves docstrings. Go records named types, functions and
-method receiver scopes, including generic receivers. Markdown
+method receiver scopes, including generic receivers. Rust records functions,
+named types and `impl`/`trait`/module scopes, keeping outer attributes and doc
+comments with their declarations. Rust macros and conditional compilation are
+not expanded or evaluated; search uses the authored source. Markdown
 uses heading/paragraph/fence boundaries; configuration text uses section/line
 boundaries. Parse errors and unsupported languages use recorded text fallback.
 Chunks cover the exact source bytes, carry one-based line ranges, target 800 tokens,
 and stay below 1,500 tokens including path/symbol context. The internal window
 baseline is available to the test/build API, not as a public storage backend.
 
-Python/Go functions stay together when they fit the token ceiling. Larger
+Python/Go/Rust functions stay together when they fit the token ceiling. Larger
 functions use bounded text splitting with the same symbol/scope metadata;
 nested function definitions remain inside their containing function. Syntax
 unsupported by the pinned grammars uses the recorded whole-file parse fallback.
-Parsed Python/Go files support exact `--language python` / `--language go` filters;
+These files support exact `--language python`, `--language go` and `--language rust` filters;
 those language labels also remain present when a parse falls back.
 
 ## Opt into managed embeddings

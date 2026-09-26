@@ -2,17 +2,18 @@
 
 Date: 2026-09-26 (Asia/Seoul).
 
-## Python/Go chunking
+## Python/Go/Rust chunking
 
-Python (`.py`, `.pyi`) and Go now use the pinned Tree-sitter grammars. Fixtures
+Python (`.py`, `.pyi`), Go and Rust (`.rs`) use the pinned Tree-sitter grammars. Fixtures
 verify decorated/async Python functions, class methods and nested class scopes,
-docstrings, Go generic/pointer/value receivers, grouped types, and complete UTF-8
+docstrings, Go generic/pointer/value receivers, grouped types, Rust generic
+`impl`/`trait` and module scopes, attributes/doc comments, authored macros, and complete UTF-8
 source coverage with BOM, CRLF and Unicode. Long functions keep their symbol/scope
 through bounded splitting; invalid parses retain text fallback. Artifact checks
 verify language and symbol metadata in lexical/small/large build payloads.
 
 Four installed-package CLI checks cover the existing lexical/small/large workflow
-and Python/Go grammar loading with exact source payloads from the npm artifact.
+and Python/Go/Rust grammar loading with exact source payloads from the npm artifact.
 The connected CLI checks use the synthetic SDK/HTTP test store. There were no live
 LambdaDB writes, paid embedding calls or new ranking measurements. Earlier
 retrieval results remain evidence for their original corpus and configuration.

@@ -2,8 +2,8 @@
 
 ## Unreleased
 
-- Add Python/Go syntax chunking with decorators, class/receiver scopes and bounded
-  source-preserving splits.
+- Add Python/Go/Rust syntax chunking with decorators, class/receiver/impl/trait
+  scopes, Rust attributes/doc comments and bounded source-preserving splits.
 
 - Distinguish Qwen setup, cache, device, input-size and timeout failures with
   actionable messages while keeping raw worker diagnostics private.

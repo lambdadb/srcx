@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { chunk, CHUNKER } from "../dist/chunk.js";
 import { lineAt } from "../dist/common.js";
-import { python, go } from "./language-fixtures.mjs";
+import { python, go, rust } from "./language-fixtures.mjs";
 import { fixture, git } from "./fixture.mjs";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -81,12 +81,17 @@ test("Go distinguishes generic/pointer/value receivers, functions and grouped ty
   assert.ok(result.spans.some((s) => s.chunkKind === "imports"));
 });
 
-test("Python/Go long functions keep metadata through token splitting; parse failures preserve source", async () => {
+test("Python/Go/Rust long functions keep metadata through token splitting; parse failures preserve source", async () => {
   for (const [path, source, broken] of [
     [
       "large.py",
       "def large():\n" + '    value = "안녕😀"\n'.repeat(1000),
       "def broken(:\n",
+    ],
+    [
+      "large.rs",
+      "pub fn large() {\n" + 'println!("안녕😀");\n'.repeat(1000) + "}\n",
+      "fn broken( {\n",
     ],
     [
       "large.go",
@@ -111,11 +116,12 @@ test("Python/Go long functions keep metadata through token splitting; parse fail
   }
 });
 
-test("Python/Go metadata reaches lexical and managed build payloads", async (t) => {
+test("Python/Go/Rust metadata reaches lexical and managed build payloads", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
   await writeFile(join(f.path, "client.py"), python);
   await writeFile(join(f.path, "client.go"), go);
+  await writeFile(join(f.path, "client.rs"), rust);
   git(f.path, "add", ".");
   git(f.path, "commit", "-qm", "languages");
   for (const [i, preset] of [
@@ -131,11 +137,30 @@ test("Python/Go metadata reaches lexical and managed build payloads", async (t) 
     });
     const docs = [];
     for await (const d of records(b.directory))
-      if (["client.py", "client.go"].includes(d.path)) docs.push(d);
+      if (["client.py", "client.go", "client.rs"].includes(d.path))
+        docs.push(d);
     assert.ok(
       docs.every(
-        (d) => d.language === (d.path.endsWith(".py") ? "python" : "go"),
+        (d) =>
+          d.language ===
+          (d.path.endsWith(".py")
+            ? "python"
+            : d.path.endsWith(".go")
+              ? "go"
+              : "rust"),
       ),
+    );
+    assert.ok(
+      docs.some(
+        (d) =>
+          d.language === "rust" &&
+          d.symbol === "get" &&
+          d.scope === "Store<T> as Read",
+      ),
+    );
+    assert.equal(
+      docs.find((d) => d.kind === "file" && d.path === "client.rs").sourceText,
+      rust,
     );
     assert.ok(docs.some((d) => d.symbol === "fetch"));
     assert.ok(docs.some((d) => d.symbol === "Get" && d.scope === "Box"));
@@ -144,4 +169,37 @@ test("Python/Go metadata reaches lexical and managed build payloads", async (t) 
       python,
     );
   }
+});
+
+test("Rust keeps attributes, docs, generic impl/trait scopes, modules and unexpanded macros", async () => {
+  const result = await chunk(rust, "client.rs");
+  assert.equal(result.language, "rust");
+  assert.equal(result.parseStatus, "parsed");
+  coverage(rust, result);
+  const method = result.spans.find(
+    (s) => s.symbol === "get" && s.scope === "Store<T> as Read",
+  );
+  assert.equal(method.chunkKind, "function");
+  assert.match(method.searchText, /Read the value 😀\r\n    #\[inline\]/);
+  assert.match(method.signature, /^fn get/);
+  assert.ok(result.spans.some((s) => s.symbol === "get" && s.scope === "Read"));
+  assert.ok(
+    result.spans.some((s) => s.symbol === "load" && s.scope === "Store<T>"),
+  );
+  assert.ok(
+    result.spans.some((s) => s.symbol === "run" && s.scope === "inner"),
+  );
+  assert.match(
+    result.spans.find((s) => s.symbol === "Store").searchText,
+    /#\[derive\(Clone\)\]/,
+  );
+  assert.ok(result.spans.some((s) => s.symbol === "State"));
+  assert.ok(result.spans.some((s) => s.symbol === "foreign"));
+  assert.ok(
+    result.spans.some(
+      (s) => s.symbol === "make" && s.searchText.includes("macro_rules!"),
+    ),
+  );
+  assert.ok(!result.spans.some((s) => s.symbol === "generated"));
+  assert.ok(result.spans.some((s) => s.chunkKind === "imports"));
 });
