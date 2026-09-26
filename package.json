@@ -10,6 +10,7 @@
   "files": [
     "dist",
     "runtime/qwen.py",
+    "runtime/grammars",
     "runtime/requirements.txt",
     "README.md",
     "DESIGN.md",

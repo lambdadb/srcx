@@ -53,7 +53,7 @@ Current recommendations, distinguished from user-confirmed choices:
 | Runtime | TypeScript and a supported Node.js release compatible with the existing SDK |
 | Database | LambdaDB only; no public backend selection or interchangeable database framework |
 | API key | Read `LAMBDADB_API_KEY` by default; optional environment-variable-name override |
-| Syntax | Java and TypeScript/JavaScript first; other text uses recorded fallback |
+| Syntax | Java, TypeScript/JavaScript, Python, Go, Rust, C/C++, Shell and SQL; other text uses recorded fallback |
 | Source | Exact UTF-8 source inside file documents, with local blob cache |
 | File size | Start with a 1 MiB raw-source limit and explicit exclusions |
 | Embedding | A fixed `none` preset first; with a model, embed meaningful code and prose chunks while recording policy-based skips |
@@ -657,6 +657,25 @@ preserves useful syntax boundaries while allowing both splitting and merging; it
 is not an unconditional one-function-per-chunk rule.
 
 ### Initial boundary and size rules
+
+The implementation adds Python/Go/Rust/C/C++/Shell using the existing pinned WASM
+grammars and SQL using a bundled, checksum-pinned grammar (see
+`runtime/grammars/README.md`).
+Python splits top-level declarations and class bodies, keeps decorators with their
+function/class, and records nested class scopes. Go keeps functions/methods,
+extracts receiver type scopes, and separates named types in grouped declarations.
+Rust splits `impl`, `trait` and inline module bodies, retaining generic type/trait
+scopes and outer attributes/doc comments with each declaration. Macros and `cfg`
+conditions remain authored source; there is no compiler expansion or evaluation.
+C/C++ walks declarators and namespace/class bodies, preserving templates and both
+preprocessor branches without evaluating conditions. `.h` uses C; C++ header
+extensions use C++. Shell covers `.sh`/`.bash` with the Bash grammar, keeping
+functions and compound commands intact. SQL keeps each top-level statement,
+including CTEs and supported quoted bodies, and records created object/schema
+names. Unknown dialect syntax uses whole-file parse fallback.
+Functions and SQL statements larger than the token ceiling use the common bounded text splitter with
+their symbol/scope preserved; nested functions stay in the containing function.
+These rules do not change Java/TypeScript/JavaScript boundaries.
 
 Prefer functions/methods and split large nodes along internal statement boundaries.
 Cover class headers, imports, types, fields, constants, top-level code, comments,

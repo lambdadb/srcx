@@ -70,12 +70,39 @@ submodules, LFS pointers, dependencies/build output, binary/invalid UTF-8 data,
 invalid UTF-8 paths, and files above 1 MiB. Excluded paths are preserved losslessly
 in `pathBase64`.
 
-Java, TypeScript/TSX, and JavaScript use pinned Tree-sitter WASM grammars. Markdown
-uses heading/paragraph/fence boundaries; configuration text uses section/line
-boundaries. Parse errors and unsupported languages use recorded text fallback.
-Chunks cover the exact source bytes, carry one-based line ranges, target 800 tokens,
-and stay below 1,500 tokens including path/symbol context. The internal window
-baseline is available to the test/build API, not as a public storage backend.
+Java, TypeScript/TSX, JavaScript/JSX, Python, Go, Rust, C/C++, Shell and SQL use
+pinned Tree-sitter WASM grammars.
+
+| Language filter | File extensions                                    | Boundaries and metadata                                                                                     |
+| --------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `python`        | `.py`, `.pyi`                                      | Decorators, functions, classes, method scopes and docstrings                                                |
+| `go`            | `.go`                                              | Named types, functions and generic/pointer/value receiver scopes                                            |
+| `rust`          | `.rs`                                              | Functions, types and `impl`/`trait`/module scopes; outer attributes and doc comments stay with declarations |
+| `c`             | `.c`, `.h`                                         | Functions, pointer declarators, types and preprocessor branches                                             |
+| `cpp`           | `.cpp`, `.cc`, `.cxx`, `.C`, `.hpp`, `.hh`, `.hxx` | Functions, templates, namespace/class scopes and qualified names                                            |
+| `shell`         | `.sh`, `.bash`                                     | Bash-compatible functions and compound commands, including heredocs                                         |
+| `sql`           | `.sql`                                             | Statements, CTEs and supported function bodies; created object names/schema scopes                          |
+
+`.h` files use the C grammar deterministically; C++ headers should use a listed
+C++ extension for syntax chunking. Shell does not infer extensionless scripts from
+shebangs or claim Zsh/Fish/PowerShell support. SQL uses the bundled
+[grammar artifact](runtime/grammars/README.md); dialect-specific syntax unsupported
+by that grammar falls back to text. SQL strings and supported dollar-quoted bodies
+are parsed as part of their containing statement, not split at each semicolon.
+Rust macros/`cfg` and C/C++ preprocessor conditions are not expanded or evaluated;
+search uses authored source, including both conditional branches.
+
+Markdown uses heading/paragraph/fence boundaries; configuration text uses
+section/line boundaries. Parse errors and unsupported languages use recorded text
+fallback. Chunks cover the exact source bytes, carry one-based line ranges, target
+800 tokens, and stay below 1,500 tokens including path/symbol context. The internal
+window baseline is available to the test/build API, not as a public storage backend.
+
+Added-language functions and SQL statements stay together when they fit the token
+ceiling. Larger units use bounded text splitting with the same symbol/scope
+metadata; nested functions remain inside their containing function. Syntax
+unsupported by the pinned grammars uses recorded whole-file parse fallback.
+Language labels remain available to `--language` filters even after fallback.
 
 ## Opt into managed embeddings
 

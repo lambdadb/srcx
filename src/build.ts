@@ -46,7 +46,7 @@ export const PRESET: Preset = {
   maxFileBytes: 1024 * 1024,
   embedding: null,
 };
-/** Opt-in managed preset; PRESET stays byte-for-byte compatible with lexical corpora. */
+/** Embedding variants share the same chunking behavior. */
 export const MANAGED_PRESET: Preset = {
   ...PRESET,
   embedding: {

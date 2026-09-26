@@ -4,9 +4,10 @@ import { createServer } from "node:http";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { join, resolve } from "node:path";
-import { rm, readFile } from "node:fs/promises";
+import { rm, readFile, writeFile } from "node:fs/promises";
 import { fixture, git } from "./fixture.mjs";
 import { fakeQwen } from "./rerank-fixture.mjs";
+import { languageFiles } from "./language-fixtures.mjs";
 import { MemoryStore } from "./memory-store.mjs";
 import { ManagedStore } from "./managed-store.mjs";
 import { publish, published, gitBranchName } from "../dist/publish.js";
@@ -413,3 +414,60 @@ for (const preset of [PRESET, MANAGED_PRESET])
 
 test("CLI managed large imports, searches and pins reads with 3072-dimensional vectors", (t) =>
   cliContract(t, MANAGED_LARGE_PRESET));
+
+test("installed CLI resolves all added grammars and preserves source metadata", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  for (const [name, source] of languageFiles)
+    await writeFile(join(f.path, name), source);
+  git(f.path, "add", ".");
+  git(f.path, "commit", "-qm", "language fixtures");
+  const commit = git(f.path, "rev-parse", "HEAD");
+  const { stdout } = await promisify(execFile)(
+    process.execPath,
+    [
+      cliPath,
+      "import",
+      "--path",
+      f.path,
+      "--ref",
+      commit,
+      "--dry-run",
+      "--output",
+      join(f.root, "language-preview"),
+    ],
+    { env: { ...process.env, SRCX_STATE_DIR: join(f.root, "language-state") } },
+  );
+  const preview = JSON.parse(stdout);
+  assert.equal(preview.uploaded, false);
+  for (const [path] of languageFiles)
+    assert.equal(
+      preview.coverage.find((e) => e.path === path).parseStatus,
+      "parsed",
+    );
+  const docs = (await readFile(join(preview.artifact, "records.jsonl"), "utf8"))
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line));
+  for (const [language, symbol, scope] of [
+    ["python", "fetch", "Client"],
+    ["go", "Get", "Box"],
+    ["rust", "get", "Store<T> as Read"],
+    ["c", "factory", undefined],
+    ["cpp", "get", "app::Box"],
+    ["shell", "run", undefined],
+    ["sql", "users", "public"],
+  ])
+    assert.ok(
+      docs.some(
+        (d) =>
+          d.language === language && d.symbol === symbol && d.scope === scope,
+      ),
+      language,
+    );
+  for (const [path, source] of languageFiles)
+    assert.equal(
+      docs.find((d) => d.kind === "file" && d.path === path).sourceText,
+      source,
+    );
+});

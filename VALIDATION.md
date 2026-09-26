@@ -2,6 +2,32 @@
 
 Date: 2026-09-26 (Asia/Seoul).
 
+## Additional language chunking
+
+Python (`.py`, `.pyi`), Go and Rust (`.rs`) use the pinned Tree-sitter grammars. Fixtures
+verify decorated/async Python functions, class methods and nested class scopes,
+docstrings, Go generic/pointer/value receivers, grouped types, Rust generic
+`impl`/`trait` and module scopes, attributes/doc comments, authored macros, and complete UTF-8
+source coverage with BOM, CRLF and Unicode. Long functions keep their symbol/scope
+through bounded splitting; invalid parses retain text fallback. Artifact checks
+verify language and symbol metadata in lexical/small/large build payloads.
+
+C/C++ fixtures verify pointer declarators, templates, namespace/class scopes,
+qualified names and both preprocessor branches. Shell fixtures retain quoted
+semicolons, heredocs and compound commands. SQL fixtures retain CREATE/INSERT,
+CTEs and dollar-quoted function bodies as statements, with created object/schema
+metadata. Each added language is checked for token bounds, parse-error fallback,
+exact source coverage and lexical/small/large payloads.
+
+Local validation passed 107 Node tests, typecheck, formatting and version checks.
+Four installed-package CLI checks cover the existing lexical/small/large workflow
+and Python/Go/Rust/C/C++/Shell/SQL grammar loading with exact source payloads from
+the npm artifact. The artifact check also verifies the SQL binary checksum and
+packaged license notices.
+The connected CLI checks use the synthetic SDK/HTTP test store. There were no live
+LambdaDB writes, paid embedding calls or new ranking measurements. Earlier
+retrieval results remain evidence for their original corpus and configuration.
+
 ## Qwen failure diagnostics
 
 Known worker failures now produce distinct setup, cache, device and input-limit
