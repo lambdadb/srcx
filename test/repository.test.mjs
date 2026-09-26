@@ -13,6 +13,7 @@ import {
   PRESET,
   MANAGED_PRESET,
   MANAGED_LARGE_PRESET,
+  LEGACY_PRESETS,
   INDEX_CONFIGS,
   indexConfigs,
 } from "../dist/build.js";
@@ -52,6 +53,34 @@ class ProvisionRemote {
     return this.stores.get(name);
   }
 }
+test("legacy and current presets coexist without replacing existing Collections", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  const prior = process.env.SRCX_STATE_DIR;
+  process.env.SRCX_STATE_DIR = join(f.root, "preset-state");
+  t.after(() =>
+    prior === undefined
+      ? delete process.env.SRCX_STATE_DIR
+      : (process.env.SRCX_STATE_DIR = prior),
+  );
+  const remote = new ProvisionRemote();
+  const old = [];
+  for (const preset of LEGACY_PRESETS)
+    old.push(await register(remote, { path: f.path, preset }));
+  for (const preset of [PRESET, MANAGED_PRESET, MANAGED_LARGE_PRESET])
+    await register(remote, { path: f.path, preset });
+  assert.equal(remote.metadata.size, 6);
+  assert.equal((await discover(remote)).repositories.length, 6);
+  for (const r of old)
+    assert.deepEqual(
+      (await selectRepository(remote, r.collection)).preset,
+      r.preset,
+    );
+  await assert.rejects(
+    selectRepository(remote, f.source.key),
+    /exact Collection name/,
+  );
+});
 test("provisioning resumes a lost create ACK and remote discovery works with fresh local state", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);

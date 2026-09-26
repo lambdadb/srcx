@@ -8,6 +8,7 @@ import {
   PRESET,
   MANAGED_PRESET,
   MANAGED_LARGE_PRESET,
+  LEGACY_PRESETS,
   presetFor,
   supportedPreset,
   materialize,
@@ -31,13 +32,21 @@ const settings = {
 
 test("large has a distinct pinned identity, preserves chunk inputs and rejects small vectors/baselines", async (t) => {
   assert.equal(
-    hash(PRESET),
+    hash(LEGACY_PRESETS[0]),
     "413f291e8667b59463a83567304ab1fab39b69647a0a3fe16e8f7ea1cf876944",
   );
   assert.equal(
-    hash(MANAGED_PRESET),
+    hash(LEGACY_PRESETS[1]),
     "07bc7a32c1d98479dbb92fe4776e18fdca22df61ec2b2aa51a0db1e644f97535",
   );
+  for (const [i, preset] of [
+    PRESET,
+    MANAGED_PRESET,
+    MANAGED_LARGE_PRESET,
+  ].entries()) {
+    assert.ok(supportedPreset(LEGACY_PRESETS[i]));
+    assert.notEqual(hash(preset), hash(LEGACY_PRESETS[i]));
+  }
   assert.equal(presetFor("text-embedding-3-large"), MANAGED_LARGE_PRESET);
   assert.ok(supportedPreset(MANAGED_LARGE_PRESET));
   assert.equal(

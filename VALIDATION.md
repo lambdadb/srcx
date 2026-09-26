@@ -2,6 +2,28 @@
 
 Date: 2026-09-26 (Asia/Seoul).
 
+## Python/Go chunking v2
+
+Python (`.py`, `.pyi`) and Go now use the pinned Tree-sitter grammars in new v2
+Collections. Fixtures verify decorated/async Python functions, class methods and
+nested class scopes, docstrings, Go generic/pointer/value receivers, grouped types,
+and complete UTF-8 source coverage with BOM, CRLF and Unicode. Long functions keep
+their symbol/scope through bounded splitting; invalid parses retain text fallback.
+
+The old lexical/small/large presets remain supported with their original hashes.
+Frozen v1 Python/Go span hashes were generated using the pre-change chunker, and
+the new implementation reproduces them. Artifact checks cover all three embedding
+options under both versions, unchanged v1 rebuilds, and rejection of cross-version
+incremental baselines. Discovery accepts all six Collections without conflating
+their identities.
+
+Node checks cover these paths alongside the existing suite. Seven installed-package
+CLI checks exercise v2 and v1 lexical/small/large import, resume, search and read,
+plus Python/Go grammar loading and exact source payloads from the npm artifact.
+The connected CLI checks use the existing synthetic SDK/HTTP test store. There
+were no live LambdaDB writes, paid embedding calls or new ranking measurements.
+Earlier retrieval results remain evidence for their original v1 corpus only.
+
 ## Qwen failure diagnostics
 
 Known worker failures now produce distinct setup, cache, device and input-limit

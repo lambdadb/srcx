@@ -7,7 +7,7 @@ const encoding = getEncoding("cl100k_base");
 export function tokens(text: string): number {
   return encoding.encode(text, [], []).length;
 }
-export const CHUNKER = {
+export const CHUNKER_V1 = {
   version: 1,
   parser: "web-tree-sitter@0.25.10",
   grammars: "tree-sitter-wasms@0.1.13",
@@ -18,6 +18,8 @@ export const CHUNKER = {
   enrichment: "path-scope-symbol-v1",
   policy: "source-v1",
 } as const;
+export const CHUNKER = { ...CHUNKER_V1, version: 2 } as const;
+export type Chunker = typeof CHUNKER_V1 | typeof CHUNKER;
 export type Span = {
   startByte: number;
   endByte: number;
@@ -52,8 +54,12 @@ async function language(name: string): Promise<Language> {
   }
   return l;
 }
-export function detectLanguage(path: string): string {
+export function detectLanguage(path: string, version: 1 | 2 = 2): string {
   const ext = path.split(".").at(-1)?.toLowerCase();
+  if (version === 2) {
+    if (ext === "py" || ext === "pyi") return "python";
+    if (ext === "go") return "go";
+  }
   return (
     (
       {
@@ -101,6 +107,84 @@ function scopeName(n: Node): string | undefined {
     p = p.parent;
   }
   return names.length ? names.join(".") : undefined;
+}
+
+/** Keep complete functions (including decorators) before token-bound splitting. */
+function pythonUnits(root: Node): Unit[] {
+  const units: Unit[] = [];
+  function visit(n: Node, scope?: string): void {
+    const definition = n.childForFieldName("definition") ?? n;
+    const body = definition.childForFieldName("body");
+    const symbol = definition.childForFieldName("name")?.text.slice(0, 200);
+    const unit: Unit = {
+      start: n.startIndex,
+      end: n.endIndex,
+      kind: classify(definition.type),
+      scope,
+      symbol,
+    };
+    if (definition.type === "class_definition" && body) {
+      units.push({ ...unit, end: body.startIndex });
+      const nested = [scope, symbol].filter(Boolean).join(".");
+      for (const child of body.namedChildren) if (child) visit(child, nested);
+    } else {
+      if (definition.type === "function_definition" && body)
+        unit.signature = definition.text
+          .slice(0, body.startIndex - definition.startIndex)
+          .trim()
+          .slice(0, 240);
+      if (
+        definition.type === "expression_statement" &&
+        definition.firstNamedChild?.type === "string"
+      )
+        unit.kind = "documentation";
+      units.push(unit);
+    }
+  }
+  for (const n of root.namedChildren) if (n) visit(n);
+  return units;
+}
+
+function goUnits(root: Node): Unit[] {
+  const units: Unit[] = [];
+  for (const n of root.namedChildren) {
+    if (!n) continue;
+    if (n.type === "type_declaration") {
+      // Include the type keyword and grouped declaration delimiters in coverage.
+      const specs = n.namedChildren.filter(
+        (node): node is Node => node !== null,
+      );
+      for (const [i, spec] of specs.entries())
+        units.push({
+          start: i === 0 ? n.startIndex : spec.startIndex,
+          end: i === specs.length - 1 ? n.endIndex : spec.endIndex,
+          kind: classify(spec.type),
+          symbol: spec.childForFieldName("name")?.text.slice(0, 200),
+        });
+      continue;
+    }
+    const unit: Unit = {
+      start: n.startIndex,
+      end: n.endIndex,
+      kind: classify(n.type),
+      symbol: n.childForFieldName("name")?.text.slice(0, 200),
+    };
+    let receiver = n
+      .childForFieldName("receiver")
+      ?.firstNamedChild?.childForFieldName("type");
+    if (receiver?.type === "pointer_type") receiver = receiver.firstNamedChild;
+    if (receiver?.type === "generic_type")
+      receiver = receiver.childForFieldName("type");
+    if (receiver) unit.scope = receiver.text.slice(0, 160);
+    const body = n.childForFieldName("body");
+    if (unit.kind === "function")
+      unit.signature = n.text
+        .slice(0, body ? body.startIndex - n.startIndex : undefined)
+        .trim()
+        .slice(0, 240);
+    units.push(unit);
+  }
+  return units;
 }
 /** Bound strings without slicing a surrogate pair; prefer line ends where possible. */
 function splitUnit(
@@ -189,8 +273,9 @@ export async function chunk(
   path: string,
   mode: "syntax" | "window" = "syntax",
   policy: Enrichment = CHUNKER.enrichment,
+  version: 1 | 2 = CHUNKER.version,
 ): Promise<{ spans: Span[]; parseStatus: string; language: string }> {
-  const lang = detectLanguage(path);
+  const lang = detectLanguage(path, version);
   if (!source.length)
     return { spans: [], parseStatus: "empty", language: lang };
   let units: Unit[] = [];
@@ -198,7 +283,9 @@ export async function chunk(
   if (mode === "window") {
     status = "window-baseline";
     units = [{ start: 0, end: source.length, kind: "fallback" }];
-  } else if (["java", "typescript", "tsx", "javascript"].includes(lang)) {
+  } else if (
+    ["java", "typescript", "tsx", "javascript", "python", "go"].includes(lang)
+  ) {
     const grammar = await language(lang);
     const parser = new Parser();
     let tree: ReturnType<Parser["parse"]> = null;
@@ -233,7 +320,9 @@ export async function chunk(
             for (const child of n.namedChildren) if (child) visit(child);
           } else if (n.endIndex > n.startIndex) units.push(u);
         }
-        visit(tree.rootNode);
+        if (lang === "python") units = pythonUnits(tree.rootNode);
+        else if (lang === "go") units = goUnits(tree.rootNode);
+        else visit(tree.rootNode);
         // Attach every gap (punctuation, BOM, comments, whitespace) without altering source bytes.
         let cursor = 0;
         const covered: Unit[] = [];
@@ -272,6 +361,7 @@ export async function chunk(
     const prev = merged.at(-1);
     if (
       prev &&
+      (!(lang === "python" || lang === "go") || (!prev.symbol && !u.symbol)) &&
       prev.kind !== "function" &&
       u.kind === prev.kind &&
       u.scope === prev.scope &&

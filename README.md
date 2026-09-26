@@ -70,12 +70,38 @@ submodules, LFS pointers, dependencies/build output, binary/invalid UTF-8 data,
 invalid UTF-8 paths, and files above 1 MiB. Excluded paths are preserved losslessly
 in `pathBase64`.
 
-Java, TypeScript/TSX, and JavaScript use pinned Tree-sitter WASM grammars. Markdown
+Java, TypeScript/TSX, JavaScript/JSX, Python (`.py`, `.pyi`) and Go use pinned
+Tree-sitter WASM grammars. Python keeps decorators with functions, records class
+method scopes and preserves docstrings. Go records named types, functions and
+method receiver scopes, including generic receivers. Markdown
 uses heading/paragraph/fence boundaries; configuration text uses section/line
 boundaries. Parse errors and unsupported languages use recorded text fallback.
 Chunks cover the exact source bytes, carry one-based line ranges, target 800 tokens,
 and stay below 1,500 tokens including path/symbol context. The internal window
 baseline is available to the test/build API, not as a public storage backend.
+
+Python/Go functions stay together when they fit the token ceiling. Larger
+functions use bounded text splitting with the same symbol/scope metadata;
+nested function definitions remain inside their containing function. Syntax
+unsupported by the pinned grammars uses the recorded whole-file parse fallback.
+Parsed Python/Go files support exact `--language python` / `--language go` filters;
+those language labels also remain present when a parse falls back.
+
+### Existing indexes and chunking v2
+
+New `repo add` registrations and `import --path ... --dry-run` builds use chunking
+v2. Its configuration hash gives each embedding option a new Collection identity.
+Existing v1 Collections remain discoverable, searchable and updatable using their
+stored preset, including resumable imports; Python/Go remain text fallback there.
+Nothing automatically rewrites an existing Collection or its published Tags.
+
+To use the new boundaries, run `srcx repo add --path /path/to/repo` with the same
+`--embedding` option as needed, then `srcx import --repo <new-collection> --ref <ref>`.
+Use the returned exact Collection name when old and new presets coexist. The
+new Collection needs its own full import and, for managed presets, document
+embeddings. Synchronize Git tag Aliases there separately with `git sync-tags`.
+Continue using `--repo <old-collection>` to update v1; v1/v2 incremental artifacts
+cannot be mixed. Prior evaluation results remain tied to their original presets.
 
 ## Opt into managed embeddings
 
