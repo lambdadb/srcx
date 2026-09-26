@@ -149,6 +149,54 @@ Image extensions are matched case-insensitively and excluded before chunking or
 embedding, even when their payload is readable text. Source files containing
 inline images, such as a TSX component with SVG markup, remain included.
 
+File selection and embedding eligibility are separate:
+
+| Default treatment                                   | Examples                                                                                                                                                                                                                                                        |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Exclude source and chunks                           | Credential files (`.env`, `.env.*`, `.npmrc`, `.netrc`, `.aws/`, `.ssh/`), key/certificate payloads, images, binaries, installed dependencies (`.venv/`, `node_modules/`, `vendor/`, `third_party/`), build/cache output, logs, minified assets and source maps |
+| Keep source and lexical chunks; skip embeddings     | Lockfiles, license/author files, CSV/TSV/JSONL data, snapshots, generated code identified by common suffixes or an explicit generated/do-not-edit comment in the first 8 KiB                                                                                    |
+| Keep source, lexical chunks and eligible embeddings | Authored code, tests, documentation, package manifests, CI/build configuration and other readable text                                                                                                                                                          |
+
+`.env.example`, `.env.sample`, `.env.template` and equivalent suffixes remain
+included as templates. Private-key PEM headers also exclude files with unrelated
+extensions. These are targeted exclusions, **not a general secret scanner**;
+review the dry-run inventory before uploading. `.gitignore` does not remove
+already tracked Git objects, and `.gitattributes` is not interpreted for selection.
+
+Use `--file-policy policy.json` with `repo add` or `import --dry-run --path` to
+adjust the scope explicitly. The JSON contents are pinned in the repository
+preset; subsequent connected imports use that preset, not the local policy file.
+
+```json
+{
+  "version": 1,
+  "rules": [
+    { "pattern": "eval/**", "action": "exclude" },
+    { "pattern": "third_party/special/**", "action": "lexical" },
+    { "pattern": "generated/api.pb.go", "action": "semantic" }
+  ]
+}
+```
+
+Patterns match case-sensitive, repository-relative paths. `*` and `?` stay within
+one path segment; `**` must occupy a whole segment and matches any depth. Rules
+run in order; the last match wins. `semantic` permits embeddings when enabled but
+still skips structural/import-only chunks. Rules override dependency/generated/
+data defaults, but cannot override credential, crypto, image, binary, private-key
+content, size, encoding, symlink or LFS exclusions. `retrieval` and `policyReason`
+in dry-run coverage explain each included file's policy; chunk records retain
+`embeddingSkipReason`. A changed policy selects a distinct Collection/configuration.
+
+```sh
+srcx import --path . --ref develop --dry-run --embedding text-embedding-3-small --file-policy policy.json --output /tmp/srcx-preview
+srcx repo add --path . --embedding text-embedding-3-small --file-policy policy.json
+```
+
+Evaluation labels need an explicit corpus boundary. The checkout evaluation
+harnesses use [this policy](eval/source-corpus-policy.json) to exclude `eval/**`;
+labels stored elsewhere require additional exclusions before a new evaluation.
+General-purpose imports do not discard all evaluation or test directories.
+
 Java, TypeScript/TSX, JavaScript/JSX, Python, Go, Rust, C/C++, Shell and SQL use
 pinned Tree-sitter WASM grammars.
 

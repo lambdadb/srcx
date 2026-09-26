@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Separate file selection from embedding eligibility. Exclude credential and
+  crypto payloads, virtual environments, caches and logs; keep lockfiles, generated
+  code, snapshots, tabular data and legal/author files available lexically without
+  embedding them. Fix case-sensitive minified-asset exclusions. Add pinned
+  `--file-policy` JSON rules for registration and local previews, explicit inventory
+  reasons and evaluation corpus exclusions for `eval/**`.
+
 - Exclude image assets, including text SVG and portable pixel maps, before
   indexing or embedding. Match image extensions case-insensitively, preserve
   exclusion metadata, and keep inline SVG in source files searchable. Include

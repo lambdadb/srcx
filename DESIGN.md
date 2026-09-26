@@ -612,10 +612,34 @@ must include stored-only source round-trip and mixed record kinds.
 ## 8. File policy, chunking, and embedding reuse
 
 Every Git tree entry must be accounted for. Include source, tests, documents,
-configuration, build definitions, and unknown readable text by default. Maintain
-explicit versioned rules for binaries, generated output, and vendored dependencies;
-do not treat working-tree ignore rules as a complete policy. Lockfiles are included
-unless an explicit generated/size rule excludes them.
+configuration, build definitions, and unknown readable text by default, subject to
+the versioned file-purpose policy. The preset pins `filePolicy: { version: 1, rules }`
+and its ordered repository-relative path rules. File selection and embedding
+eligibility are separate: source/lexical retrieval can remain available without a
+vector. Do not treat working-tree ignore rules as a complete policy.
+
+Credential filenames/directories, key/certificate payloads, image/binary assets
+and PEM private-key headers are hard exclusions, including for tracked files.
+Credential template suffixes (`.example`, `.sample`, `.template`) remain eligible.
+This is a targeted policy, not comprehensive secret detection. Dependencies,
+virtual environments, build/cache outputs, minified assets/maps and logs are
+excluded by default. Lockfiles, legal/author files, tabular/JSONL data, snapshots,
+and generated code (common suffixes or explicit generated/do-not-edit comments in the first 8 KiB) are
+lexical-only by default. Tests, ordinary docs, manifests and build/CI config remain
+eligible. Embedded license headers are not removed from source chunks.
+
+`--file-policy` accepts JSON on registration and local path dry runs. Last matching
+rule wins (`exclude`, `lexical`, `semantic`); rules use case-sensitive relative
+paths, `*`, `?` and whole-segment `**`. Rules can override default purpose decisions,
+but never hard content/path/size/encoding exclusions. The resolved policy is stored
+in the preset, not reread from a mutable checkout on import. `.gitattributes` is
+not interpreted. Inventory `retrieval`/`policyReason` and chunk skip reasons expose
+the decision. Changing rules changes configHash and cannot reuse a prior baseline.
+
+Evaluation labels require explicit exclusion independently of product defaults.
+Both checkout source evaluation harnesses pin `eval/source-corpus-policy.json`
+(excluding `eval/**`) and fingerprint it. New runs use new artifact roots; retained
+results and their old corpus/runtime identities remain historical evidence.
 
 | Special entry | Initial handling |
 | --- | --- |
@@ -766,7 +790,7 @@ structural fragments, rather than build a complex value classifier.
 | Documentation, explanatory comments/docstrings | Embed; keep attached explanations with their code where practical |
 | Meaningful type/configuration declarations | Embed initially, then evaluate |
 | Imports-only or whitespace/punctuation-only fragments | Skip with a recorded reason |
-| Repeated license headers and mechanical listings | Candidates for explicit, versioned skip rules after evaluation |
+| Lexical-only file categories or rules | Keep exact source/chunks, omit embedding inputs and record the file policy reason; embedded license comments in authored code are not stripped |
 | Parser fallback | Do not exclude solely because parsing failed; apply content policy |
 
 Skipped chunks remain in inventory and source coverage. Retain lexical search text

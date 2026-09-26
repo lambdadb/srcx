@@ -4,6 +4,7 @@ import {
   readFile,
   writeFile,
   mkdtemp,
+  mkdir,
   rm,
   stat,
   readdir,
@@ -227,8 +228,17 @@ test("run before prepare leaves a reusable root and preserves incomplete prepara
       "origin",
       `https://${suite.repositories[id]}.git`,
     );
+    git(f.path, "checkout", "-qf", "--detach", f.a);
+    await mkdir(join(f.path, "eval"));
+    await writeFile(
+      join(f.path, "eval", "answers.json"),
+      JSON.stringify({ answer: "fixture answer" }),
+    );
+    git(f.path, "add", "eval");
+    git(f.path, "commit", "-qm", "evaluation labels");
+    const commit = git(f.path, "rev-parse", "HEAD");
     for (const q of suite.queries.filter((q) => q.repository === id)) {
-      q.commit = f.a;
+      q.commit = commit;
       q.evidenceSets = [
         [
           {
@@ -257,6 +267,22 @@ test("run before prepare leaves a reusable root and preserves incomplete prepara
   const planFile = join(root, "plan.json");
   const plan = JSON.parse(await readFile(planFile, "utf8"));
   assert.equal(plan.status, "prepared");
+  for (const input of Object.values(plan.inputs)) {
+    for (const artifact of Object.values(input.artifacts)) {
+      const build = JSON.parse(
+        await readFile(join(artifact.path, "build.json"), "utf8"),
+      );
+      assert.equal(
+        build.inventory.find((e) => e.path === "eval/answers.json").reason,
+        "file-rule:exclude",
+      );
+      assert.ok(
+        !(
+          await readFile(join(artifact.path, "records.jsonl"), "utf8")
+        ).includes("fixture answer"),
+      );
+    }
+  }
   // A retained partial preparation must also be rejected without locks, writes,
   // or deleting artifacts that the user may need for recovery.
   plan.status = "preparing";

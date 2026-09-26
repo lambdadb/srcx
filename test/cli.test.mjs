@@ -519,3 +519,96 @@ test("CLI analyzer flags reject invalid lists and connected overrides before ser
     );
   }
 });
+
+test("CLI file policy previews exclusions and lexical-only inputs and rejects connected overrides", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  const policyPath = join(f.root, "policy.json");
+  const policy = {
+    version: 1,
+    rules: [
+      { pattern: "gone.txt", action: "exclude" },
+      { pattern: "code.ts", action: "lexical" },
+    ],
+  };
+  await writeFile(policyPath, JSON.stringify(policy));
+  const options = {
+    env: {
+      ...process.env,
+      SRCX_CONFIG: join(f.root, "absent.json"),
+      SRCX_STATE_DIR: join(f.root, "state"),
+    },
+  };
+  const { stdout } = await promisify(execFile)(
+    process.execPath,
+    [
+      cliPath,
+      "import",
+      "--path",
+      f.path,
+      "--ref",
+      f.a,
+      "--dry-run",
+      "--embedding",
+      "text-embedding-3-small",
+      "--file-policy",
+      policyPath,
+      "--output",
+      join(f.root, "preview-policy"),
+    ],
+    options,
+  );
+  const preview = JSON.parse(stdout);
+  assert.equal(preview.uploaded, false);
+  assert.equal(
+    preview.configHash,
+    hash(presetFor("text-embedding-3-small", undefined, policy)),
+  );
+  assert.equal(
+    preview.coverage.find((e) => e.path === "gone.txt").reason,
+    "file-rule:exclude",
+  );
+  assert.equal(
+    preview.coverage.find((e) => e.path === "code.ts").retrieval,
+    "lexical",
+  );
+  const docs = (await readFile(join(preview.artifact, "records.jsonl"), "utf8"))
+    .trim()
+    .split("\n")
+    .map(JSON.parse);
+  assert.ok(!docs.some((d) => d.path === "gone.txt"));
+  assert.ok(docs.some((d) => d.path === "code.ts" && d.kind === "file"));
+  assert.ok(
+    docs
+      .filter((d) => d.path === "code.ts")
+      .every((d) => d.embeddingText === undefined),
+  );
+  for (const args of [
+    ["import", "--repo", "example"],
+    ["import", "--repo", "example", "--dry-run"],
+    ["import", "--artifact", preview.artifact, "--dry-run"],
+  ])
+    await assert.rejects(
+      promisify(execFile)(
+        process.execPath,
+        [cliPath, ...args, "--file-policy", policyPath],
+        options,
+      ),
+      (error) => /--file-policy is only/.test(error.stderr),
+    );
+  await writeFile(
+    policyPath,
+    JSON.stringify({
+      version: 1,
+      rules: [{ pattern: "../**", action: "exclude" }],
+    }),
+  );
+  await assert.rejects(
+    promisify(execFile)(
+      process.execPath,
+      [cliPath, "repo", "add", "--path", f.path, "--file-policy", policyPath],
+      options,
+    ),
+    (error) => /File policy patterns/.test(error.stderr),
+  );
+});

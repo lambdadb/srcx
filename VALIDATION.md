@@ -1,5 +1,35 @@
 # Validation record
 
+## File selection and embedding policy
+
+Offline validation on Node 24.15.0 passed 128 tests and seven installed-package
+checks, plus typecheck, version and formatting checks. Synthetic tracked files
+verify credential/crypto/image exclusions, case-insensitive minified assets,
+virtual environments, dependency/cache paths and logs. Lockfiles, generated code,
+snapshots and data retain source and lexical chunks without managed inputs.
+Ordinary source, tests, manifests, templates and configurable Sphinx documentation
+remain eligible. Ordered path overrides, configuration identity, baseline rejection,
+unchanged-file reuse, managed publication and CLI override rejection are covered.
+The CLI evaluator's actual offline prepare test includes an in-tree answer fixture
+and verifies it is absent from the prepared corpus.
+
+Fresh offline inventories reused the audited source commits:
+
+| Repository                                              | Result                                                                                                                                                                                                                      |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Requests `611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60`     | Excludes 12 certificate/key payload files. Estimated managed input decreases from the image-only build's 179,548 to 159,849 tokens; legal/author files stay lexical-only and docs/conf.py stays eligible.                   |
+| srcx `e83134b44a11d78a79c5941c0e1f907383f238b3`         | Explicit `eval/**` exclusion removes 45 evaluation files: total chunk tokens decrease from 316,889 to 202,835. This is a corpus boundary, not a claim that earlier answers used leaked labels.                              |
+| lambdadb-cli `513af6e4d262edd380013c86d51a20aad16274d7` | Retains all 38 files and 200 chunks; package-lock.json (22,076 chunk tokens), LICENSE and JSONL examples have no managed input. The retained baseline was lexical-only, so this is not a measured embedding-cost reduction. |
+
+All excluded paths have zero file/chunk records and all lexical-only files have
+zero embedding inputs in these rebuilt artifacts. No service writes, provider calls
+or agent sessions were performed. Existing remote Collections and historical
+results are unchanged. The pinned policy selects a new configuration; no legacy
+preset compatibility or migration layer was added. Generated detection is limited
+to explicit markers/suffixes, `.gitattributes` is not interpreted, and credential
+rules are not a general secret scanner. Additional evaluation-label locations must
+be added to the explicit evaluation policy before running a different suite.
+
 ## Image exclusion
 
 Image assets are excluded by case-insensitive extension before source records,

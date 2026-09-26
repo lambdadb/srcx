@@ -40,6 +40,8 @@ const { values, positionals } = parseArgs({
 const root = resolve(values.root);
 const planFile = join(root, "plan.json");
 const reportFile = join(root, "report.json");
+const filePolicyPath = resolve("eval/source-corpus-policy.json");
+const filePolicy = JSON.parse(await readFile(filePolicyPath, "utf8"));
 const env = {
   ...process.env,
   SRCX_CONFIG: join(root, "config.json"),
@@ -60,6 +62,7 @@ async function fingerprint() {
     "scripts/eval-command.mjs",
     "scripts/cli-eval-lib.mjs",
     "scripts/retrieval-eval-lib.mjs",
+    "eval/source-corpus-policy.json",
     ...(await readdir("dist"))
       .filter((f) => f.endsWith(".js"))
       .sort()
@@ -90,7 +93,7 @@ function presetForSuite(suite) {
         ? "text-embedding-3-large"
         : "text-embedding-3-small";
   // Frozen protocols use standard analysis even if the CLI default changes.
-  return presetFor(model, ["standard"]);
+  return presetFor(model, ["standard"], filePolicy);
 }
 function compareReference(suite, reference) {
   validateCliSuite(reference);
@@ -168,6 +171,8 @@ async function prepare() {
         "--dry-run",
         "--analyzers",
         preset.analyzers.join(","),
+        "--file-policy",
+        filePolicyPath,
         ...(suite.format >= 3 ? ["--embedding", preset.embedding.model] : []),
         "--output",
         output,
@@ -510,6 +515,8 @@ async function run() {
         source.path,
         "--analyzers",
         preset.analyzers.join(","),
+        "--file-policy",
+        filePolicyPath,
         ...(comparison ? ["--embedding", preset.embedding.model] : []),
       ]);
       assert.equal(repository.repoKey, source.key);
