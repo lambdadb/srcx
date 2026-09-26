@@ -175,10 +175,8 @@ export async function validateCandidate(
     };
     for await (const d of records(b.directory)) {
       if (d.kind !== "chunk") continue;
-      // Keep a complete surface token: the standard analyzer may retain dots
-      // (e.g. code.ts), so extracting an alphanumeric substring is not a valid probe.
-      const term = String(d.symbol ?? d.searchText).match(/\S+/u)?.[0];
-      if (!term) continue;
+      // Probe an indexed chunk ID: a valid source may contain only stop words
+      // or punctuation, so text-query matches cannot establish readiness.
       query = {
         bool: [
           {
@@ -191,16 +189,8 @@ export async function validateCandidate(
           },
           {
             queryString: {
-              query: d.fileId,
-              defaultField: "fileId",
-              skipSyntax: true,
-            },
-            occur: "filter",
-          },
-          {
-            queryString: {
-              query: term,
-              defaultField: "searchText",
+              query: d.id,
+              defaultField: "id",
               skipSyntax: true,
             },
             occur: "must",

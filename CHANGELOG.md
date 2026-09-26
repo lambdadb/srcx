@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Default text analysis to English and add `--analyzers` for any combination of
+  LambdaDB's English, Korean, Japanese and standard analyzers. Pin the canonical
+  selection in repository/build identity and verify it during discovery. This
+  pre-release preset requires an analyzer list; older presets are not accepted.
+  Make publication readiness independent of stop-word/tokenization behavior.
+
 - Add Python/Go/Rust/C/C++/Shell/SQL syntax chunking with language-specific
   declaration, function and statement boundaries, symbol/scope metadata and
   bounded source-preserving splits. Bundle the pinned SQL grammar with licenses.

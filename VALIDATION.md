@@ -1,5 +1,26 @@
 # Validation record
 
+## Configurable text analyzers
+
+The pre-release preset now defaults to English and requires a canonical analyzer
+list. All 15 nonempty combinations of LambdaDB's four supported analyzers are
+validated across lexical, managed-small and managed-large presets (45 distinct
+configuration/Collection identities). Registration/discovery tests cover canonical
+reattachment and schema drift; build tests reject reuse of a different analyzer
+baseline while preserving the source/chunk text.
+
+On Node 24.15.0, typecheck, formatting/version checks, all 111 tests and the packed
+npm consumer passed. Its five CLI checks include a managed-large English/Korean
+preset, offline preview parity, and invalid/connected analyzer-override rejection.
+Publication tests verify readiness without depending on analyzed text matches.
+
+A bounded live run on 2026-09-26 used synthetic source, two Collections and three
+imports, with no embeddings or reranker. The actual CLI verified English as the
+default, publication of a stop-word-only file, `run` matching `Running`, exact
+pinned source reads, sorted/deduplicated reattachment, the live four-analyzer
+schema, and Korean/Japanese search/read results. This is integration validation,
+not a ranking benchmark or evidence that English is universally optimal.
+
 Date: 2026-09-26 (Asia/Seoul).
 
 ## Additional language chunking

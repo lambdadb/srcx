@@ -455,7 +455,7 @@ The lexical preset's concrete `indexConfigs` is:
   "language": { "type": "keyword" },
   "fileId": { "type": "keyword" },
   "symbol": { "type": "keyword" },
-  "searchText": { "type": "text", "analyzers": ["standard"] }
+  "searchText": { "type": "text", "analyzers": ["english"] }
 }
 ```
 
@@ -553,8 +553,14 @@ is stored in the file; enriched chunk search text is never the citation authorit
 `sourceText`, role, byte/line positions, hashes, commit identity, scope/signature,
 embedding diagnostics, and inventory/config objects are stored without entries in
 `indexConfigs`. Public documentation states that fields are stored even when not
-indexed. Do not invent an `index: false` option. The `standard` analyzer is a
-baseline, not a proven code-specific ranking solution. An initial enrichment
+indexed. Do not invent an `index: false` option. The default text analyzer is
+`english`; users can choose any nonempty combination of `english`, `japanese`,
+`korean`, and `standard`. The sorted, deduplicated list is part of the pinned
+preset/configuration hash and configures both `searchText` and managed
+`embeddingText`. Discovery requires the matching schema; a different selection
+uses a different Collection. Analyzer selection does not change embedding input
+text or the programming-language chunker. No analyzer is a proven universal
+code-search ranking solution. An initial enrichment
 candidate preserves original identifiers while adding camelCase/snake_case terms;
 pin and evaluate that transformation before adopting it as the preset.
 
