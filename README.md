@@ -345,6 +345,11 @@ compares fresh agent sessions with Git/local tools and optional or explicitly
 invoked srcx. It found no established efficiency advantage on the small public
 corpora and records the remaining workflow hypotheses.
 
+The [semantic agent follow-up](https://github.com/lambdadb/srcx/blob/develop/eval/SEMANTIC-AGENT-RESULTS.md)
+compares local, lexical-first and semantic-first investigations on Requests. It
+finds no established agent efficiency gain and records an unresolved candidate
+retrieval discrepancy and excessive embedding of a generated SVG asset.
+
 ## Query language and agent use
 
 Queries can use any language; the CLI does not translate them. For lexical search,

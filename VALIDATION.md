@@ -1,5 +1,23 @@
 # Validation record
 
+## Semantic agent investigation
+
+[The semantic follow-up](eval/SEMANTIC-AGENT-RESULTS.md) covers twelve fresh sessions
+on four frozen Requests questions, with the same local checkout in all conditions.
+All answers covered the required facts under assistant source review. Mean times
+were 69.9 seconds for local tools, 68.6 for lexical-first and 68.0 for semantic-first;
+these single-run differences do not establish an efficiency gain. Semantic used
+more total model input than both other conditions. All srcx sessions used one
+search followed by local reads.
+
+All 35 task previews and five separate diagnostic previews matched pinned source
+and immutable version metadata; twelve checkouts and 26 runtime/harness fingerprints
+passed verification. Payload validation does not establish nearest-neighbor recall:
+one unfiltered semantic query returned SVG chunks, while a Python-filtered query
+returned relevant methods with higher scores. The report preserves this unresolved
+retrieval discrepancy separately from the original agent comparison. No product
+search policy, embedding model or ranking default changed.
+
 ## Agent workflow diagnostic
 
 [The agent workflow record](eval/AGENT-WORKFLOW-PILOT.md) covers eight fresh Codex
