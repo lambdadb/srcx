@@ -2,6 +2,33 @@
 
 Date: 2026-09-26 (Asia/Seoul).
 
+## Qwen failure diagnostics
+
+Known worker failures now produce distinct setup, cache, device and input-limit
+messages; host launch and deadline failures have separate remediation. Unknown
+failures remain generic, and raw worker output is not forwarded. Search defaults,
+scores, source verification and the no-fallback policy are unchanged.
+
+Local validation passed 97 Node tests, nine Python checks (six worker and three
+local-reranker protocol checks), three installed-package CLI checks, typecheck,
+formatting and version consistency. Reserved worker exits and unexpected exits
+were exercised with real synthetic subprocesses. Deadline, permission and
+unexpected-signal mapping used a mocked process callback; the test asserted the
+unchanged 120-second/SIGKILL policy rather than waiting for a real timeout.
+
+Six additional offline checks used the existing Python 3.12 environment and
+cached pinned model: missing executable, missing Python imports, empty cache,
+invalid device, unavailable CUDA, and successful MPS inference. All produced the
+expected outcome; the successful two-candidate query returned finite scores and
+ranked the sorting function above an unrelated reader. No LambdaDB calls, document
+embeddings or model downloads were needed. This is an error-handling and inference
+smoke check, not a retrieval-quality comparison.
+
+The retained report is `.srcx/diagnostics/report.json` in the
+`srcx-reranker-diagnostics` worktree, SHA-256
+`7725a96f6c5bf5b4a6a4f01369e2dbea6a8ce16d70692f6e1039774f42564e67`.
+The local runner and Node/package logs are retained alongside it.
+
 ## Developer workflow pilot
 
 The [workflow pilot](https://github.com/lambdadb/srcx/blob/develop/eval/DEVELOPER-WORKFLOW-PILOT.md)

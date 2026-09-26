@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Distinguish Qwen setup, cache, device, input-size and timeout failures with
+  actionable messages while keeping raw worker diagnostics private.
+
 - Record three developer search/read investigations with concrete change maps,
   bounded live usage and source verification, separate from ranking benchmarks.
 
