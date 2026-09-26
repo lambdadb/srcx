@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   mkdtemp,
   mkdir,
+  chmod,
   readFile,
   writeFile,
   readdir,
@@ -22,6 +23,37 @@ async function fixture(t) {
 }
 for (const agent of ["codex", "claude"]) {
   for (const scope of ["user", "project"]) {
+    test(
+      `skill ${agent}/${scope}: absent removal works with a read-only parent`,
+      {
+        skip: process.platform === "win32" || process.getuid?.() === 0,
+      },
+      async (t) => {
+        const root = await fixture(t),
+          parent = join(
+            root,
+            agent === "codex" ? ".agents" : ".claude",
+            "skills",
+          ),
+          options = {
+            agent,
+            scope,
+            ...(scope === "project" ? { path: root } : {}),
+          };
+        await mkdir(parent, { recursive: true });
+        await chmod(parent, 0o555);
+        try {
+          assert.equal(
+            (await manageSkill("remove", options, root)).status,
+            "not-installed",
+          );
+          assert.deepEqual(await readdir(parent), []);
+        } finally {
+          await chmod(parent, 0o755);
+        }
+      },
+    );
+
     test(`skill ${agent}/${scope}: install, update and remove only managed instructions`, async (t) => {
       const root = await fixture(t),
         options = {
@@ -126,6 +158,8 @@ test("unmanaged files, symlinked directories/files and an active lock are preser
     "Preserve me",
   );
   await mkdir(join(parent, ".srcx-search.srcx-lock"));
+  assert.equal((await run("remove")).status, "not-installed");
+  assert.deepEqual(await readdir(parent), [".srcx-search.srcx-lock"]);
   await assert.rejects(run("install"), /operation may be active/);
   await rm(join(parent, ".srcx-search.srcx-lock"), { recursive: true });
   await rm(parent, { recursive: true });

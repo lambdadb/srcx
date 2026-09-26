@@ -4,7 +4,8 @@
 
 - Bundle the srcx-search agent skill in npm and add `skills install`, `update`,
   `remove` and `status` for Codex and Claude Code, with user/project scopes,
-  explicit setup and preservation of customized or unowned files.
+  explicit setup and preservation of customized or unowned files. Removing an
+  absent skill stays read-only even when its parent directory already exists.
 
 - Explain source-language query selection in README and search help, including
   agent translation of query intent while preserving exact identifiers and

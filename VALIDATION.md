@@ -10,10 +10,14 @@ copies from custom files; modified/unowned content, extra files and symlinked
 managed paths are preserved. Scope selection does not edit unrelated agent
 settings or infer a project root.
 
-On Node 24.15.0, formatting/version checks, typecheck, all 120 tests and six packed
+On Node 24.15.0, formatting/version checks, typecheck, all 124 tests and six packed
 CLI tests passed. Lifecycle tests cover both agents and scopes using isolated
 roots, replacement of a previous managed bundle, custom-file preservation,
-symlinks, active locks, invalid options and no-write status/absent removal. Packed
+symlinks, active locks, invalid options and no-write status/absent removal. Absent
+removal also covers existing read-only parent directories for both agents/scopes
+and preserves a pre-existing lock without acquiring it. The permission regression
+tests fail before the fix and pass afterward on the local non-root POSIX runtime;
+those permission tests are skipped on Windows or when running as root. Packed
 CLI tests exercise both project destinations without config, then the existing
 loopback workflow covers skill installation, repository discovery, commit
 resolution, search and exact source reads. This is deterministic integration

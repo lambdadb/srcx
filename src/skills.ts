@@ -139,7 +139,11 @@ export async function manageSkill(
       return { ...info, status: "not-installed" };
     }
   }
-  if (operation === "status") return { ...info, ...(await inspect()) };
+  if (operation === "status" || operation === "remove") {
+    const current = await inspect();
+    if (operation === "status" || current.status === "not-installed")
+      return { ...info, ...current };
+  }
   const lock = join(parent, `.${name}.srcx-lock`);
   try {
     await mkdir(lock);
@@ -151,6 +155,7 @@ export async function manageSkill(
     throw e;
   }
   try {
+    // Recheck after locking before changing an existing installation.
     const current = await inspect();
     invariant(
       current.status !== "unmanaged" && current.status !== "modified",
