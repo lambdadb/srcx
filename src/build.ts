@@ -32,7 +32,7 @@ export const INDEX_CONFIGS = {
   language: { type: "keyword" },
   fileId: { type: "keyword" },
   symbol: { type: "keyword" },
-  searchText: { type: "text", analyzers: ["english"] },
+  searchText: { type: "text", analyzers: ["standard"] },
 } as const;
 export type Preset = {
   schemaVersion: 1;
@@ -53,7 +53,7 @@ export type Preset = {
 };
 export const PRESET: Preset = {
   schemaVersion: 1,
-  analyzers: ["english"],
+  analyzers: ["standard"],
   chunker: CHUNKER,
   mode: "syntax",
   maxFileBytes: 1024 * 1024,

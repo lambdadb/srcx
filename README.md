@@ -22,7 +22,7 @@ srcx --help
 ## Run locally
 
 Requires Node.js 22.14+ and Git. The default preset uses lexical search with
-`embedding=none` and the `english` text analyzer; no embedding account or paid API is needed.
+`embedding=none` and the `standard` text analyzer; no embedding account or paid API is needed.
 
 ```sh
 npm ci --ignore-scripts
@@ -106,14 +106,14 @@ Language labels remain available to `--language` filters even after fallback.
 
 ## Choose text analyzers
 
-New repositories use `english` by default. Choose any nonempty combination of
+New repositories use `standard` by default. Choose any nonempty combination of
 LambdaDB's supported analyzers: `english`, `korean`, `japanese`, and `standard`.
 These analyze searchable text; they are separate from programming-language
 chunking and the `--language` file filter.
 
 ```sh
 srcx repo add --path /path/to/repo --analyzers english,korean
-srcx repo add --path /path/to/repo --analyzers standard
+srcx repo add --path /path/to/repo --analyzers english
 
 # Preview exactly the same settings without credentials or service calls.
 srcx import --path /path/to/repo --ref main --dry-run \

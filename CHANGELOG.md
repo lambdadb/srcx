@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Default text analysis to English and add `--analyzers` for any combination of
+- Keep standard text analysis as the default and add `--analyzers` for any combination of
   LambdaDB's English, Korean, Japanese and standard analyzers. Pin the canonical
   selection in repository/build identity and verify it during discovery. This
   pre-release preset requires an analyzer list; older presets are not accepted.

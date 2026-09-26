@@ -2,7 +2,7 @@
 
 ## Configurable text analyzers
 
-The pre-release preset now defaults to English and requires a canonical analyzer
+The pre-release preset defaults to standard and requires a canonical analyzer
 list. All 15 nonempty combinations of LambdaDB's four supported analyzers are
 validated across lexical, managed-small and managed-large presets (45 distinct
 configuration/Collection identities). Registration/discovery tests cover canonical
@@ -15,11 +15,14 @@ preset, offline preview parity, and invalid/connected analyzer-override rejectio
 Publication tests verify readiness without depending on analyzed text matches.
 
 A bounded live run on 2026-09-26 used synthetic source, two Collections and three
-imports, with no embeddings or reranker. The actual CLI verified English as the
-default, publication of a stop-word-only file, `run` matching `Running`, exact
+imports, with no embeddings or reranker. At commit `10936fe` (before restoring the
+standard default), the actual CLI verified the English preset, publication of a
+stop-word-only file, `run` matching `Running`, exact
 pinned source reads, sorted/deduplicated reattachment, the live four-analyzer
 schema, and Korean/Japanese search/read results. This is integration validation,
-not a ranking benchmark or evidence that English is universally optimal.
+not a ranking benchmark or evidence that English is universally optimal. The
+restored standard default is covered by the local and packed CLI checks above;
+this default-only change did not repeat live writes.
 
 Date: 2026-09-26 (Asia/Seoul).
 

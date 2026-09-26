@@ -59,7 +59,7 @@ const integer = (value: string) => {
 const analyzerOption = (description: string) =>
   new Option(
     "--analyzers <names>",
-    description + ` (${ANALYZERS.join(", ")}; default: english)`,
+    description + ` (${ANALYZERS.join(", ")}; default: standard)`,
   ).argParser((value) =>
     normalizeAnalyzers(value.split(",").map((name) => name.trim())),
   );

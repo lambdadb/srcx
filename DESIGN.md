@@ -455,7 +455,7 @@ The lexical preset's concrete `indexConfigs` is:
   "language": { "type": "keyword" },
   "fileId": { "type": "keyword" },
   "symbol": { "type": "keyword" },
-  "searchText": { "type": "text", "analyzers": ["english"] }
+  "searchText": { "type": "text", "analyzers": ["standard"] }
 }
 ```
 
@@ -554,7 +554,7 @@ is stored in the file; enriched chunk search text is never the citation authorit
 embedding diagnostics, and inventory/config objects are stored without entries in
 `indexConfigs`. Public documentation states that fields are stored even when not
 indexed. Do not invent an `index: false` option. The default text analyzer is
-`english`; users can choose any nonempty combination of `english`, `japanese`,
+`standard`; users can choose any nonempty combination of `english`, `japanese`,
 `korean`, and `standard`. The sorted, deduplicated list is part of the pinned
 preset/configuration hash and configures both `searchText` and managed
 `embeddingText`. Discovery requires the matching schema; a different selection

@@ -15,8 +15,8 @@ import { matchesIndexSchema, collectionName } from "../dist/repository.js";
 import { fixture } from "./fixture.mjs";
 
 test("supported analyzer combinations have canonical, distinct pinned identities", () => {
-  assert.deepEqual(PRESET.analyzers, ["english"]);
-  assert.deepEqual(indexConfigs().searchText.analyzers, ["english"]);
+  assert.deepEqual(PRESET.analyzers, ["standard"]);
+  assert.deepEqual(indexConfigs().searchText.analyzers, ["standard"]);
   const identities = new Set();
   for (const model of [
     "none",

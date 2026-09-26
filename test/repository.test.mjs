@@ -223,7 +223,7 @@ test("analyzer sets round-trip through registration and detect schema drift", as
     else process.env.SRCX_STATE_DIR = prior;
   });
   const remote = new ProvisionRemote();
-  const english = await register(remote, { path: f.path });
+  const defaultRepository = await register(remote, { path: f.path });
   for (const model of [
     "none",
     "text-embedding-3-small",
@@ -231,7 +231,7 @@ test("analyzer sets round-trip through registration and detect schema drift", as
   ]) {
     const preset = presetFor(model, ["korean", "english", "english"]);
     const mixed = await register(remote, { path: f.path, preset });
-    assert.notEqual(mixed.collection, english.collection);
+    assert.notEqual(mixed.collection, defaultRepository.collection);
     const reordered = await register(remote, {
       path: f.path,
       preset: presetFor(model, ["english", "korean"]),
