@@ -12,7 +12,7 @@ assert.match(fs.readFileSync(process.argv[2], 'utf8'), /def main/);
 assert.equal(process.env.HF_HUB_OFFLINE, '1');
 const input = JSON.parse(fs.readFileSync(0, 'utf8'));
 assert.deepEqual(Object.keys(input).sort(), ['candidates', 'query']);
-if (process.env.SRCX_FAKE_FAIL) { console.error('PRIVATE SOURCE'); process.exit(1); }
+if (process.env.SRCX_FAKE_FAIL) { console.log('PRIVATE STDOUT'); console.error('PRIVATE SOURCE'); process.exit(Number(process.env.SRCX_FAKE_FAIL)); }
 const scores = input.candidates.map((c, i) => ({id: c.id, score: process.env.SRCX_FAKE_TIE ? 1 : i}));
 if (process.env.SRCX_FAKE_BAD) scores[0].id = 'foreign-candidate';
 console.log(JSON.stringify({model: 'Qwen/Qwen3-Reranker-0.6B', revision: 'e61197ed45024b0ed8a2d74b80b4d909f1255473', scores}));

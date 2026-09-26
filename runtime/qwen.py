@@ -4,6 +4,7 @@ import json
 import math
 import os
 import sys
+from pathlib import Path
 
 MODEL = "Qwen/Qwen3-Reranker-0.6B"
 REVISION = "e61197ed45024b0ed8a2d74b80b4d909f1255473"
@@ -14,6 +15,19 @@ PREFIX = (
 )
 SUFFIX = "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n"
 INSTRUCTION = "Given a code search query, retrieve code passages that answer the query."
+CACHE_FILES = ["config.json", "generation_config.json", "model.safetensors",
+               "tokenizer.json", "tokenizer_config.json", "vocab.json", "merges.txt"]
+
+
+class WorkerFailure(ValueError):
+    """Exit codes: 20 imports, 21 cache, 22 device, 23 pair tokens, 24 request bytes.
+
+    The Node caller maps codes to messages; exception text never crosses the boundary.
+    """
+
+    def __init__(self, code):
+        super().__init__("Qwen worker failure")
+        self.code = code
 
 
 def require(condition, message):
@@ -25,7 +39,8 @@ def encode(tokenizer, query, text):
     body = f"<Instruct>: {INSTRUCTION}\n<Query>: {query}\n<Document>: {text}"
     ids = sum((tokenizer.encode(p, add_special_tokens=False)
                for p in (PREFIX, body, SUFFIX)), [])
-    require(len(ids) <= 8192, "Pair exceeds 8192 tokens; no truncation")
+    if len(ids) > 8192:
+        raise WorkerFailure(23)
     return ids
 
 
@@ -45,22 +60,33 @@ def validate(body):
 
 def score(body):
     os.environ["HF_HUB_OFFLINE"] = "1"
-    from huggingface_hub import snapshot_download
-    from transformers import AutoTokenizer, AutoModelForCausalLM
-    import torch
-
-    path = snapshot_download(MODEL, revision=REVISION, local_files_only=True,
-                             allow_patterns=["config.json", "generation_config.json", "model.safetensors",
-                                             "tokenizer.json", "tokenizer_config.json", "vocab.json", "merges.txt"])
+    device = os.environ.get("SRCX_RERANK_DEVICE", "auto")
+    if device not in ("auto", "cpu", "mps", "cuda"):
+        raise WorkerFailure(22)
+    try:
+        from huggingface_hub import snapshot_download
+        from huggingface_hub.errors import LocalEntryNotFoundError
+        from transformers import AutoTokenizer, AutoModelForCausalLM
+        import torch
+    except ImportError:
+        raise WorkerFailure(20) from None
+    if device == "auto":
+        device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+    elif ((device == "cuda" and not torch.cuda.is_available()) or
+          (device == "mps" and not torch.backends.mps.is_available())):
+        raise WorkerFailure(22)
+    try:
+        path = snapshot_download(MODEL, revision=REVISION, local_files_only=True,
+                                 allow_patterns=CACHE_FILES)
+    except LocalEntryNotFoundError:
+        raise WorkerFailure(21) from None
+    if not all((Path(path) / name).is_file() for name in CACHE_FILES):
+        raise WorkerFailure(21)
     tokenizer = AutoTokenizer.from_pretrained(path, local_files_only=True, trust_remote_code=False)
     # Reuse exact duplicate code within this query, retaining every candidate ID.
     encoded = {c["text"]: None for c in body["candidates"]}
     for text in encoded:
         encoded[text] = encode(tokenizer, body["query"], text)
-    device = os.environ.get("SRCX_RERANK_DEVICE", "auto")
-    require(device in ("auto", "cpu", "mps", "cuda"), "Invalid device")
-    if device == "auto":
-        device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     model = AutoModelForCausalLM.from_pretrained(
         path, local_files_only=True, trust_remote_code=False,
         dtype=torch.float32, attn_implementation="sdpa",
@@ -83,15 +109,24 @@ def score(body):
 
 def main():
     raw = sys.stdin.buffer.read(4 * 1024 * 1024 + 1)
-    require(len(raw) <= 4 * 1024 * 1024, "Request exceeds 4 MiB")
+    if len(raw) > 4 * 1024 * 1024:
+        raise WorkerFailure(24)
     body = validate(json.loads(raw))
     print(json.dumps(score(body), allow_nan=False))
 
 
-if __name__ == "__main__":
+def run():
     try:
         main()
+    except WorkerFailure as error:
+        # The Node caller maps these codes to fixed, actionable messages.
+        return error.code
     except Exception:
         # Libraries may include source text or environment values in exceptions.
         print("Qwen worker failed; verify setup, device and input size.", file=sys.stderr)
-        sys.exit(1)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(run())

@@ -8,6 +8,8 @@ import { publish } from "../dist/publish.js";
 import { search, loadHandle, readHandle } from "../dist/search.js";
 import { candidateLimit, qwenScores } from "../dist/rerank.js";
 import { fakeQwen } from "./rerank-fixture.mjs";
+import childProcess from "node:child_process";
+import { syncBuiltinESMExports } from "node:module";
 
 function env(t, key, value) {
   const old = process.env[key];
@@ -120,7 +122,7 @@ test("worker protocol rejects malformed identities and masks subprocess diagnost
   await assert.rejects(qwenScores("query", candidates), /identity/);
   env(t, "SRCX_FAKE_FAIL", "1");
   await assert.rejects(qwenScores("query", candidates), (error) => {
-    assert.match(error.message, /no fallback/);
+    assert.match(error.message, /no fallback/i);
     assert.doesNotMatch(error.message, /PRIVATE SOURCE/);
     return true;
   });
@@ -128,6 +130,96 @@ test("worker protocol rejects malformed identities and masks subprocess diagnost
     qwenScores("query", [candidates[0], candidates[0]]),
     /Invalid/,
   );
+});
+
+test("worker failures give fixed remediation without subprocess output", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  env(t, "SRCX_RERANK_PYTHON", await fakeQwen(f.root));
+  env(t, "SRCX_FAKE_FAIL", "1");
+  const cases = [
+    [20, /dependencies.*runtime\/requirements.txt/],
+    [21, /cache.*pinned model revision.*HF_HUB_CACHE/],
+    [22, /device.*SRCX_RERANK_DEVICE/],
+    [23, /8,192 tokens.*Shorten the query/],
+    [24, /4 MiB.*Reduce --candidates/],
+    [1, /reranking failed/],
+    [99, /reranking failed/],
+  ];
+  for (const [code, expected] of cases) {
+    process.env.SRCX_FAKE_FAIL = String(code);
+    await assert.rejects(
+      qwenScores("private query", [{ id: "a", text: "private code" }]),
+      (error) => {
+        assert.match(error.message, expected);
+        assert.match(error.message, /no fallback/i);
+        assert.doesNotMatch(error.stack, /PRIVATE|private query|private code/);
+        return true;
+      },
+    );
+  }
+  process.env.SRCX_RERANK_PYTHON = join(f.root, "private-missing-python");
+  await assert.rejects(
+    qwenScores("q", [{ id: "a", text: "code" }]),
+    (error) => {
+      assert.match(
+        error.message,
+        /executable was not found.*SRCX_RERANK_PYTHON/,
+      );
+      assert.doesNotMatch(error.stack, /private-missing-python/);
+      return true;
+    },
+  );
+  await assert.rejects(
+    qwenScores("q", [{ id: "a", text: "x".repeat(4 * 1024 * 1024) }]),
+    /4 MiB.*Reduce --candidates/,
+  );
+});
+
+test("host errors distinguish deadline, permissions and unexpected termination", async (t) => {
+  env(t, "SRCX_RERANK_PYTHON", "python3");
+  let failure;
+  const mock = t.mock.method(
+    childProcess,
+    "execFile",
+    (_file, _args, options, callback) => {
+      assert.equal(options.timeout, 120_000);
+      assert.equal(options.killSignal, "SIGKILL");
+      queueMicrotask(() => callback(failure, "PRIVATE OUTPUT"));
+      return {};
+    },
+  );
+  syncBuiltinESMExports();
+  t.after(() => {
+    mock.mock.restore();
+    syncBuiltinESMExports();
+  });
+  for (const [properties, expected] of [
+    [
+      { killed: true, signal: "SIGKILL", code: null },
+      /exceeded 120 seconds.*Reduce --candidates/,
+    ],
+    [{ code: "EACCES" }, /execute permissions/],
+    [{ killed: false, signal: "SIGKILL", code: null }, /reranking failed/],
+    [
+      {
+        killed: true,
+        signal: "SIGKILL",
+        code: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER",
+      },
+      /reranking failed/,
+    ],
+  ]) {
+    failure = Object.assign(new Error("PRIVATE EXCEPTION"), properties);
+    await assert.rejects(
+      qwenScores("q", [{ id: "a", text: "code" }]),
+      (error) => {
+        assert.match(error.message, expected);
+        assert.doesNotMatch(error.stack, /PRIVATE/);
+        return true;
+      },
+    );
+  }
 });
 
 test("reranker reads exact chunk bytes even when several chunks share one source line", async () => {

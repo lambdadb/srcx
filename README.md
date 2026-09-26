@@ -183,6 +183,22 @@ or fallback. Empty candidate pools skip model execution. Existing search default
 and managed embedding usage rules remain unchanged; wider pools increase source
 verification work. See the [integration validation](VALIDATION.md#local-reranker-integration).
 
+Failures include a fixed remediation message where the cause is known:
+
+| Failure                                     | Action                                                                                               |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Python executable missing or not executable | Check the path and execute permissions in `SRCX_RERANK_PYTHON`.                                      |
+| Missing or incompatible Python imports      | Install `runtime/requirements.txt` using that Python environment.                                    |
+| Missing or incomplete model cache           | Download the pinned revision and all files listed above; check `HF_HUB_CACHE`.                       |
+| Invalid or unavailable device               | Use `SRCX_RERANK_DEVICE=auto` or `cpu`, or an available `mps`/`cuda` device.                         |
+| Request exceeds 4 MiB                       | Reduce `--candidates` or shorten the query.                                                          |
+| A query/chunk pair exceeds 8,192 tokens     | Shorten the query or omit `--rerank`; reducing candidate count does not shorten an individual chunk. |
+| Worker exceeds 120 seconds                  | Reduce `--candidates` or select an available faster device.                                          |
+
+Unknown worker failures remain generic. Raw subprocess output and library
+exceptions are never included in these messages. Failed reranking does not
+silently return the original ranking; rerun without `--rerank` to opt out.
+
 For practical search → read → change-planning examples, see the
 [developer workflow pilot](https://github.com/lambdadb/srcx/blob/develop/eval/DEVELOPER-WORKFLOW-PILOT.md).
 It follows three maintenance investigations through related source and tests,
