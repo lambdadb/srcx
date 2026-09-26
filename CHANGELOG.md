@@ -3,8 +3,7 @@
 ## Unreleased
 
 - Add Python/Go syntax chunking with decorators, class/receiver scopes and bounded
-  source-preserving splits. New Collections use v2; v1 indexes retain their
-  original identities and remain readable and updatable.
+  source-preserving splits.
 
 - Distinguish Qwen setup, cache, device, input-size and timeout failures with
   actionable messages while keeping raw worker diagnostics private.

@@ -94,19 +94,10 @@ try {
     execFileSync(process.execPath, [bin, "--help"], { encoding: "utf8" }),
     /Usage: srcx/,
   );
-  execFileSync(
-    process.execPath,
-    [
-      "--test",
-      "--test-timeout=60000",
-      "test/cli.test.mjs",
-      "test/cli-legacy.test.mjs",
-    ],
-    {
-      stdio: "inherit",
-      env: { ...process.env, SRCX_TEST_CLI: bin },
-    },
-  );
+  execFileSync(process.execPath, ["--test", "test/cli.test.mjs"], {
+    stdio: "inherit",
+    env: { ...process.env, SRCX_TEST_CLI: bin },
+  });
 } finally {
   rmSync(temp, { recursive: true, force: true });
 }

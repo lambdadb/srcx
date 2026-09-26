@@ -7,8 +7,8 @@ const encoding = getEncoding("cl100k_base");
 export function tokens(text: string): number {
   return encoding.encode(text, [], []).length;
 }
-export const CHUNKER_V1 = {
-  version: 1,
+export const CHUNKER = {
+  version: 2,
   parser: "web-tree-sitter@0.25.10",
   grammars: "tree-sitter-wasms@0.1.13",
   tokenizer: "js-tiktoken@1.0.21/cl100k_base",
@@ -18,8 +18,6 @@ export const CHUNKER_V1 = {
   enrichment: "path-scope-symbol-v1",
   policy: "source-v1",
 } as const;
-export const CHUNKER = { ...CHUNKER_V1, version: 2 } as const;
-export type Chunker = typeof CHUNKER_V1 | typeof CHUNKER;
 export type Span = {
   startByte: number;
   endByte: number;
@@ -54,15 +52,14 @@ async function language(name: string): Promise<Language> {
   }
   return l;
 }
-export function detectLanguage(path: string, version: 1 | 2 = 2): string {
+export function detectLanguage(path: string): string {
   const ext = path.split(".").at(-1)?.toLowerCase();
-  if (version === 2) {
-    if (ext === "py" || ext === "pyi") return "python";
-    if (ext === "go") return "go";
-  }
   return (
     (
       {
+        py: "python",
+        pyi: "python",
+        go: "go",
         java: "java",
         ts: "typescript",
         tsx: "tsx",
@@ -273,9 +270,8 @@ export async function chunk(
   path: string,
   mode: "syntax" | "window" = "syntax",
   policy: Enrichment = CHUNKER.enrichment,
-  version: 1 | 2 = CHUNKER.version,
 ): Promise<{ spans: Span[]; parseStatus: string; language: string }> {
-  const lang = detectLanguage(path, version);
+  const lang = detectLanguage(path);
   if (!source.length)
     return { spans: [], parseStatus: "empty", language: lang };
   let units: Unit[] = [];

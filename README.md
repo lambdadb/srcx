@@ -87,22 +87,6 @@ unsupported by the pinned grammars uses the recorded whole-file parse fallback.
 Parsed Python/Go files support exact `--language python` / `--language go` filters;
 those language labels also remain present when a parse falls back.
 
-### Existing indexes and chunking v2
-
-New `repo add` registrations and `import --path ... --dry-run` builds use chunking
-v2. Its configuration hash gives each embedding option a new Collection identity.
-Existing v1 Collections remain discoverable, searchable and updatable using their
-stored preset, including resumable imports; Python/Go remain text fallback there.
-Nothing automatically rewrites an existing Collection or its published Tags.
-
-To use the new boundaries, run `srcx repo add --path /path/to/repo` with the same
-`--embedding` option as needed, then `srcx import --repo <new-collection> --ref <ref>`.
-Use the returned exact Collection name when old and new presets coexist. The
-new Collection needs its own full import and, for managed presets, document
-embeddings. Synchronize Git tag Aliases there separately with `git sync-tags`.
-Continue using `--repo <old-collection>` to update v1; v1/v2 incremental artifacts
-cannot be mixed. Prior evaluation results remain tied to their original presets.
-
 ## Opt into managed embeddings
 
 Supported models are `text-embedding-3-small` (1536 dimensions) and

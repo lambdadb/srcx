@@ -3,7 +3,7 @@ import { createReadStream } from "node:fs";
 import { createInterface } from "node:readline";
 import { join, resolve } from "node:path";
 import { Blobs, inventory, resolveCommit, type Identity } from "./git.js";
-import { chunk, CHUNKER, CHUNKER_V1, tokens, type Chunker } from "./chunk.js";
+import { chunk, CHUNKER, tokens } from "./chunk.js";
 import {
   atomic,
   canonical,
@@ -25,7 +25,7 @@ export const INDEX_CONFIGS = {
 } as const;
 export type Preset = {
   schemaVersion: 1;
-  chunker: Chunker;
+  chunker: typeof CHUNKER;
   mode: "syntax" | "window";
   /** Internal evaluation override; the CLI keeps its original enrichment. */
   enrichment?: "path-only-v1";
@@ -46,7 +46,7 @@ export const PRESET: Preset = {
   maxFileBytes: 1024 * 1024,
   embedding: null,
 };
-/** Embedding variants share the same versioned chunking behavior. */
+/** Embedding variants share the same chunking behavior. */
 export const MANAGED_PRESET: Preset = {
   ...PRESET,
   embedding: {
@@ -66,12 +66,6 @@ export const MANAGED_LARGE_PRESET: Preset = {
     dimensions: 3072,
   },
 };
-// Preserve exact v1 identities and behavior for existing Collections and journals.
-export const LEGACY_PRESETS: Preset[] = [
-  PRESET,
-  MANAGED_PRESET,
-  MANAGED_LARGE_PRESET,
-].map((preset) => ({ ...preset, chunker: CHUNKER_V1 }));
 export function presetFor(embedding = "none"): Preset {
   invariant(
     ["none", "text-embedding-3-small", "text-embedding-3-large"].includes(
@@ -87,9 +81,9 @@ export function presetFor(embedding = "none"): Preset {
 export function supportedPreset(preset: unknown): preset is Preset {
   return (
     preset !== undefined &&
-    [PRESET, MANAGED_PRESET, MANAGED_LARGE_PRESET, ...LEGACY_PRESETS]
-      .map(hash)
-      .includes(hash(preset))
+    [hash(PRESET), hash(MANAGED_PRESET), hash(MANAGED_LARGE_PRESET)].includes(
+      hash(preset),
+    )
   );
 }
 export function indexConfigs(preset: Preset = PRESET) {
@@ -223,7 +217,7 @@ export async function materialize(args: {
     configHash = hash(preset),
     prev = args.previous;
   invariant(
-    [hash(CHUNKER), hash(CHUNKER_V1)].includes(hash(preset.chunker)) &&
+    hash(preset.chunker) === hash(CHUNKER) &&
       ["syntax", "window"].includes(preset.mode) &&
       (preset.enrichment === undefined ||
         preset.enrichment === "path-only-v1") &&
@@ -332,7 +326,6 @@ export async function materialize(args: {
         e.path,
         preset.mode,
         preset.enrichment,
-        preset.chunker.version,
       );
       const contentHash = hash(data);
       const fileId = `f-${hash([e.pathBase64, contentHash])}`;
