@@ -1,10 +1,11 @@
 # srcx: Initial Implementation Design
 
-Status: initial CLI implemented with local tests and live synthetic A/B validation
-on LambdaDB. See [README.md](README.md) for runnable interfaces and
+Status: CLI implemented with persistent Git branch tracking, managed semantic/hybrid
+search and optional local Qwen reranking. Local, live and public-benchmark evidence
+have separate scopes. See [README.md](README.md) for runnable interfaces and
 [VALIDATION.md](VALIDATION.md) for the bounded live evidence and remaining scope.
 
-Updated: 2026-09-25.
+Updated: 2026-09-26.
 
 ## 1. Purpose, decisions, and implementation defaults
 
@@ -557,10 +558,10 @@ baseline, not a proven code-specific ranking solution. An initial enrichment
 candidate preserves original identifiers while adding camelCase/snake_case terms;
 pin and evaluate that transformation before adopting it as the preset.
 
-The opt-in managed preset adds indexed text `embeddingText` and a managed
-`embedding` vector field with provider `openai`, model `text-embedding-3-small`,
-1536 dimensions and cosine similarity. The source field, dimensions and similarity
-are nested under the vector field's `embedding` configuration; there are no
+The opt-in managed presets add indexed text `embeddingText` and a managed
+`embedding` vector field with provider `openai`: `text-embedding-3-small` uses
+1536 dimensions and `text-embedding-3-large` uses 3072, both with cosine similarity.
+The source field, dimensions and similarity are nested under the vector field's `embedding` configuration; there are no
 top-level dimension/similarity properties. Collection discovery verifies the
 complete resolved schema and pinned preset. Missing `embeddingText` on skipped
 chunks, files and manifests means no vector is generated for those records. The `none` preset omits the vector index entirely.
@@ -769,12 +770,22 @@ shape and payload integrity, not deterministic numerical reproduction by OpenAI.
 Search remains lexical by default. Explicit `--mode semantic` uses managed
 `knn.queryText`; `--mode hybrid` combines the existing lexical query and that kNN
 query using LambdaDB RRF. Both legs enforce `kind=chunk` and the same optional
-path/language filters; kNN uses a prefilter and `k=limit`. The lexical leg keeps
+path/language filters; kNN uses a prefilter and `k=limit`, or `k=candidates`
+when optional reranking requests a wider pool. The lexical leg keeps
 nonembedded chunks eligible. Query/fetch/list request vectors explicitly so the
 same validation applies to pinned result handles. When a deployment omits managed
 vectors from list responses, fetch the affected IDs from that same immutable Tag
 and require identical non-vector payloads before vector validation. Source reads still use the
-original file bytes, never enriched text. No relevance gain is claimed yet.
+original file bytes, never enriched text. Bounded retrieval and reranking results
+are recorded in [VALIDATION.md](VALIDATION.md); they do not establish a universal
+winner or authorize default changes.
+
+Optional `--rerank qwen` scores complete verified chunk bytes with a pinned local
+Qwen3-Reranker-0.6B revision, preserves candidate identity and retrieval order on
+ties, and returns a separate reranker score. Setup is explicit, inference is
+offline, and failures do not silently fall back. Every CLI invocation loads its
+own model. See [README.md](README.md#optional-local-qwen-reranker) for limits and
+runtime setup; this path does not change stored Collections or embedding presets.
 
 Managed source text and semantic/hybrid query text are sent through LambdaDB to
 OpenAI and incur embedding usage plus normal LambdaDB operations/storage. Dry-run
@@ -1067,15 +1078,18 @@ latency, and operational cost are separate measurements.
 
 ## 12. Remaining decisions and inspected evidence
 
+The initial parser/tokenizer presets, managed embedding choices and CLI retrieval
+modes are implemented and have bounded evaluation records. The following are
+future decisions or per-run requirements, not blockers awaiting initial design:
+
 | Decision | When needed |
 | --- | --- |
-| First real repositories and parser priority | Real-repository evaluation; defaults do not block fixtures |
-| Exact parser/tokenizer/preset versions, enrichment and embedding skip rules | Bootstrap and retrieval evaluation; pin before publishing a corpus |
-| Chunk size/overlap and syntax-versus-window tradeoff | Section 8 pilot after retrieval works; current values are starting points |
-| Embedding model/dimensions/provider, data destination, spending cap | Before any real source upload or paid experiment |
-| LambdaDB endpoint/project and credentials | Provisioning and live fixture run |
-| Authoritative Git-tag source and observed-ref freshness policy | Manual Alias synchronization |
-| Concurrent multi-host writers, retention/cleanup, configuration migration | Later internal operation, outside first CLI |
+| Additional parser languages and production repositories | Onboarding source beyond the currently tested coverage |
+| Quality/latency thresholds and any default changes | After actual development-task use; before stable rollout |
+| New embedding/reranking providers or chunking policies | A concrete unmet retrieval need; Jev access remains deferred |
+| Source authorization, endpoint/project, credentials and spending limits | Before every new corpus upload or paid experiment |
+| Authoritative Git-tag source and observation freshness | Automatic synchronization or pruning |
+| Multi-host writers, retention/cleanup and configuration migration | Later internal operation, outside the first CLI |
 
 Sources and evidence used during this design discussion:
 
@@ -1112,13 +1126,13 @@ Sources and evidence used during this design discussion:
 - [Tree-sitter parsing](https://tree-sitter.github.io/tree-sitter/using-parsers/2-basic-parsing.html):
   source ranges and encodings; verify the selected binding during implementation.
 
-Development checkout references identify the inspected files, not runtime
-dependencies. No
-application tests, source uploads, embeddings, or live LambdaDB validation have
-been performed as part of writing this document.
+Development checkout references identify the files inspected during the original
+design discussion, not runtime dependencies. That design-only review did not run
+application tests, source uploads, embeddings or live LambdaDB checks. Subsequent
+implementation and validation evidence is recorded in [VALIDATION.md](VALIDATION.md).
 
-Document validation: the revised lexical `indexConfigs` JSON, description, four
-reserved metadata labels, and one optional context label passed the local built
+Historical design validation (September 25): the revised lexical `indexConfigs`
+JSON, description, four reserved metadata labels, and one optional context label passed the local built
 SDK's Collection-create input validator on September 25. All three JSON examples,
 the illustrative source span, then-local links, code fences, and whitespace also passed
 document checks. These checks do not establish server acceptance, marker ordering,

@@ -265,40 +265,46 @@ run and any pending journal. Its per-import deadline defaults to 300 seconds and
 
 ## Connected workflow
 
+Use the installed `srcx` binary below. For a source checkout, build first and
+replace `srcx` with `node dist/cli.js`.
+
 These commands create and write LambdaDB resources. Select an approved project
-and source scope before running them. Start live validation with the synthetic
-fixture, not a production repository.
+and source scope before running them. Start live validation with a small synthetic
+fixture. `repo add` returns a `collection` value: use that value as `<name>` below
+to disambiguate repositories with multiple presets. If isolating a first-use run,
+set `SRCX_CONFIG` and `SRCX_STATE_DIR` to fresh paths before `configure`; keep
+credentials in the shell and preserve these paths for later result reads.
 
 ```sh
 # Supply LAMBDADB_API_KEY through your shell or secret manager.
-node dist/cli.js configure --endpoint https://api.lambdadb.ai --project <project>
-node dist/cli.js doctor
-node dist/cli.js repo add --path /path/to/repo \
+srcx configure --endpoint https://api.lambdadb.ai --project <project>
+srcx doctor
+srcx repo add --path /path/to/repo \
   --description "Repository source, tests, and documentation for code search." \
   --tag team=search
-node dist/cli.js repo list
-node dist/cli.js repo show --repo <name>
+srcx repo list
+srcx repo show --repo <name>
 
 # Import the exact artifact reviewed in the credential-free preview.
-node dist/cli.js import --repo <name> --artifact /tmp/srcx-build-a
-node dist/cli.js versions --repo <name>
+srcx import --repo <name> --artifact /tmp/srcx-build-a
+srcx versions --repo <name>
 
 # Keep a Git branch connected to its Collection Branch.
-node dist/cli.js import --repo <name> --ref develop
-node dist/cli.js search --repo <name> --version develop --query retry
-node dist/cli.js resolve --repo <name> --ref refs/heads/develop
-node dist/cli.js search --repo <name> --version <full-commit-A> --query retry
-node dist/cli.js read --result <result-id> --context 20
-node dist/cli.js read --result <result-id> --full-file
-node dist/cli.js read --repo <name> --version <full-commit-A> \
+srcx import --repo <name> --ref develop
+srcx search --repo <name> --version develop --query retry
+srcx resolve --repo <name> --ref refs/heads/develop
+srcx search --repo <name> --version <full-commit-A> --query retry
+srcx read --result <result-id> --context 20
+srcx read --result <result-id> --full-file
+srcx read --repo <name> --version <full-commit-A> \
   --path src/example.ts --lines 10:30
 
-node dist/cli.js import --repo <name> --artifact /tmp/srcx-build-b
+srcx import --repo <name> --artifact /tmp/srcx-build-b
 # An old A result still reads A after B is published.
-node dist/cli.js read --result <result-id> --full-file
+srcx read --result <result-id> --full-file
 
-node dist/cli.js git sync-tags --repo <name>
-node dist/cli.js resolve --repo <name> --ref v1.0.0
+srcx git sync-tags --repo <name>
+srcx resolve --repo <name> --ref v1.0.0
 ```
 
 `doctor` checks authentication and Collection read access, not write permission
@@ -314,7 +320,9 @@ identity or Collection name. Registration normalizes the selected Git remote;
 without remotes receive a persistent local source identity. Repeated registration
 preserves existing descriptions/labels and attaches the local checkout.
 
-Search is literal analyzed lexical text, restricted to `kind=chunk`. Optional
+Search defaults to literal analyzed lexical text. All retrieval modes are
+restricted to `kind=chunk`; semantic/hybrid and optional Qwen reranking are
+described above. Optional
 `--path` and `--language` filters are exact keyword filters. `--limit` is 1–100.
 Search results include a durable local `resultId`, commit, immutable Tag/Snapshot,
 path, lines, and citation. Reads verify the original content hash and refuse
