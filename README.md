@@ -340,6 +340,11 @@ For practical search → read → change-planning examples, see the
 It follows three maintenance investigations through related source and tests,
 including the limitations of previews and optional reranking.
 
+The [agent workflow diagnostic](https://github.com/lambdadb/srcx/blob/develop/eval/AGENT-WORKFLOW-PILOT.md)
+compares fresh agent sessions with Git/local tools and optional or explicitly
+invoked srcx. It found no established efficiency advantage on the small public
+corpora and records the remaining workflow hypotheses.
+
 ## Query language and agent use
 
 Queries can use any language; the CLI does not translate them. For lexical search,

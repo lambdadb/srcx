@@ -1,5 +1,18 @@
 # Validation record
 
+## Agent workflow diagnostic
+
+[The agent workflow record](eval/AGENT-WORKFLOW-PILOT.md) covers eight fresh Codex
+sessions on three frozen questions against pinned public srcx/lambdadb-cli source.
+Optional srcx access was unused in all three paired development environments.
+A separate explicit-invocation confirmation used three searches and seven reads
+without cloning. Both it and the Git/local baseline answered correctly under
+assistant source review; srcx took 94.2 seconds versus 65.8, with more total model
+input but less uncached input. No token-cost, latency or accuracy win is claimed.
+Six successful reads and ten search previews matched pinned source/version data.
+The report separates preparation cost, guided invocation, evolving environment
+conditions and the audited wrapper reservation defect from product correctness.
+
 ## Bash grammar runtime compatibility
 
 Preparing the agent workflow pilot exposed a real import failure in the public

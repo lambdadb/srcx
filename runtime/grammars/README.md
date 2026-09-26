@@ -1,8 +1,10 @@
-# Bundled SQL grammar
+# Bundled grammars
+
+## SQL
 
 `tree-sitter-sql.wasm` is extracted unchanged from
 [`tree-sitter-wasm@2.0.2`](https://www.npmjs.com/package/tree-sitter-wasm/v/2.0.2),
-path `package/out/sql/tree-sitter-sql.wasm`. Only this grammar is bundled to avoid
+path `package/out/sql/tree-sitter-sql.wasm`. Only SQL and Bash are bundled to avoid
 adding the full 120 MB grammar distribution to every installation.
 
 - Binary SHA-256: `b77530893b1dd6d1d4814eacf34d25bcbe4a12ec9a25a8c45b320d447265f42b`
