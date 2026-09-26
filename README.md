@@ -264,6 +264,42 @@ For practical search → read → change-planning examples, see the
 It follows three maintenance investigations through related source and tests,
 including the limitations of previews and optional reranking.
 
+## Query language and agent use
+
+Queries can use any language; the CLI does not translate them. For lexical search,
+match the language of the source you want to find. Prefer English search terms for
+English code and comments, preserving identifiers, API names and error messages
+exactly. For Korean documentation, use Korean terms in a Collection registered
+with the `korean` analyzer. Analyzers tokenize text; they do not translate between
+languages. The `--language` search filter selects a programming language, not the
+natural language of the query.
+
+For example, an agent answering the Korean question “데이터베이스 연결을 닫을 때
+어떻게 되나요?” can search English source with:
+
+```sh
+srcx search --repo <collection> --version <commit> \
+  --query "What happens when closing a database connection?"
+```
+
+This is a query-writing example, not a measured retrieval result. Read the returned
+source before answering. Semantic and hybrid search can help across languages,
+but relevant implementation evidence is not guaranteed to appear in the first
+results. English wording is a starting point, not an input requirement or a
+promise of better ranking for every question.
+
+Agents can use the following search guidance:
+
+> Choose query wording for the target source language, independently of the user's
+> conversation language. For English code and comments, translate the user's
+> intent into a concise English query. Preserve supplied identifiers, API names,
+> paths and error messages exactly; do not invent implementation names or assume
+> the question's premise is correct. Use the original language when seeking
+> documentation written in that language. Read results at the pinned version and
+> check that they support the answer. If evidence is incomplete, inspect relevant
+> surrounding code or try another query based on observed source. Answer in the
+> user's language and cite the source; state when evidence is missing.
+
 ## Evaluate retrieval quality
 
 The internal [lexical chunking pilot](https://github.com/lambdadb/srcx/blob/develop/eval/README.md) compares syntax-aware and
