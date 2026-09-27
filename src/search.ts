@@ -6,6 +6,7 @@ import { stateRoot, type Settings } from "./settings.js";
 import type { Repository } from "./repository.js";
 import type { Published } from "./publish.js";
 import { PRESET, recordHash, type InventoryItem } from "./build.js";
+import { implementationSpan, type Implementation } from "./implementation.js";
 import {
   candidateLimit,
   qwenScores,
@@ -283,8 +284,18 @@ export async function readHandle(
     fullFile?: boolean;
     lines?: [number, number];
     exactChunk?: boolean;
+    implementation?: boolean;
   } = {},
 ) {
+  invariant(
+    !options.implementation ||
+      (h.chunkId &&
+        !options.fullFile &&
+        !options.lines &&
+        !options.context &&
+        !options.exactChunk),
+    "Implementation reads require a result handle without range overrides.",
+  );
   invariant(
     h.endpoint === s.endpoint && h.project === s.project,
     "Result belongs to another endpoint/project; restore that connection before reading.",
@@ -311,6 +322,7 @@ export async function readHandle(
       ? 0
       : lineAt(raw, raw.length - (raw.at(-1) === 10 ? 1 : 0));
   let chunkSource: string | undefined;
+  let implementation: Implementation | undefined;
   if (h.chunkId) {
     const d = await one(store, tag(v.tagName), h.chunkId);
     invariant(
@@ -333,6 +345,11 @@ export async function readHandle(
       "Invalid source range.",
     );
     chunkSource = raw.subarray(a, z).toString("utf8");
+    if (options.implementation)
+      implementation = await implementationSpan(file.sourceText, h.path, {
+        startByte: a,
+        endByte: z,
+      });
   }
   const context = options.context ?? 0;
   invariant(
@@ -341,6 +358,10 @@ export async function readHandle(
   );
   let start = options.lines?.[0] ?? h.startLine,
     end = options.lines?.[1] ?? h.endLine;
+  if (implementation?.status === "resolved") {
+    start = implementation.startLine!;
+    end = implementation.endLine!;
+  }
   if (options.fullFile) {
     start = 1;
     end = total;
@@ -380,6 +401,7 @@ export async function readHandle(
     startLine: start,
     endLine: end,
     contentHash: h.contentHash,
+    ...(implementation ? { implementation } : {}),
     sourceText,
     citation: `${h.repository.repoKey}@${v.commitOid}:${h.path}:${start}-${end}`,
   };

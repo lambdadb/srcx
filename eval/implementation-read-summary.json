@@ -1,0 +1,825 @@
+{
+  "kind": "offline-source-navigation",
+  "node": "v24.15.0",
+  "rawReportSha256": "f9d4d75e6392e60b6a215dbe9889b2190024c388e6cdb014d0234313509c5dd7",
+  "fingerprint": {
+    "scripts/implementation-eval.mjs": "8b23ccec50d164b505dd31c6a4097202574cd7265820b7bfe685d1c1cefde7f9",
+    "scripts/cli-eval-lib.mjs": "066901d82e05d020e4dfc48c9869bf60efd6c7ce4a0ef9289382f1295436b23b",
+    "scripts/retrieval-eval-lib.mjs": "b94ce9d0824760deedb33e527d49de07708ee6596e51d32654a108f8f57a1132",
+    "test/implementation-fixtures.mjs": "b072f02c45796b4ead270979f76e13b39ac1e3340780a946bb2188f3d86c0d0d",
+    "eval/clean-corpus-v1.json": "b36dd728fd541f2c2ce95c2400a45e73342a6fb4afa6c463fae38f61c1dacf9c",
+    "package-lock.json": "a9946c1932bd28cd7f35507cf20c33674c5aa24d3e5530a41680a9748baaca89",
+    "dist/build.js": "eac008c6302abcd64c994f9752d6bf7be71a3379a40f47efcc32d581c94eb439",
+    "dist/chunk.js": "6d1672115715f8377dc9d691058841cb69770f30e2db331a9e55662f53abe4fb",
+    "dist/cli.js": "5fdc5a57b594c71b3b1d0abed1e7104f53d3ae4059165d8c1a9caa46c60bda4c",
+    "dist/common.js": "ba09989d84fcfe8630192e4f57ef863dfaa1add61be493f8eaee89b2e2d973fd",
+    "dist/file-policy.js": "27783f4e30531bbd266a9ac266d25b68984ad030e4754e9d1c38ece006035c81",
+    "dist/git.js": "a8f2b7fce720a994337b5ac09ca6181b5fffa73f74813085d9401c28c1759508",
+    "dist/implementation.js": "5aec33cf62f02dae72c9c1114e5ea30d9fcf37e2b888ff11148bc21dee5ca48e",
+    "dist/publish.js": "f578fca3a68d25b889558862912797ce0f5fa1f7e9fdb7b9046c49831bb74b91",
+    "dist/releases.js": "03b0ba86753a06a638f06431fdb93d663094e75894290249012c110ca3930b4e",
+    "dist/remote.js": "5130612ea2db735b0e63c693c34f66c0582c03717f678aadabbf69b4e65e952c",
+    "dist/repository.js": "7dec4c5e87b5da26fb409862a7c0d46420beb9f495eb078b38690a3e6d95fbc6",
+    "dist/rerank.js": "ce881a5ef0659de389d7e7cebd454ca63e6927de6e1ab6b9b1fd63622cc15109",
+    "dist/search.js": "ecf9fc6d6720c1b5524cae0bc2d73d88a81c7abfbcaf3fe3c6b1144bf3808f54",
+    "dist/settings.js": "4dccf36a8f548ea6fadc87e411136bd1468d55bbe6d3814cd961ebd4de35ab80",
+    "dist/skills.js": "dd05f10fc492da912cb985b5ad8b53f697ffc021c1e143b8b6604df56d08eb83"
+  },
+  "replayInput": {
+    "reportHash": "3c064a4171a54ad8e919b672e47dabb98f4d3979fc83d30f6c7ae24379014a4e",
+    "recordsHash": "7c7169ce07f6ae02c32b89f90a8622bb34fb9b63f96c0d38b46a4b85f4512b85",
+    "version": {
+      "id": "version-611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60",
+      "kind": "manifest",
+      "role": "published",
+      "schemaVersion": 1,
+      "configHash": "4c7419c0c5484514fc24f7cc2a713d996704114f296e386c183b9f8f2ec1ffe1",
+      "repoId": "f4d36d37-58ae-4a5f-bf03-9530e4561a24",
+      "indexId": "5527a289-fa95-4c2c-bd54-f96c31e2ed31",
+      "commitOid": "611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60",
+      "commitTime": "2026-09-21T13:22:33-07:00",
+      "tagName": "ver-3676a38cec3e62a50a406161a1c2523da976e75d",
+      "snapshotId": "9144f002-0124-48bd-b22b-1c30e3b7119a",
+      "writer": "work-eb4f80f0-43ea-46d8-b970-ee9134ff0ed8",
+      "buildId": "4bc4543b14b863f2e091fa83d973cabbb2325966ea6914a8ac75444341de764b",
+      "recordsHash": "342c6d696611a8729bcffbb18ade40b3cc6810cfa35ea252391f878f825cb00f",
+      "inventoryHash": "7f712b797c14d6ae32655d8dcb980f9c734a01587907347dc13dc7e80a0fa1e8",
+      "attemptId": "eb4f80f0-43ea-46d8-b970-ee9134ff0ed8",
+      "counts": {
+        "files": 109,
+        "excluded": 21,
+        "chunks": 1325,
+        "tokens": 170548,
+        "managed": 1057,
+        "managedTokens": 159849,
+        "embedded": 0,
+        "skipped": 268
+      },
+      "validation": {
+        "inventory": true,
+        "content": true,
+        "query": true
+      }
+    }
+  },
+  "fresh": [
+    {
+      "id": "python-module:0",
+      "path": "decode.py",
+      "contentHash": "981487a0803cd4c5a48f4fabd233b8f5b0d49c2776ded206c3a7e86f3781a5fc",
+      "beforeSourceTokens": 14,
+      "afterSourceTokens": 24,
+      "status": "resolved"
+    },
+    {
+      "id": "python-module:1",
+      "path": "decode.py",
+      "contentHash": "981487a0803cd4c5a48f4fabd233b8f5b0d49c2776ded206c3a7e86f3781a5fc",
+      "beforeSourceTokens": 14,
+      "afterSourceTokens": 24,
+      "status": "resolved"
+    },
+    {
+      "id": "python-method:0",
+      "path": "cache.py",
+      "contentHash": "cad7627ca60571ffb8afcdca3a1e159c867fb6cd36834bd202cd230acab44c32",
+      "beforeSourceTokens": 21,
+      "afterSourceTokens": 17,
+      "status": "resolved"
+    },
+    {
+      "id": "python-method:1",
+      "path": "cache.py",
+      "contentHash": "cad7627ca60571ffb8afcdca3a1e159c867fb6cd36834bd202cd230acab44c32",
+      "beforeSourceTokens": 24,
+      "afterSourceTokens": 17,
+      "status": "resolved"
+    },
+    {
+      "id": "python-async:0",
+      "path": "loader.py",
+      "contentHash": "882d3debe2389decb1e153b9472fa1e6d0032cca7138800265bc5d6419a2464b",
+      "beforeSourceTokens": 26,
+      "afterSourceTokens": 16,
+      "status": "resolved"
+    },
+    {
+      "id": "python-async:1",
+      "path": "loader.py",
+      "contentHash": "882d3debe2389decb1e153b9472fa1e6d0032cca7138800265bc5d6419a2464b",
+      "beforeSourceTokens": 25,
+      "afterSourceTokens": 16,
+      "status": "resolved"
+    },
+    {
+      "id": "typescript-export:0",
+      "path": "encode.ts",
+      "contentHash": "7f8b8d82d65274948c3bb62e85c7c17563060c248608854bc1507973ebbc03cc",
+      "beforeSourceTokens": 9,
+      "afterSourceTokens": 16,
+      "status": "resolved"
+    },
+    {
+      "id": "typescript-export:1",
+      "path": "encode.ts",
+      "contentHash": "7f8b8d82d65274948c3bb62e85c7c17563060c248608854bc1507973ebbc03cc",
+      "beforeSourceTokens": 9,
+      "afterSourceTokens": 16,
+      "status": "resolved"
+    },
+    {
+      "id": "typescript-method:0",
+      "path": "format.ts",
+      "contentHash": "c2311780ef184c3f21a070edd24cf4db174d949e3128f908a9d4e4e2fe91b6be",
+      "beforeSourceTokens": 11,
+      "afterSourceTokens": 17,
+      "status": "resolved"
+    },
+    {
+      "id": "typescript-method:1",
+      "path": "format.ts",
+      "contentHash": "c2311780ef184c3f21a070edd24cf4db174d949e3128f908a9d4e4e2fe91b6be",
+      "beforeSourceTokens": 16,
+      "afterSourceTokens": 17,
+      "status": "resolved"
+    },
+    {
+      "id": "tsx-static:0",
+      "path": "view.tsx",
+      "contentHash": "a66d0b2e8b6f8c39c76d61cc2c4c80bc16ef0bd053de1d5fd864986e49e83160",
+      "beforeSourceTokens": 12,
+      "afterSourceTokens": 21,
+      "status": "resolved"
+    },
+    {
+      "id": "tsx-static:1",
+      "path": "view.tsx",
+      "contentHash": "a66d0b2e8b6f8c39c76d61cc2c4c80bc16ef0bd053de1d5fd864986e49e83160",
+      "beforeSourceTokens": 18,
+      "afterSourceTokens": 21,
+      "status": "resolved"
+    }
+  ],
+  "replay": [
+    {
+      "id": "missing-error-response-original",
+      "mode": "lexical",
+      "statuses": {
+        "unsupported": 3,
+        "not-linked": 2
+      },
+      "before": {
+        "coverage": 0.26054732041049034,
+        "complete": false,
+        "alternativeCoverages": [0.26054732041049034],
+        "reads": 5,
+        "searchTokens": 1864,
+        "readTokens": 3990,
+        "outputTokens": 5854,
+        "duplicateReadBytes": 35
+      },
+      "after": {
+        "coverage": 0.26054732041049034,
+        "complete": false,
+        "alternativeCoverages": [0.26054732041049034],
+        "reads": 5,
+        "searchTokens": 1864,
+        "readTokens": 4062,
+        "outputTokens": 5926,
+        "duplicateReadBytes": 35
+      }
+    },
+    {
+      "id": "missing-error-response-original",
+      "mode": "semantic",
+      "statuses": {
+        "not-linked": 5
+      },
+      "before": {
+        "coverage": 0.03677309007981756,
+        "complete": false,
+        "alternativeCoverages": [0.03677309007981756],
+        "reads": 5,
+        "searchTokens": 1790,
+        "readTokens": 1931,
+        "outputTokens": 3721,
+        "duplicateReadBytes": 0
+      },
+      "after": {
+        "coverage": 0.03677309007981756,
+        "complete": false,
+        "alternativeCoverages": [0.03677309007981756],
+        "reads": 5,
+        "searchTokens": 1790,
+        "readTokens": 2006,
+        "outputTokens": 3796,
+        "duplicateReadBytes": 0
+      }
+    },
+    {
+      "id": "missing-error-response-original",
+      "mode": "hybrid",
+      "statuses": {
+        "unsupported": 3,
+        "not-linked": 2
+      },
+      "before": {
+        "coverage": 0.03677309007981756,
+        "complete": false,
+        "alternativeCoverages": [0.03677309007981756],
+        "reads": 5,
+        "searchTokens": 1783,
+        "readTokens": 3900,
+        "outputTokens": 5683,
+        "duplicateReadBytes": 0
+      },
+      "after": {
+        "coverage": 0.03677309007981756,
+        "complete": false,
+        "alternativeCoverages": [0.03677309007981756],
+        "reads": 5,
+        "searchTokens": 1783,
+        "readTokens": 3972,
+        "outputTokens": 5755,
+        "duplicateReadBytes": 0
+      }
+    },
+    {
+      "id": "replaced-credentials-original",
+      "mode": "semantic",
+      "statuses": {
+        "not-linked": 4,
+        "unsupported": 1
+      },
+      "before": {
+        "coverage": 0,
+        "complete": false,
+        "alternativeCoverages": [0],
+        "reads": 5,
+        "searchTokens": 1882,
+        "readTokens": 3714,
+        "outputTokens": 5596,
+        "duplicateReadBytes": 0
+      },
+      "after": {
+        "coverage": 0,
+        "complete": false,
+        "alternativeCoverages": [0],
+        "reads": 5,
+        "searchTokens": 1882,
+        "readTokens": 3788,
+        "outputTokens": 5670,
+        "duplicateReadBytes": 0
+      }
+    },
+    {
+      "id": "replaced-credentials-original",
+      "mode": "hybrid",
+      "statuses": {
+        "unsupported": 3,
+        "not-linked": 2
+      },
+      "before": {
+        "coverage": 0,
+        "complete": false,
+        "alternativeCoverages": [0],
+        "reads": 5,
+        "searchTokens": 1834,
+        "readTokens": 4845,
+        "outputTokens": 6679,
+        "duplicateReadBytes": 0
+      },
+      "after": {
+        "coverage": 0,
+        "complete": false,
+        "alternativeCoverages": [0],
+        "reads": 5,
+        "searchTokens": 1834,
+        "readTokens": 4917,
+        "outputTokens": 6751,
+        "duplicateReadBytes": 0
+      }
+    },
+    {
+      "id": "replaced-credentials-original",
+      "mode": "lexical",
+      "statuses": {
+        "unsupported": 4,
+        "not-linked": 1
+      },
+      "before": {
+        "coverage": 0,
+        "complete": false,
+        "alternativeCoverages": [0],
+        "reads": 5,
+        "searchTokens": 1882,
+        "readTokens": 5395,
+        "outputTokens": 7277,
+        "duplicateReadBytes": 0
+      },
+      "after": {
+        "coverage": 0,
+        "complete": false,
+        "alternativeCoverages": [0],
+        "reads": 5,
+        "searchTokens": 1882,
+        "readTokens": 5466,
+        "outputTokens": 7348,
+        "duplicateReadBytes": 0
+      }
+    },
+    {
+      "id": "stream-replay-ko-original",
+      "mode": "hybrid",
+      "statuses": {
+        "not-linked": 3,
+        "resolved": 2
+      },
+      "before": {
+        "coverage": 0.13752071095044435,
+        "complete": false,
+        "alternativeCoverages": [0.13752071095044435],
+        "reads": 5,
+        "searchTokens": 1730,
+        "readTokens": 1871,
+        "outputTokens": 3601,
+        "duplicateReadBytes": 0
+      },
+      "after": {
+        "coverage": 0.34914896821810515,
+        "complete": false,
+        "alternativeCoverages": [0.34914896821810515],
+        "reads": 5,
+        "searchTokens": 1730,
+        "readTokens": 2757,
+        "outputTokens": 4487,
+        "duplicateReadBytes": 1289
+      }
+    },
+    {
+      "id": "stream-replay-ko-original",
+      "mode": "lexical",
+      "statuses": {},
+      "before": {
+        "coverage": 0,
+        "complete": false,
+        "alternativeCoverages": [0],
+        "reads": 0,
+        "searchTokens": 1,
+        "readTokens": 0,
+        "outputTokens": 1,
+        "duplicateReadBytes": 0
+      },
+      "after": {
+        "coverage": 0,
+        "complete": false,
+        "alternativeCoverages": [0],
+        "reads": 0,
+        "searchTokens": 1,
+        "readTokens": 0,
+        "outputTokens": 1,
+        "duplicateReadBytes": 0
+      }
+    },
+    {
+      "id": "stream-replay-ko-original",
+      "mode": "semantic",
+      "statuses": {
+        "not-linked": 3,
+        "resolved": 2
+      },
+      "before": {
+        "coverage": 0.13752071095044435,
+        "complete": false,
+        "alternativeCoverages": [0.13752071095044435],
+        "reads": 5,
+        "searchTokens": 1727,
+        "readTokens": 1871,
+        "outputTokens": 3598,
+        "duplicateReadBytes": 0
+      },
+      "after": {
+        "coverage": 0.34914896821810515,
+        "complete": false,
+        "alternativeCoverages": [0.34914896821810515],
+        "reads": 5,
+        "searchTokens": 1727,
+        "readTokens": 2757,
+        "outputTokens": 4484,
+        "duplicateReadBytes": 1289
+      }
+    },
+    {
+      "id": "merge-setting-control-original",
+      "mode": "lexical",
+      "statuses": {
+        "not-linked": 4,
+        "unsupported": 1
+      },
+      "before": {
+        "coverage": 0.37247353224254093,
+        "complete": false,
+        "alternativeCoverages": [0.37247353224254093],
+        "reads": 5,
+        "searchTokens": 1991,
+        "readTokens": 4691,
+        "outputTokens": 6682,
+        "duplicateReadBytes": 0
+      },
+      "after": {
+        "coverage": 0.37247353224254093,
+        "complete": false,
+        "alternativeCoverages": [0.37247353224254093],
+        "reads": 5,
+        "searchTokens": 1991,
+        "readTokens": 4765,
+        "outputTokens": 6756,
+        "duplicateReadBytes": 0
+      }
+    },
+    {
+      "id": "merge-setting-control-original",
+      "mode": "semantic",
+      "statuses": {
+        "not-linked": 5
+      },
+      "before": {
+        "coverage": 0.5075393006095604,
+        "complete": false,
+        "alternativeCoverages": [0.5075393006095604],
+        "reads": 5,
+        "searchTokens": 1931,
+        "readTokens": 2711,
+        "outputTokens": 4642,
+        "duplicateReadBytes": 0
+      },
+      "after": {
+        "coverage": 0.5075393006095604,
+        "complete": false,
+        "alternativeCoverages": [0.5075393006095604],
+        "reads": 5,
+        "searchTokens": 1931,
+        "readTokens": 2786,
+        "outputTokens": 4717,
+        "duplicateReadBytes": 0
+      }
+    },
+    {
+      "id": "merge-setting-control-original",
+      "mode": "hybrid",
+      "statuses": {
+        "not-linked": 4,
+        "unsupported": 1
+      },
+      "before": {
+        "coverage": 0.37247353224254093,
+        "complete": false,
+        "alternativeCoverages": [0.37247353224254093],
+        "reads": 5,
+        "searchTokens": 1970,
+        "readTokens": 4027,
+        "outputTokens": 5997,
+        "duplicateReadBytes": 0
+      },
+      "after": {
+        "coverage": 0.37247353224254093,
+        "complete": false,
+        "alternativeCoverages": [0.37247353224254093],
+        "reads": 5,
+        "searchTokens": 1970,
+        "readTokens": 4101,
+        "outputTokens": 6071,
+        "duplicateReadBytes": 0
+      }
+    },
+    {
+      "id": "missing-error-response-agent-rewrite",
+      "mode": "semantic",
+      "statuses": {
+        "not-linked": 5
+      },
+      "before": {
+        "coverage": 0.4546750285062714,
+        "complete": false,
+        "alternativeCoverages": [0.4546750285062714],
+        "reads": 5,
+        "searchTokens": 1774,
+        "readTokens": 1733,
+        "outputTokens": 3507,
+        "duplicateReadBytes": 63
+      },
+      "after": {
+        "coverage": 0.4546750285062714,
+        "complete": false,
+        "alternativeCoverages": [0.4546750285062714],
+        "reads": 5,
+        "searchTokens": 1774,
+        "readTokens": 1808,
+        "outputTokens": 3582,
+        "duplicateReadBytes": 63
+      }
+    },
+    {
+      "id": "missing-error-response-agent-rewrite",
+      "mode": "hybrid",
+      "statuses": {
+        "not-linked": 5
+      },
+      "before": {
+        "coverage": 0.4546750285062714,
+        "complete": false,
+        "alternativeCoverages": [0.4546750285062714],
+        "reads": 5,
+        "searchTokens": 1861,
+        "readTokens": 1890,
+        "outputTokens": 3751,
+        "duplicateReadBytes": 49
+      },
+      "after": {
+        "coverage": 0.4546750285062714,
+        "complete": false,
+        "alternativeCoverages": [0.4546750285062714],
+        "reads": 5,
+        "searchTokens": 1861,
+        "readTokens": 1965,
+        "outputTokens": 3826,
+        "duplicateReadBytes": 49
+      }
+    },
+    {
+      "id": "missing-error-response-agent-rewrite",
+      "mode": "lexical",
+      "statuses": {
+        "not-linked": 5
+      },
+      "before": {
+        "coverage": 0.4218928164196123,
+        "complete": false,
+        "alternativeCoverages": [0.4218928164196123],
+        "reads": 5,
+        "searchTokens": 1973,
+        "readTokens": 2149,
+        "outputTokens": 4122,
+        "duplicateReadBytes": 35
+      },
+      "after": {
+        "coverage": 0.4218928164196123,
+        "complete": false,
+        "alternativeCoverages": [0.4218928164196123],
+        "reads": 5,
+        "searchTokens": 1973,
+        "readTokens": 2224,
+        "outputTokens": 4197,
+        "duplicateReadBytes": 35
+      }
+    },
+    {
+      "id": "replaced-credentials-agent-rewrite",
+      "mode": "hybrid",
+      "statuses": {
+        "not-linked": 4,
+        "unsupported": 1
+      },
+      "before": {
+        "coverage": 0,
+        "complete": false,
+        "alternativeCoverages": [0],
+        "reads": 5,
+        "searchTokens": 1821,
+        "readTokens": 3326,
+        "outputTokens": 5147,
+        "duplicateReadBytes": 0
+      },
+      "after": {
+        "coverage": 0,
+        "complete": false,
+        "alternativeCoverages": [0],
+        "reads": 5,
+        "searchTokens": 1821,
+        "readTokens": 3400,
+        "outputTokens": 5221,
+        "duplicateReadBytes": 0
+      }
+    },
+    {
+      "id": "replaced-credentials-agent-rewrite",
+      "mode": "lexical",
+      "statuses": {
+        "unsupported": 3,
+        "not-linked": 2
+      },
+      "before": {
+        "coverage": 0,
+        "complete": false,
+        "alternativeCoverages": [0],
+        "reads": 5,
+        "searchTokens": 2002,
+        "readTokens": 4788,
+        "outputTokens": 6790,
+        "duplicateReadBytes": 0
+      },
+      "after": {
+        "coverage": 0,
+        "complete": false,
+        "alternativeCoverages": [0],
+        "reads": 5,
+        "searchTokens": 2002,
+        "readTokens": 4860,
+        "outputTokens": 6862,
+        "duplicateReadBytes": 0
+      }
+    },
+    {
+      "id": "replaced-credentials-agent-rewrite",
+      "mode": "semantic",
+      "statuses": {
+        "not-linked": 5
+      },
+      "before": {
+        "coverage": 0.018213930897450048,
+        "complete": false,
+        "alternativeCoverages": [0.018213930897450048],
+        "reads": 5,
+        "searchTokens": 1718,
+        "readTokens": 2083,
+        "outputTokens": 3801,
+        "duplicateReadBytes": 0
+      },
+      "after": {
+        "coverage": 0.018213930897450048,
+        "complete": false,
+        "alternativeCoverages": [0.018213930897450048],
+        "reads": 5,
+        "searchTokens": 1718,
+        "readTokens": 2158,
+        "outputTokens": 3876,
+        "duplicateReadBytes": 0
+      }
+    },
+    {
+      "id": "stream-replay-ko-agent-rewrite",
+      "mode": "lexical",
+      "statuses": {
+        "not-linked": 3,
+        "resolved": 2
+      },
+      "before": {
+        "coverage": 0.3523120951950595,
+        "complete": false,
+        "alternativeCoverages": [0.3523120951950595],
+        "reads": 5,
+        "searchTokens": 1602,
+        "readTokens": 2046,
+        "outputTokens": 3648,
+        "duplicateReadBytes": 36
+      },
+      "after": {
+        "coverage": 0.3523120951950595,
+        "complete": false,
+        "alternativeCoverages": [0.3523120951950595],
+        "reads": 5,
+        "searchTokens": 1602,
+        "readTokens": 3200,
+        "outputTokens": 4802,
+        "duplicateReadBytes": 5308
+      }
+    },
+    {
+      "id": "stream-replay-ko-agent-rewrite",
+      "mode": "semantic",
+      "statuses": {
+        "not-linked": 3,
+        "resolved": 2
+      },
+      "before": {
+        "coverage": 0,
+        "complete": false,
+        "alternativeCoverages": [0],
+        "reads": 5,
+        "searchTokens": 1352,
+        "readTokens": 1357,
+        "outputTokens": 2709,
+        "duplicateReadBytes": 76
+      },
+      "after": {
+        "coverage": 0.24310890194306373,
+        "complete": false,
+        "alternativeCoverages": [0.24310890194306373],
+        "reads": 5,
+        "searchTokens": 1352,
+        "readTokens": 2511,
+        "outputTokens": 3863,
+        "duplicateReadBytes": 2716
+      }
+    },
+    {
+      "id": "stream-replay-ko-agent-rewrite",
+      "mode": "hybrid",
+      "statuses": {
+        "not-linked": 3,
+        "resolved": 2
+      },
+      "before": {
+        "coverage": 0.10694381683988552,
+        "complete": false,
+        "alternativeCoverages": [0.10694381683988552],
+        "reads": 5,
+        "searchTokens": 1488,
+        "readTokens": 1512,
+        "outputTokens": 3000,
+        "duplicateReadBytes": 76
+      },
+      "after": {
+        "coverage": 0.35005271878294925,
+        "complete": false,
+        "alternativeCoverages": [0.35005271878294925],
+        "reads": 5,
+        "searchTokens": 1488,
+        "readTokens": 2666,
+        "outputTokens": 4154,
+        "duplicateReadBytes": 2716
+      }
+    },
+    {
+      "id": "merge-setting-control-agent-rewrite",
+      "mode": "semantic",
+      "statuses": {
+        "not-linked": 5
+      },
+      "before": {
+        "coverage": 0.5075393006095604,
+        "complete": false,
+        "alternativeCoverages": [0.5075393006095604],
+        "reads": 5,
+        "searchTokens": 1886,
+        "readTokens": 2176,
+        "outputTokens": 4062,
+        "duplicateReadBytes": 0
+      },
+      "after": {
+        "coverage": 0.5075393006095604,
+        "complete": false,
+        "alternativeCoverages": [0.5075393006095604],
+        "reads": 5,
+        "searchTokens": 1886,
+        "readTokens": 2251,
+        "outputTokens": 4137,
+        "duplicateReadBytes": 0
+      }
+    },
+    {
+      "id": "merge-setting-control-agent-rewrite",
+      "mode": "hybrid",
+      "statuses": {
+        "not-linked": 5
+      },
+      "before": {
+        "coverage": 0.6878408726339429,
+        "complete": false,
+        "alternativeCoverages": [0.6878408726339429],
+        "reads": 5,
+        "searchTokens": 1873,
+        "readTokens": 2406,
+        "outputTokens": 4279,
+        "duplicateReadBytes": 0
+      },
+      "after": {
+        "coverage": 0.6878408726339429,
+        "complete": false,
+        "alternativeCoverages": [0.6878408726339429],
+        "reads": 5,
+        "searchTokens": 1873,
+        "readTokens": 2481,
+        "outputTokens": 4354,
+        "duplicateReadBytes": 0
+      }
+    },
+    {
+      "id": "merge-setting-control-agent-rewrite",
+      "mode": "lexical",
+      "statuses": {
+        "not-linked": 5
+      },
+      "before": {
+        "coverage": 0.5527751042669233,
+        "complete": false,
+        "alternativeCoverages": [0.5527751042669233],
+        "reads": 5,
+        "searchTokens": 1930,
+        "readTokens": 3323,
+        "outputTokens": 5253,
+        "duplicateReadBytes": 17
+      },
+      "after": {
+        "coverage": 0.5527751042669233,
+        "complete": false,
+        "alternativeCoverages": [0.5527751042669233],
+        "reads": 5,
+        "searchTokens": 1930,
+        "readTokens": 3398,
+        "outputTokens": 5328,
+        "duplicateReadBytes": 17
+      }
+    }
+  ]
+}

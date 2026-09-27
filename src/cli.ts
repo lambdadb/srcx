@@ -463,7 +463,15 @@ cli
   .option("--lines <start:end>")
   .option("--context <lines>", "Expand an evidence span", integer, 0)
   .option("--full-file")
+  .option(
+    "--implementation",
+    "Read a linked Python/TypeScript overload implementation",
+  )
   .action(async (o) => {
+    invariant(
+      !o.implementation || (o.result && !o.fullFile && !o.lines && !o.context),
+      "--implementation requires --result and cannot be combined with range options.",
+    );
     invariant(
       !(o.fullFile && (o.lines || o.context)),
       "--full-file cannot be combined with --lines or --context.",
@@ -510,6 +518,7 @@ cli
           context: o.context,
           fullFile: o.fullFile || (!o.result && !o.lines),
           lines,
+          implementation: o.implementation,
         },
       ),
     );

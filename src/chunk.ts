@@ -654,3 +654,23 @@ export async function chunk(
   invariant(covered === raw.length, "Incomplete source coverage.");
   return { spans, parseStatus: status, language: lang };
 }
+
+/** Inspect a stored source without changing the indexing/chunking policy. */
+export async function withSyntaxTree<T>(
+  source: string,
+  lang: string,
+  inspect: (root: Node) => T,
+): Promise<T> {
+  const grammar = await language(lang);
+  const parser = new Parser();
+  let tree: ReturnType<Parser["parse"]> = null;
+  try {
+    parser.setLanguage(grammar);
+    tree = parser.parse(source);
+    invariant(tree, "Parser returned no tree.");
+    return inspect(tree.rootNode);
+  } finally {
+    tree?.delete();
+    parser.delete();
+  }
+}

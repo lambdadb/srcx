@@ -549,6 +549,7 @@ srcx search --repo <name> --version develop --query retry
 srcx resolve --repo <name> --ref refs/heads/develop
 srcx search --repo <name> --version <full-commit-A> --query retry
 srcx read --result <result-id> --context 20
+srcx read --result <result-id> --implementation
 srcx read --result <result-id> --full-file
 srcx read --repo <name> --version <full-commit-A> \
   --path src/example.ts --lines 10:30
@@ -560,6 +561,23 @@ srcx read --result <result-id> --full-file
 srcx git sync-tags --repo <name>
 srcx resolve --repo <name> --ref v1.0.0
 ```
+
+`read --implementation` follows a contiguous Python or TypeScript/TSX overload
+group to its unique implementation in the same file and AST scope. It reads the
+stored source at the result's immutable Tag; no reindexing or embedding is needed.
+Python supports direct `from typing`/`typing_extensions import overload` imports,
+including aliases used only as decorators. Stub files, ambiguous/interrupted
+groups, unrecognized decorators and parse failures retain the original span.
+Other languages and cross-file/type-based dispatch are not resolved. This is
+syntax navigation, not proof of runtime binding or behavior.
+
+The returned `implementation.status` is `resolved`, `not-linked`, `unsupported`,
+`parse-error` or `too-large`. Resolved reads return the body's actual lines and
+citation. Multiple overload hits may return the same body; the option does not
+deduplicate results or skip reads. Bodies exceeding 1,500 source tokens retain the
+original span with `too-large`; no silent truncation is applied. Ordinary reads
+and search rankings are unchanged. The option requires `--result` and cannot be
+combined with `--context`, `--lines` or `--full-file`.
 
 `doctor` checks authentication and Collection read access, not write permission
 or indexing/query readiness. `configure --api-key-env NAME` selects another
