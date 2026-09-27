@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Document a frozen nine-session comparison of semantic retrieval against adaptive
+  local and lexical search, including cleaned corpora, equal answer coverage,
+  measured overhead and the absence of a demonstrated semantic task advantage.
+
 - Look up explicit generated Collection names directly instead of discovering
   every repository. Exact Collection names take precedence over aliases; only
   missing Collections fall back to discovery. Preserve descriptor, schema and
