@@ -90,6 +90,11 @@ installed-module navigation assertions, typecheck, version and formatting checks
 passed. The bundled skill passes its metadata validator. Ordinary indexing and
 search tests continue to pass; no connected validation was needed for this change.
 
+The subsequent namespace-merge review fix passes 162 tests, including an exported
+TypeScript function/namespace regression that fails on the original PR head.
+The evaluation figures and machine-readable runtime fingerprints above describe
+`7578f42`, before that fix; no retrieval or navigation evaluation was rerun.
+
 ## Next gate
 
 Review this bounded navigation change first. Then use fresh behavior questions

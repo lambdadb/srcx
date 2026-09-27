@@ -48,6 +48,38 @@ for (const c of implementationCases) {
   });
 }
 
+for (const exported of [false, true]) {
+  test(`TypeScript namespace augmentation preserves overload linking (exported=${exported})`, async () => {
+    const prefix = exported ? "export " : "";
+    const source = `${prefix}function parse(value: string): string;
+${prefix}function parse(value: number): string;
+${prefix}function parse(value: string | number): string {
+  return String(value);
+}
+${prefix}namespace parse {
+  export const format = "text";
+}
+`;
+    const { spans, parseStatus } = await chunk(source, "parse.ts");
+    assert.equal(parseStatus, "parsed");
+    const declarations = spans.filter((s) => s.symbol === "parse").slice(0, 2);
+    assert.equal(declarations.length, 2);
+    for (const span of declarations) {
+      const result = await implementationSpan(source, "parse.ts", span);
+      assert.deepEqual(result, {
+        status: "resolved",
+        startLine: 3,
+        endLine: 5,
+        symbol: "parse",
+      });
+      assert.equal(
+        lines(source, result),
+        `${prefix}function parse(value: string | number): string {\n  return String(value);\n}\n`,
+      );
+    }
+  });
+}
+
 const python = implementationCases[0].source;
 const ts = implementationCases[3].source;
 for (const [name, path, source] of [
@@ -137,6 +169,21 @@ for (const [name, path, source] of [
     "duplicate TS body",
     "x.ts",
     ts + "function encode(value: unknown) { return null; }",
+  ],
+  [
+    "namespace augmentation does not hide duplicate TS bodies",
+    "x.ts",
+    ts +
+      'export namespace encode { export const format = "text"; }\n' +
+      'export function encode(value: unknown) { return "other"; }\n',
+  ],
+  [
+    "namespace interrupts the overload group",
+    "x.ts",
+    ts.replace(
+      "export function encode(value: unknown)",
+      'export namespace encode { export const format = "text"; }\nexport function encode(value: unknown)',
+    ),
   ],
   [
     "C declarations unsupported",

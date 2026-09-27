@@ -205,6 +205,9 @@ export async function implementationSpan(
         const matches = siblings.filter((n) => {
           const node =
             n.childForFieldName(python ? "definition" : "declaration") ?? n;
+          // TypeScript namespaces augment a function without adding another body.
+          // Keep other same-name declarations in the ambiguity check.
+          if (!python && node.type === "internal_module") return false;
           return node.childForFieldName("name")?.text === d.name;
         });
         if (matches.length !== next - first + 1) continue;

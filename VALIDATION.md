@@ -15,6 +15,13 @@ bundled skill validation. Source/Tag integrity, conservative refusal, source-tok
 limits, accurate citations and unchanged ordinary reads are covered. No service
 writes, embeddings, new searches or agent sessions were performed.
 
+The namespace-merge review follow-up passes all 162 tests. TypeScript namespace
+augmentation no longer counts as a second function implementation; exported and
+non-exported merges link to the exact body, while duplicate bodies and interrupted
+overload groups still reject linking. The exported-merge regression fails on the
+original PR head. The offline evaluation above retains its original runtime and
+results; it was not rerun for this TypeScript-only fix.
+
 ## File selection and embedding policy
 
 Offline validation on Node 24.15.0 passed 128 tests and seven installed-package
