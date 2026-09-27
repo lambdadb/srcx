@@ -1,8 +1,9 @@
 # Requests vector candidate diagnostic: results
 
-Completed September 27, 2026, using diagnostic runtime `2d1b0b6`, Node 24.15.0,
-and the [committed protocol](VECTOR-DIAGNOSTIC.md). No source reindexing or agent
-rerun was performed. This query was already exposed by the earlier investigation.
+The initial API diagnostic completed September 27, 2026, using runtime `2d1b0b6`,
+Node 24.15.0 and the [committed protocol](VECTOR-DIAGNOSTIC.md), without remote
+reindexing or an agent rerun. The backend replay and local rebuild controls below
+followed on the same day. This query was already exposed by the earlier investigation.
 
 ## Finding
 
@@ -78,17 +79,81 @@ query-only Collection was deleted and its absence verified. Raw vectors, payload
 verification, exact full ranks, requests/responses, runtime hashes and usage ledger
 remain in the ignored local diagnostic directory.
 
+## Backend follow-up: quantized graph traversal
+
+The running development query-executor image was verified against ECR as
+`dev-v3-a163d66`, digest
+`sha256:592a72bcbf1511722f3cd9dfaa18cc5b5af941ce49aa2c62cc2e03e499088b9f`.
+That revision uses Lucene 10.4 HNSW with one-bit document / four-bit query
+quantization for this 1,536-dimensional field. The effective candidate/rescore
+budget is 45 for `k=5` on the single executor node. The experimental custom
+vector engine on another backend branch is not the deployed path.
+
+The catalog Snapshot identifies the original S3 manifest. Its 24 referenced
+object versions were downloaded and compared byte-for-byte with the local copy;
+Lucene's integrity check passed. The index contains one segment, 2,247 documents
+and 1,864 vectors. Local replay uses the earlier independently generated query
+vector, not a newly captured internal server vector.
+
+| Control on the original index                           | Exact top-five coverage | Observation                                              |
+| ------------------------------------------------------- | ----------------------- | -------------------------------------------------------- |
+| Exhaustive original-vector scoring                      | 5/5                     | Same five implementation methods                         |
+| Exhaustive quantized scoring                            | 5/5                     | Same five methods, in a different order                  |
+| HNSW, no language filter, 45 candidates                 | 0/5                     | Same five SVG IDs as the service after exact rescoring   |
+| Same HNSW query with patience enabled                   | 0/5                     | Same result; disabling patience alone does not repair it |
+| Same graph and budget, original-vector traversal scores | 5/5                     | All five target nodes are scored                         |
+
+The graph is connected from its entry node: all 1,864 vector nodes are reachable
+at level zero. Instrumented quantized traversal scores 348 distinct nodes and
+none of the five targets; original-vector traversal scores 330 distinct nodes
+and all five. These tracing controls use Lucene's default scalar bulk-scoring
+wrapper. The ordinary Lucene query also reproduces the service's returned IDs,
+so LambdaDB's custom SIMD scorer is not required to reproduce this failure.
+
+This isolates the failure in this case to the traversal decisions made using
+quantized scores on the existing graph. It is not a final score conversion or
+reranking error, and the exact leaders are not lost from the global quantized
+top five. The trace does not establish a particular Lucene implementation defect
+or a general safe replacement for the current search policy.
+
+The Python filter changes execution as well as eligibility. Without patience,
+the filtered ANN search visits 802 nodes and finds the targets. With patience,
+it returns only two candidates after 367 visits and Lucene invokes its exact
+fallback; the final result still contains all five targets. Thus the successful
+filtered request alone would not prove that both arms took equivalent ANN paths.
+
+## Local corpus control
+
+Two local indexes were rebuilt from the stored vectors, preserving vector order,
+model, query, cosine metric, quantization and the 45-candidate search budget.
+Both use the current backend HNSW construction settings (`maxConn=64`,
+`beamWidth=250`); the original graph also records `maxConn=64`. Each rebuild
+has one segment and retains only the vector documents and fields needed for this
+control. No embedding request or remote write was made.
+
+| Rebuilt corpus                | Vectors |               Exact top-five coverage |
+| ----------------------------- | ------: | ------------------------------------: |
+| All original vector documents |   1,864 |              0/5; same SVG result IDs |
+| Excluding `.svg` paths        |   1,081 | 5/5; same five implementation methods |
+
+Removing the 783 SVG vectors changes the quantizer and graph together; this is a
+corpus control, not an isolated test of either construction component. It shows
+that this known failure disappears locally after the relevant corpus cleanup.
+It is not yet a live validation of the full merged file policy, a multi-query
+quality result, or an agent-workflow benefit. No model, reranker, backend default
+or production code was changed to fit this one query.
+
 ## Next action
 
-Use this single reproducible case for backend candidate-selection diagnosis before
-adding a reranker, changing the embedding model, or spending on another agent run.
-Inspect the deployed search execution path, effective candidate budget, filter
-planning and visited vector partitions/leaves; capture the actual server query
-vector if available and compare its exhaustive neighbors. The source cause within
-that path is not yet established. The current evidence does not identify a specific
-ANN algorithm, configuration or deployment revision as the cause.
+Build a fresh live corpus with the merged file policy and evaluate the frozen
+query set with lexical, semantic and hybrid retrieval. Check exact-neighbor
+coverage on any remaining semantic failures before another model/reranker
+experiment. Then measure answer evidence, tokens and latency on the same agent
+tasks. Retain this original case for backend regression work, but do not increase
+global search budgets or add a new exact-search threshold based on this case
+alone.
 
-The merged file-policy improvement independently prevents new image indexing.
-It does not establish that the candidate omission is fixed, and removing the SVG
-from a fresh index would change the case being diagnosed. This diagnostic also
-does not establish a general semantic-search or agent-workflow advantage.
+The follow-up used read-only AWS inspection and local replay/rebuilds. The source
+Collection, Tag and Snapshot remain unchanged. Backend receipts, pinned index
+files, standalone Java probes, score ranks and logs remain in the ignored local
+`backend-diagnostic` evidence directory beside the original `vector-diagnostic`.
