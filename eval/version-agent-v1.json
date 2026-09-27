@@ -1,0 +1,199 @@
+{
+  "format": 1,
+  "labelStatus": "assistant-authored-not-independent",
+  "productCommit": "642169ee7abdc8fc71508418f43a52ca863dce5f",
+  "sources": {
+    "cli": {
+      "repository": "github.com/lambdadb/lambdadb-cli",
+      "release": "v0.1.0",
+      "commit": "c8d389f3264d641ae6eafc7737fedd5ea046ddf1"
+    },
+    "sdk-old": {
+      "repository": "github.com/lambdadb/lambdadb-typescript-client",
+      "release": "v0.4.3",
+      "commit": "a6050ce1ca76ba1201ffee09133d1b96adcfa42b"
+    },
+    "sdk-new": {
+      "repository": "github.com/lambdadb/lambdadb-typescript-client",
+      "release": "v0.5.1",
+      "commit": "856abf48a014185de54ccc541c2f6ee3871133ee"
+    }
+  },
+  "tasks": [
+    {
+      "id": "import-outcome",
+      "question": "CLI v0.1.0 imports three one-document batches. The first is accepted; the second returns HTTP 503, or HTTP 400 instead. What does the CLI report and exit with in each case, does it send the third batch or retry the second, and does acceptance establish search visibility? Trace why its retry behavior may differ from calling SDK v0.5.1 upsert directly. Explain a safe recovery action supported by the code and existing tests.",
+      "facts": [
+        "HTTP 503 gives unknown with accepted=1,unknown=1,notAttempted=1 and exit 5; no third batch.",
+        "HTTP 400 gives partial with accepted=1,failed=1,notAttempted=1 and exit 4.",
+        "CLI explicitly disables mutation retries; SDK generated upsert defaults to backoff for 429/5XX and connection errors, overridable per request.",
+        "Accepted/searchable:not_verified is not indexing/search readiness.",
+        "Inspect target and batch outcomes before retry; no automatic resume. Cite existing failure-case tests without claiming execution."
+      ],
+      "references": [
+        {
+          "target": "cli",
+          "path": "src/import-workflow.ts",
+          "startLine": 33,
+          "endLine": 73,
+          "sourceSha256": "309845a5c1a2f29a6cc688cfa174d88e7dda76a62dc71ccff284b23aee27ef3a",
+          "spanSha256": "0a34a61492e70885919f23de811ba6d974ac13ff96603502df770bfbab601d35"
+        },
+        {
+          "target": "cli",
+          "path": "src/errors.ts",
+          "startLine": 7,
+          "endLine": 45,
+          "sourceSha256": "fcec3794dcfe278a2593514e65fc17457ee4bcb8819f08cf85d3dd32c471e135",
+          "spanSha256": "6ba18959c46d0502596b5f21dd61b87482024645449c2fc78f0333c432c3ae60"
+        },
+        {
+          "target": "cli",
+          "path": "src/cli.ts",
+          "startLine": 137,
+          "endLine": 147,
+          "sourceSha256": "c3ce2f76130c0c00420835c5cce98f76a4950834625486e8129ad29384eb6186",
+          "spanSha256": "afaf226e6f382d375be33503252911e3abf11cf306d97fb784cd7a0b823959f9"
+        },
+        {
+          "target": "cli",
+          "path": "test/cli.test.mjs",
+          "startLine": 149,
+          "endLine": 174,
+          "sourceSha256": "b8754d4011011a23355e52cb5d4bd38cdc7f34bf52af0faaef04fe0e5ece0312",
+          "spanSha256": "10a633eb012f5fff617713922912c0ae9e408112431448f8c4e074f7ae290de6"
+        },
+        {
+          "target": "sdk-new",
+          "path": "src/funcs/collectionsDocsUpsert.ts",
+          "startLine": 132,
+          "endLine": 148,
+          "sourceSha256": "8e24b21cc8dba5961f431fc1f68cf734e86e17e22d8cb10a880f7c47c4d67474",
+          "spanSha256": "b427a4171c0ce1d54263e6ad9185fd009d3e7b0565b1e8384beec006d73662b7"
+        }
+      ]
+    },
+    {
+      "id": "offloaded-download",
+      "question": "After upgrading the TypeScript SDK from v0.4.3 to v0.5.1, a query whose results are offloaded to a signed URL now accepts a top-level JSON array. Explain the old versus new behavior, the supported legacy payload, and whether API authentication/custom headers are forwarded to the download. For CLI v0.1.0, does its command deadline cover that download? Support the distinctions with implementation and existing tests; distinguish source evidence from server guarantees.",
+      "facts": [
+        "v0.4.3 rejects top-level arrays; v0.5.1 returns arrays and preserves legacy {docs:[...]} support.",
+        "Old helper uses global fetch; new helper uses separate transferClient and forwards cancellation signal.",
+        "New download request is GET to signed URL without copying API key, authorization or API-only custom headers; API transport retains its own headers.",
+        "CLI binds one command AbortController to both API and transfer fetchers so deadline includes offloaded download.",
+        "Cite SDK payload/header tests and CLI transfer deadline test; client code/mocks do not prove live service behavior."
+      ],
+      "references": [
+        {
+          "target": "sdk-old",
+          "path": "src/client.ts",
+          "startLine": 87,
+          "endLine": 132,
+          "sourceSha256": "56005d4388ac743412bc89758cc7ab9f15d830cf9f56c04a428ed8bd914e2d67",
+          "spanSha256": "f2bb77b8bbf51c70090b52d2487193a4b3ca1be3a550a802d5e0226a3d7e97b1"
+        },
+        {
+          "target": "sdk-new",
+          "path": "src/client.ts",
+          "startLine": 170,
+          "endLine": 229,
+          "sourceSha256": "d776511de5ee7c31ed1b4433675c6c0970db94e8f5bc6e19315f5ab3800da6b6",
+          "spanSha256": "5192c5275f7f530fb32b7ea52b823bfc7dd0d864e60510300fdb132f6d877655"
+        },
+        {
+          "target": "sdk-new",
+          "path": "src/client.ts",
+          "startLine": 492,
+          "endLine": 519,
+          "sourceSha256": "d776511de5ee7c31ed1b4433675c6c0970db94e8f5bc6e19315f5ab3800da6b6",
+          "spanSha256": "96121688b15bdc724774ceb654a5b4d33fb82c0df975db18cd8907b89be770e2"
+        },
+        {
+          "target": "sdk-new",
+          "path": "test/docs-url.test.mjs",
+          "startLine": 44,
+          "endLine": 110,
+          "sourceSha256": "b5be6fc2e3f917d181b10ff5b2f184a1495b0359c904e372278a732e99b4eeec",
+          "spanSha256": "41f835b94275451c0bf3018e9e6ac4c2809856ae221a84677fcfd57489c283a6"
+        },
+        {
+          "target": "cli",
+          "path": "src/runtime.ts",
+          "startLine": 5,
+          "endLine": 36,
+          "sourceSha256": "5670dae4b6a2004774b0f8e0288980002819ec703d928058319e9173b741b90f",
+          "spanSha256": "833d4967b1f95fde24aab970cc35d7080056f8ba93e735a26b21bdda9fdb21ca"
+        },
+        {
+          "target": "cli",
+          "path": "test/cli.test.mjs",
+          "startLine": 268,
+          "endLine": 289,
+          "sourceSha256": "b8754d4011011a23355e52cb5d4bd38cdc7f34bf52af0faaef04fe0e5ece0312",
+          "spanSha256": "77971e61d203d609493e67f330234753652d0a2f5b8dff8c263415d5c221f450"
+        }
+      ]
+    },
+    {
+      "id": "delete-migration-ko",
+      "question": "TypeScript SDK v0.4.3에서 v0.5.1로 바꾼 뒤 문서 삭제 요청에서 ids와 filter를 같이 주거나 partitionFilter만 주는 코드가 실패합니다. 두 버전의 타입·런타임 검증 차이와 네트워크 요청 전에 거절되는 근거를 설명해주세요. tenant 범위를 유지하면서 filter로 삭제하도록 고치는 최소 예시도 주세요. branch를 생략할 때와 지정할 때의 차이, 서버가 실제로 삭제했다는 것까지 이 소스만으로 확정할 수 있는지도 구분해주세요.",
+      "facts": [
+        "Old type/schema permits optional ids and filter without XOR; new union plus strict runtime refinement requires exactly one.",
+        "partitionFilter only narrows a selector; neither selector/partition-only and both selectors rejected before API calls.",
+        "Give filter plus partitionFilter tenant example preserving scope, not both ids and filter.",
+        "New optional branch targets selected Branch; omission documented as main, old delete body has no branch.",
+        "Cite runtime and/or type rejection tests and distinguish validation/request behavior from actual server deletion."
+      ],
+      "references": [
+        {
+          "target": "sdk-old",
+          "path": "src/models/operations/deletedocs.ts",
+          "startLine": 9,
+          "endLine": 48,
+          "sourceSha256": "23918b9b808f88c424e8f3c16d1f15414b3b2b286c3d55afc1e1b44159db7895",
+          "spanSha256": "e0634a2c60d07e6f2d3a2ffb5814fa5f19f9a302eecc1f7a8454df21c03e0248"
+        },
+        {
+          "target": "sdk-new",
+          "path": "src/models/operations/deletedocs.ts",
+          "startLine": 9,
+          "endLine": 86,
+          "sourceSha256": "88300129fd92133c9bbffa4a74d7f147ccac1c1a927d838aeaa8483080bbd93a",
+          "spanSha256": "01ecf4a73e33e2b700d07ea388fb5eecff9a24de13220b54e085e9b338728df7"
+        },
+        {
+          "target": "sdk-new",
+          "path": "src/funcs/collectionsDocsDelete.ts",
+          "startLine": 91,
+          "endLine": 111,
+          "sourceSha256": "cbc4471dfcd81d665bb4006d63f187d0d9cff6ffd18b3e9f2ce7b3c6b7534b89",
+          "spanSha256": "82bca603c9c2e8981f43ba2b501f5659d0028442ea45e75278b3067944b20cae"
+        },
+        {
+          "target": "sdk-new",
+          "path": "test/contract-alignment.test.mjs",
+          "startLine": 167,
+          "endLine": 206,
+          "sourceSha256": "a06162db1ab966d64d5ec1a4c77fa7a7b96ee084f9f987433183ad8a511b7789",
+          "spanSha256": "547d8c11556f5d4d757ded22e133287296fec21cc55c2e8f09bf85f383c07a80"
+        },
+        {
+          "target": "sdk-new",
+          "path": "test/types/data-versioning.ts",
+          "startLine": 60,
+          "endLine": 89,
+          "sourceSha256": "93907471f0c51f905497fa4de8e4159f821d0b7237711867499d6ebce53cfc7f",
+          "spanSha256": "2ce5bac71dec98c33acdc0f170624495044d35b81f9ac7ad287b72840c0957cd"
+        }
+      ]
+    }
+  ],
+  "order": [
+    ["import-outcome", "local"],
+    ["import-outcome", "srcx"],
+    ["offloaded-download", "srcx"],
+    ["offloaded-download", "local"],
+    ["delete-migration-ko", "local"],
+    ["delete-migration-ko", "srcx"]
+  ]
+}
