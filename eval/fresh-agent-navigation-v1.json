@@ -1,0 +1,186 @@
+{
+  "format": 1,
+  "repository": "https://github.com/psf/requests.git",
+  "repoKey": "github.com/psf/requests",
+  "commit": "611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60",
+  "runtimeBase": "c98a76f3ae77873a664014a66cab0d5cf9cd5f8d",
+  "agentModel": "gpt-6-astra",
+  "reasoningEffort": "high",
+  "limits": {
+    "secondsPerSession": 240,
+    "shellCommandsPerSession": 20,
+    "srcxCallsPerSession": 8,
+    "searchesPerSession": 4,
+    "queryCharacters": 1024,
+    "resultLimit": 5
+  },
+  "tasks": [
+    {
+      "id": "cookie-collision-ko",
+      "question": "Requests 세션으로 여러 호스트에 접근한 뒤 쿠키 이름만으로 값을 읽으면 예외가 납니다. 같은 이름의 쿠키가 여러 도메인이나 경로에 저장된 상황에서 get에 기본값을 주면 해결되나요? 원하는 쿠키 하나를 정확히 읽는 방법과 get_dict로 바꾸었을 때 잃는 정보를 설명하고, 구현과 관련 테스트를 근거로 보여주세요.",
+      "facts": [
+        "Cookies with the same name can coexist across domains and paths; unqualified lookup is ambiguous.",
+        "get catches KeyError for absence, not CookieConflictError; a default does not resolve multiple matches.",
+        "Use get(name, domain=..., path=...) with sufficiently specific selectors; domain alone can still leave path conflicts.",
+        "get_dict filters optionally then keys only by name, so multiple matching cookies overwrite and domain/path multiplicity is lost.",
+        "Identify real implementation and duplicate-domain/path tests; do not claim tests ran."
+      ],
+      "evidence": [
+        {
+          "path": "src/requests/cookies.py",
+          "startLine": 211,
+          "endLine": 232,
+          "fileSha256": "05d12b965c76f229803e17aef1c9969d712e4f4d0f6a06c05e0a47212fd5b417",
+          "spanSha256": "235318466854db2a96102b97e8b31503dcd1affba7da97c5dac721e91f3d1ca1"
+        },
+        {
+          "path": "src/requests/cookies.py",
+          "startLine": 331,
+          "endLine": 345,
+          "fileSha256": "05d12b965c76f229803e17aef1c9969d712e4f4d0f6a06c05e0a47212fd5b417",
+          "spanSha256": "448aa48897948345778f0fa58eb47c7fbd8418a4a965b0dfc2941b022120407e"
+        },
+        {
+          "path": "src/requests/cookies.py",
+          "startLine": 423,
+          "endLine": 452,
+          "fileSha256": "05d12b965c76f229803e17aef1c9969d712e4f4d0f6a06c05e0a47212fd5b417",
+          "spanSha256": "a41702accf7a2647de06881935c5235f28a588460d916d6edf1e0400b1f7135b"
+        },
+        {
+          "path": "tests/test_requests.py",
+          "startLine": 1403,
+          "endLine": 1433,
+          "fileSha256": "5eacf6341d236e225ce6a37a592f3b410f20e69ec17641f0e2c99b03a79b904d",
+          "spanSha256": "6ebb0a1afea1b4f1ec6a7a4d67cac980b34f1aa31720a35af768c4b8a735e9c0"
+        }
+      ]
+    },
+    {
+      "id": "json-decoding",
+      "question": "A service sometimes returns JSON bytes encoded as UTF-16 without a declared encoding, sometimes sets an explicit response encoding, and sometimes returns an empty or malformed body. Trace how Requests chooses the decoding path for Response.json(), when it falls back to text decoding, and which error callers should handle. Include implementation and existing test evidence; distinguish invalid byte encoding from syntactically invalid JSON.",
+      "facts": [
+        "The raw-byte UTF detection path requires no response encoding, nonempty content and length greater than three.",
+        "guess_json_utf detects UTF encodings using BOMs/null patterns; a set encoding bypasses this path and uses self.text.",
+        "UnicodeDecodeError in the detected-byte path falls back to text; JSONDecodeError there is wrapped immediately rather than retried as text.",
+        "Text-path JSON errors are also normalized to requests.exceptions.JSONDecodeError; empty content is not an automatic None result.",
+        "Cite actual alternate-UTF/error and detection tests, distinguish what each proves, and do not claim they ran."
+      ],
+      "evidence": [
+        {
+          "path": "src/requests/models.py",
+          "startLine": 1054,
+          "endLine": 1125,
+          "fileSha256": "a3351c3c12a86bf5ed211533875350bc4791e9327a685f8c19ba54343e471e26",
+          "spanSha256": "cc995c2538997d53dd6d3522b4867ef05e22c624d43467b0a4f7865fabb461bd"
+        },
+        {
+          "path": "src/requests/utils.py",
+          "startLine": 1008,
+          "endLine": 1039,
+          "fileSha256": "b879cb3f671cf1c28e8ff9b2b02151bcdb8974b4820a514cfdd1f5a038443cd2",
+          "spanSha256": "ab65d5648c7adb5e9abf9c454ad13a1eeb98344cb45bd90c09f102a7d6263ee2"
+        },
+        {
+          "path": "tests/test_utils.py",
+          "startLine": 409,
+          "endLine": 440,
+          "fileSha256": "00d027432443a1aa9539c00a09550de9439cdd696d2e6acf2dc997de3a416946",
+          "spanSha256": "ad877ed73ed3ba85f46d94881df1e9c4c4cc046ee029ea43a1f7d1d31e508abc"
+        },
+        {
+          "path": "tests/test_lowlevel.py",
+          "startLine": 407,
+          "endLine": 429,
+          "fileSha256": "db5fac7340c49c49551e3e41679a8ee6e385c56054f84073932354a8da87df65",
+          "spanSha256": "6ac7b094820c3551925532652884bc04d8f44cf125d696051a8856ab6d3096ef"
+        }
+      ]
+    },
+    {
+      "id": "redirect-upload-offset",
+      "question": "An application uploads a file-like body after consuming its first four bytes. The server returns a 307 redirect and the application expects the follow-up request to resend the intended payload. Does Requests rewind to byte zero or to another position? Trace how the position is recorded and reused, contrast a body-clearing redirect, and explain what happens if tell or seek fails. Use implementation and relevant existing tests; do not assume all iterable bodies are replayable.",
+      "facts": [
+        "Preparation records the current tell position, so a partially consumed stream replays from that offset, not necessarily zero.",
+        "307/308 retain body and body headers; other redirect statuses follow the body/header-clearing branch.",
+        "Redirect rewinding requires non-None saved position and Content-Length or Transfer-Encoding; not every iterable qualifies.",
+        "Failed tell uses a non-None sentinel; rewind requires integer offset and seek, and missing/failed seek or invalid offset raises UnrewindableBodyError.",
+        "Cite preparation, redirect, rewind helper and partially read/failure tests, with no claim of executed network tests."
+      ],
+      "evidence": [
+        {
+          "path": "src/requests/models.py",
+          "startLine": 600,
+          "endLine": 633,
+          "fileSha256": "a3351c3c12a86bf5ed211533875350bc4791e9327a685f8c19ba54343e471e26",
+          "spanSha256": "b8905794679ed6a2ea2115d9a959eff57622adbb42c8c0efeb30a803ab544f64"
+        },
+        {
+          "path": "src/requests/sessions.py",
+          "startLine": 247,
+          "endLine": 284,
+          "fileSha256": "3d2089736ced93b2b405624a943f866d22652b17df06a85eb010f86272fc3e7d",
+          "spanSha256": "ddae700999542f1ae87c8a836c4b52c8fc06b007b5912c3d8aeb01284387415f"
+        },
+        {
+          "path": "src/requests/utils.py",
+          "startLine": 1139,
+          "endLine": 1155,
+          "fileSha256": "b879cb3f671cf1c28e8ff9b2b02151bcdb8974b4820a514cfdd1f5a038443cd2",
+          "spanSha256": "1618673e2a03babfbf6990671fc61afdefd38c5a0d51937f6d2a92c38346936f"
+        },
+        {
+          "path": "tests/test_requests.py",
+          "startLine": 2025,
+          "endLine": 2100,
+          "fileSha256": "5eacf6341d236e225ce6a37a592f3b410f20e69ec17641f0e2c99b03a79b904d",
+          "spanSha256": "b4d6bfc9c48032e716f58ac8892e2fee1038a8c859b6bcfe7bb293554137629c"
+        }
+      ]
+    },
+    {
+      "id": "timeout-budget",
+      "question": "A download uses requests.get(..., timeout=(2, 5)), but the operation can take longer than seven seconds while the server keeps sending data. A teammate proposes timeout=5 as a five-second overall deadline. Is that interpretation supported by Requests? Trace how these values are passed to the transport, distinguish connect/read failures, and identify existing tests and the limits of what this repository alone proves.",
+      "facts": [
+        "Tuple values become separate connect/read limits, not a summed seven-second wall-clock budget.",
+        "A scalar becomes both connect and read timeouts; it does not establish a five-second overall deadline.",
+        "Repository documentation defines read wait between bytes and explicitly disclaims wall-clock limits; continuing data can extend elapsed time.",
+        "HTTPAdapter constructs/passes urllib3 Timeout, maps qualifying connection timeout and read timeout failures to Requests exceptions; avoid claiming every ConnectionError is a timeout.",
+        "Identify actual timeout tests and that socket-level enforcement is delegated to urllib3 rather than proven by executing tests here."
+      ],
+      "evidence": [
+        {
+          "path": "src/requests/adapters.py",
+          "startLine": 681,
+          "endLine": 746,
+          "fileSha256": "cc9b1b02694fee0353481fbad84fe3ddbedec4441dba54df7914c63f2aa85937",
+          "spanSha256": "0d9f2a79cfb134ca341952be6d4a2d1bb8b4ae2533bca2533a7ae5b5d6a7d13d"
+        },
+        {
+          "path": "docs/user/advanced.rst",
+          "startLine": 1089,
+          "endLine": 1133,
+          "fileSha256": "f2b6c6cd31ad7e1ed1dce2f6266d29c8fab246103d4c0e929a23c351d2cfe79c",
+          "spanSha256": "fbe7aa4d27b4b0bc5ba7513f361d16e84f7e5d29e42ee43a6c66fdb9ef27f539"
+        },
+        {
+          "path": "tests/test_requests.py",
+          "startLine": 2536,
+          "endLine": 2588,
+          "fileSha256": "5eacf6341d236e225ce6a37a592f3b410f20e69ec17641f0e2c99b03a79b904d",
+          "spanSha256": "b149968e9ade19f123af0b1d29494a728a3122a3a3fe7d3622dcbaafe7289d85"
+        }
+      ]
+    }
+  ],
+  "order": [
+    ["cookie-collision-ko", "local"],
+    ["cookie-collision-ko", "srcx"],
+    ["json-decoding", "srcx"],
+    ["json-decoding", "local"],
+    ["redirect-upload-offset", "local"],
+    ["redirect-upload-offset", "srcx"],
+    ["timeout-budget", "srcx"],
+    ["timeout-budget", "local"]
+  ]
+}
