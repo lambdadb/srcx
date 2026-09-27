@@ -163,6 +163,12 @@ extensions. These are targeted exclusions, **not a general secret scanner**;
 review the dry-run inventory before uploading. `.gitignore` does not remove
 already tracked Git objects, and `.gitattributes` is not interpreted for selection.
 
+Java files under `src/<source-set>/java/` keep package directories named `build`,
+`dist`, `target` or `coverage`. For example, `src/main/java/example/build/Builder.java`
+is source, while `build/generated/src/main/java/example/Builder.java` is excluded.
+Dependency and cache exclusions still apply inside source roots. Other ambiguous
+layouts can use explicit file-policy rules below.
+
 Use `--file-policy policy.json` with `repo add` or `import --dry-run --path` to
 adjust the scope explicitly. The JSON contents are pinned in the repository
 preset; subsequent connected imports use that preset, not the local policy file.
