@@ -153,6 +153,17 @@ The image emitted no source or chunk records. This is an offline input reduction
 not a rerun of the agent comparison or proof of improved vector recall. The
 original remote Collection/Tag and the unresolved retrieval discrepancy are retained.
 
+## Subsequent vector candidate diagnosis
+
+A [bounded follow-up](VECTOR-DIAGNOSTIC-RESULTS.md) exported all 1,864 stored
+vectors from the original immutable Tag. Exhaustive local ranking placed the
+relevant Python methods first, while the no-language-filter query repeatedly
+returned SVG chunks ranked 189, 230, 234, 262 and 267. Python-filtered queries
+returned the top five; reported scores agreed with local normalized cosine within
+1.8e-7. This strongly supports candidate omission, subject to the documented
+limitation that the reference query vector was independently generated rather than
+captured from the managed query itself. No agent outcome or backend fix is claimed.
+
 ## Usage, integrity and retained evidence
 
 - One new managed-small Collection, `code-requests-698afe9dc47c9919`, in the existing

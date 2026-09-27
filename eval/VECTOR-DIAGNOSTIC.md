@@ -41,9 +41,12 @@ and minimal public-source identifiers.
 Run after building, supplying credentials through the existing environment:
 
 ```sh
+mkdir -p .srcx
 node scripts/vector-diagnostic.mjs export NEW_OUTPUT ARCHIVED_SEMANTIC_RUN
 node scripts/vector-diagnostic.mjs probe NEW_OUTPUT ARCHIVED_SEMANTIC_RUN
 ```
 
 Both stages require the same runtime fingerprint. The original run archive is under
 `.srcx/archives/pr-25-agent-pilot/evidence/semantic-agent-pilot/` in the main checkout.
+
+[Completed results](VECTOR-DIAGNOSTIC-RESULTS.md) retain the managed-query-vector limitation.
