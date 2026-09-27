@@ -1,0 +1,155 @@
+{
+  "format": 1,
+  "labelStatus": "assistant-authored-source-delivery-diagnostic",
+  "sources": {
+    "cli": {
+      "repository": "github.com/lambdadb/lambdadb-cli",
+      "release": "v0.1.0",
+      "commit": "c8d389f3264d641ae6eafc7737fedd5ea046ddf1"
+    },
+    "sdk-old": {
+      "repository": "github.com/lambdadb/lambdadb-typescript-client",
+      "release": "v0.4.3",
+      "commit": "a6050ce1ca76ba1201ffee09133d1b96adcfa42b"
+    },
+    "sdk-new": {
+      "repository": "github.com/lambdadb/lambdadb-typescript-client",
+      "release": "v0.5.1",
+      "commit": "856abf48a014185de54ccc541c2f6ee3871133ee"
+    }
+  },
+  "settings": {
+    "embedding": "none",
+    "analyzers": ["standard"],
+    "maxRecords": 20000,
+    "maxSourceBytes": 30000000,
+    "maxCollections": 2,
+    "maxVersions": 3,
+    "searchLimit": 5,
+    "searchRequests": 5,
+    "directReads": 8,
+    "maxCliCalls": 35,
+    "importTimeoutSeconds": 300
+  },
+  "tasks": [
+    {
+      "id": "read-consistency",
+      "question": "In CLI v0.1.0, why can a query with consistentRead:true not use a Tag or Alias ref? Trace CLI validation through SDK v0.5.1 and distinguish direct Branch refs.",
+      "spans": [
+        {
+          "id": "cli-query",
+          "target": "cli",
+          "path": "src/input.ts",
+          "startLine": 52,
+          "endLine": 67,
+          "sourceSha256": "2a9088d545ca17d0ee434d2b57fce8dd5e69aa0cd8cc820103c29ecb6bd6bda5",
+          "spanSha256": "5e087d47a3dc6b63f838725a9a14ce4d1dcff02b4f2f2f3383ae4d2c28b18cc7",
+          "fact": "CLI validates conflicting refs, then delegates the merged input to the SDK serializer."
+        },
+        {
+          "id": "sdk-query",
+          "target": "sdk-new",
+          "path": "src/models/operations/querycollection.ts",
+          "startLine": 105,
+          "endLine": 134,
+          "sourceSha256": "4e5e81444130ad75acb14c5becf310fb53559412f31ba519c05b3d5b39c02d06",
+          "spanSha256": "4d19e609e7a3214ac81e8f04ad3e2de4e78fbb7695c6b092c8397ea0c0a33d40",
+          "fact": "The strict SDK schema rejects consistentRead true with an explicit non-Branch ref; absent ref is allowed."
+        },
+        {
+          "id": "cli-rejection-test",
+          "target": "cli",
+          "path": "test/cli.test.mjs",
+          "startLine": 185,
+          "endLine": 208,
+          "sourceSha256": "b8754d4011011a23355e52cb5d4bd38cdc7f34bf52af0faaef04fe0e5ece0312",
+          "spanSha256": "4102bbf5b070b51c421dd719fb7dccc021126974d45f6fade3ddea639fb44a06",
+          "fact": "CLI tests reject invalid Tag requests before any API call."
+        },
+        {
+          "id": "cli-branch-test",
+          "target": "cli",
+          "path": "test/cli.test.mjs",
+          "startLine": 261,
+          "endLine": 267,
+          "sourceSha256": "b8754d4011011a23355e52cb5d4bd38cdc7f34bf52af0faaef04fe0e5ece0312",
+          "spanSha256": "59b90367f6ad57b4a8ff6c7ec60621f27d638bb41c6339c359d64877f5fa12b7",
+          "fact": "A direct Branch query forwards consistentRead true in a mocked request."
+        }
+      ]
+    },
+    {
+      "id": "write-branch-migration",
+      "question": "When moving SDK v0.4.3 to v0.5.1, how does the upsert body change, and why does CLI v0.1.0 still require an explicit branch? Trace its forwarding and explain whether SDK branch is mandatory.",
+      "spans": [
+        {
+          "id": "old-upsert",
+          "target": "sdk-old",
+          "path": "src/models/operations/upsertdocs.ts",
+          "startLine": 8,
+          "endLine": 43,
+          "sourceSha256": "5c406234c5a6316fcaa32c1a9be98f7683b4f7af516d1bf517769d9cd3d09875",
+          "spanSha256": "8191b2864ecca507e68f27686d184f396bed6f54ad391c3cfad079b09d4f1457",
+          "fact": "The older SDK body/schema declares only docs; it does not expose branch."
+        },
+        {
+          "id": "new-upsert",
+          "target": "sdk-new",
+          "path": "src/models/operations/upsertdocs.ts",
+          "startLine": 8,
+          "endLine": 47,
+          "sourceSha256": "a58431675707d5c8c7e4e34db3e4c339502680a45330405577d6872e5a7d387e",
+          "spanSha256": "9f2eb085d2c5cf305a716ae039b31e692085fcd9c7ac2eb1218d19d0367476fd",
+          "fact": "The new SDK declares optional branch, validates its name and uses a strict body schema; documentation says omission targets main."
+        },
+        {
+          "id": "cli-write-option",
+          "target": "cli",
+          "path": "src/cli.ts",
+          "startLine": 120,
+          "endLine": 140,
+          "sourceSha256": "c3ce2f76130c0c00420835c5cce98f76a4950834625486e8129ad29384eb6186",
+          "spanSha256": "3d6b57ba8ed42b5b4e8f7b2e3c97c33f389e2c6facc23a167a36a47b90a48d0e",
+          "fact": "CLI import requires an explicit --branch and validates it."
+        },
+        {
+          "id": "cli-write-forward",
+          "target": "cli",
+          "path": "src/import-workflow.ts",
+          "startLine": 49,
+          "endLine": 58,
+          "sourceSha256": "309845a5c1a2f29a6cc688cfa174d88e7dda76a62dc71ccff284b23aee27ef3a",
+          "spanSha256": "9f7bd42a35ca87efe61c8c84f543835763290e55c8cc6932fa4182bd5ca704cc",
+          "fact": "CLI passes the chosen branch to both ordinary and bulk upsert, disabling automatic mutation retries."
+        }
+      ]
+    }
+  ],
+  "searches": [
+    {
+      "id": "cli-consistency",
+      "target": "cli",
+      "query": "consistentRead"
+    },
+    {
+      "id": "sdk-consistency",
+      "target": "sdk-new",
+      "query": "consistentRead"
+    },
+    {
+      "id": "cli-write",
+      "target": "cli",
+      "query": "branch"
+    },
+    {
+      "id": "sdk-old-write",
+      "target": "sdk-old",
+      "query": "UpsertDocsRequestBody"
+    },
+    {
+      "id": "sdk-new-write",
+      "target": "sdk-new",
+      "query": "UpsertDocsRequestBody"
+    }
+  ]
+}
