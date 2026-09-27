@@ -1,0 +1,106 @@
+{
+  "click": {
+    "commitOid": "934813e4d421071a1b3db3973c02fe2721359a6e",
+    "repoKey": "github.com/pallets/click",
+    "preset": {
+      "schemaVersion": 1,
+      "analyzers": ["english"],
+      "chunker": {
+        "version": 2,
+        "parser": "web-tree-sitter@0.25.10",
+        "grammars": "tree-sitter-wasms@0.1.13",
+        "sqlGrammar": "tree-sitter-wasm@2.0.2/sql/b77530893b1dd6d1d4814eacf34d25bcbe4a12ec9a25a8c45b320d447265f42b",
+        "shellGrammar": "tree-sitter-wasm@2.0.2/bash/5daf3f2ac1cea01a64cfd6878ef7d247310925a4c62238eb4b8c1feb5dce355a",
+        "tokenizer": "js-tiktoken@1.0.21/cl100k_base",
+        "targetTokens": 800,
+        "maxTokens": 1500,
+        "fallbackOverlap": 0.1,
+        "enrichment": "path-scope-symbol-v1",
+        "policy": "source-v2"
+      },
+      "mode": "syntax",
+      "maxFileBytes": 1048576,
+      "filePolicy": {
+        "version": 1,
+        "rules": [
+          {
+            "pattern": "eval/**",
+            "action": "exclude"
+          }
+        ]
+      },
+      "embedding": {
+        "managed": true,
+        "provider": "openai",
+        "model": "text-embedding-3-small",
+        "dimensions": 1536,
+        "similarity": "cosine",
+        "sourceField": "embeddingText"
+      }
+    },
+    "counts": {
+      "files": 141,
+      "excluded": 6,
+      "chunks": 1689,
+      "tokens": 212846,
+      "managed": 1280,
+      "managedTokens": 205915,
+      "embedded": 0,
+      "skipped": 409
+    },
+    "recordsHash": "a355fa4d51465c6569d6d59abb9a4a3822d3e46204399d975e4aa73cc270b8e9",
+    "inventoryHash": "a7277c7fd731e1b459a527cad48d7d9914e98ff7f95c11b808a1cd112070f4e8"
+  },
+  "cobra": {
+    "commitOid": "40b5bc1437a564fc795d388b23835e84f54cd1d1",
+    "repoKey": "github.com/spf13/cobra",
+    "preset": {
+      "schemaVersion": 1,
+      "analyzers": ["english"],
+      "chunker": {
+        "version": 2,
+        "parser": "web-tree-sitter@0.25.10",
+        "grammars": "tree-sitter-wasms@0.1.13",
+        "sqlGrammar": "tree-sitter-wasm@2.0.2/sql/b77530893b1dd6d1d4814eacf34d25bcbe4a12ec9a25a8c45b320d447265f42b",
+        "shellGrammar": "tree-sitter-wasm@2.0.2/bash/5daf3f2ac1cea01a64cfd6878ef7d247310925a4c62238eb4b8c1feb5dce355a",
+        "tokenizer": "js-tiktoken@1.0.21/cl100k_base",
+        "targetTokens": 800,
+        "maxTokens": 1500,
+        "fallbackOverlap": 0.1,
+        "enrichment": "path-scope-symbol-v1",
+        "policy": "source-v2"
+      },
+      "mode": "syntax",
+      "maxFileBytes": 1048576,
+      "filePolicy": {
+        "version": 1,
+        "rules": [
+          {
+            "pattern": "eval/**",
+            "action": "exclude"
+          }
+        ]
+      },
+      "embedding": {
+        "managed": true,
+        "provider": "openai",
+        "model": "text-embedding-3-small",
+        "dimensions": 1536,
+        "similarity": "cosine",
+        "sourceField": "embeddingText"
+      }
+    },
+    "counts": {
+      "files": 65,
+      "excluded": 1,
+      "chunks": 1037,
+      "tokens": 171852,
+      "managed": 998,
+      "managedTokens": 167917,
+      "embedded": 0,
+      "skipped": 39
+    },
+    "recordsHash": "7a720099fc297b6af336905e903386f13a46e8ee0006be57982857e1a3bc5a67",
+    "inventoryHash": "7b0584a0fb5190545b66eb1ece9c1f4f7fb0d7974d9ead7cd114d98f39caf387"
+  }
+}

@@ -1,0 +1,205 @@
+{
+  "format": 1,
+  "productCommit": "88abc665f4f436c045d79870eeb7cf0eac8ac814",
+  "sources": {
+    "click": {
+      "repository": "github.com/pallets/click",
+      "commit": "934813e4d421071a1b3db3973c02fe2721359a6e"
+    },
+    "cobra": {
+      "repository": "github.com/spf13/cobra",
+      "commit": "40b5bc1437a564fc795d388b23835e84f54cd1d1"
+    }
+  },
+  "tasks": [
+    {
+      "id": "deferred-file",
+      "repository": "click",
+      "question": "A Click application chains several commands. One command accepts a file argument and returns a function that will read it later, after all commands return. That deferred function sees an already closed stream. Why does it happen, why can a file owned by the outer command still work in the final processing step, and how should ownership change to make the deferred read safe? Trace the implementation and distinguish what existing tests actually cover.",
+      "origin": "https://github.com/pallets/click/blob/934813e4d421071a1b3db3973c02fe2721359a6e/docs/commands.rst#L347-L421",
+      "facts": [
+        "A file opened from a command parameter registers closure on that command context; already supplied file-like objects are returned directly.",
+        "Each chained subcommand context exits before the outer result callback; outer context remains active during result processing.",
+        "Context exit at depth zero invokes close and its exit stack; the returned callable does not extend the subcommand resource lifetime.",
+        "Open/manage the resource inside the deferred work or in a longer-lived outer scope and close it after consumption; do not retain the prematurely closed subcommand stream.",
+        "Cite the documented limitation and pipeline/context tests accurately; the pipeline test uses the outer group file and is not a direct reproduction of the failing subcommand file."
+      ],
+      "references": [
+        {
+          "path": "src/click/types.py",
+          "startLine": 704,
+          "endLine": 743,
+          "primary": true,
+          "sourceSha256": "043e50aaae21fbc91ac0198e2332659aae31cd38407f8c02bda38b652043371d",
+          "spanSha256": "fbdb38e3062c6babc86e87145c099c00a06e67ad1d770af201df1552184ffe93"
+        },
+        {
+          "path": "src/click/core.py",
+          "startLine": 467,
+          "endLine": 476,
+          "primary": true,
+          "sourceSha256": "4359c455d72d670bc83ce96de2f7c7928d136271c2784e3450412e97c5a9cafb",
+          "spanSha256": "9f87fd8048b1ffb5feb7f8e3e4ff25a393f031b4797889623ffa4ad711b5320a"
+        },
+        {
+          "path": "src/click/core.py",
+          "startLine": 587,
+          "endLine": 606,
+          "primary": true,
+          "sourceSha256": "4359c455d72d670bc83ce96de2f7c7928d136271c2784e3450412e97c5a9cafb",
+          "spanSha256": "ea42cae6458ce238993a82c014ad0f7e3a4be51dd026307b748ce4e7d07be12d"
+        },
+        {
+          "path": "src/click/core.py",
+          "startLine": 1704,
+          "endLine": 1729,
+          "primary": true,
+          "sourceSha256": "4359c455d72d670bc83ce96de2f7c7928d136271c2784e3450412e97c5a9cafb",
+          "spanSha256": "4053ded4227c0621cb90e6ea5cbe0cda3236f1358acf7b5dca6f96486cbeeaeb"
+        },
+        {
+          "path": "docs/commands.rst",
+          "startLine": 399,
+          "endLine": 421,
+          "primary": false,
+          "sourceSha256": "676a5df286a93d5a47adb5cd13941a82ad5d1faf879f85a3f632135ea1749bb8",
+          "spanSha256": "0ef3a93fbca01f13f5deb2f32111f18dca73300e9b243285578925ad25dc0156"
+        },
+        {
+          "path": "tests/test_chain.py",
+          "startLine": 125,
+          "endLine": 167,
+          "primary": false,
+          "sourceSha256": "acc6e6f5a2f070f65ab1177fcd12e72e1469ed6d4ee3f7c390da9786acad7803",
+          "spanSha256": "ecf5dc2cee3f5440fadf8aac51934e79e08222ccf4526fdd8249375f5c9c4e3d"
+        },
+        {
+          "path": "tests/test_context.py",
+          "startLine": 219,
+          "endLine": 237,
+          "primary": false,
+          "sourceSha256": "0f40aa32456f0597233a006fa11ca641b3a93034ceedd92df11ba38b382d6b42",
+          "spanSha256": "779843838f61ec26d646895d4308b8ab7fa0984d7155c1dedaf895b700f73e1c"
+        }
+      ]
+    },
+    {
+      "id": "internal-command",
+      "repository": "click",
+      "question": "A Click application wants to run another decorated command from inside its main callback, while keeping both commands callable from the shell. Calling the decorated object like an ordinary function with the current context does not work as intended. Find the supported way to call the command with explicit option values or its declared defaults, and the different way to reuse already parsed values. Explain context creation, default conversion and how explicit overrides behave, with source and test evidence.",
+      "origin": "https://github.com/pallets/click/issues/1274",
+      "facts": [
+        "Calling a decorated Command uses its __call__/main command-line entry path rather than directly invoking the callback.",
+        "Context.invoke(command, keyword options) selects the callback and creates a subcontext; a missing callback is an error.",
+        "Missing exposed parameters are filled from target defaults and type-cast, while explicitly supplied keyword values are preserved.",
+        "Context.forward accepts commands only and copies current params only when not already in kwargs, then invokes; explicit overrides win.",
+        "Cite existing command invocation/default/forward tests; distinguish callback invocation from a full second parse of shell arguments."
+      ],
+      "references": [
+        {
+          "path": "src/click/core.py",
+          "startLine": 1159,
+          "endLine": 1161,
+          "primary": true,
+          "sourceSha256": "4359c455d72d670bc83ce96de2f7c7928d136271c2784e3450412e97c5a9cafb",
+          "spanSha256": "b82b2e9c62a7136eb1c02a573abe3ee5b50129e3a19380711dbb81d67f696151"
+        },
+        {
+          "path": "src/click/core.py",
+          "startLine": 737,
+          "endLine": 810,
+          "primary": true,
+          "sourceSha256": "4359c455d72d670bc83ce96de2f7c7928d136271c2784e3450412e97c5a9cafb",
+          "spanSha256": "4feae1a301e511fd47221d76c7d238cdeb5ce48988cd608331a04f4d539e5d5b"
+        },
+        {
+          "path": "tests/test_commands.py",
+          "startLine": 8,
+          "endLine": 41,
+          "primary": false,
+          "sourceSha256": "093c5d2dc314e84204c0d1592077f16b21aa1078afcdac98596b4cf93e34edc7",
+          "spanSha256": "ebd75e2e877ed5b6317c2afae9265dd4301425e01bdde345a839b9f88b745c9a"
+        },
+        {
+          "path": "tests/test_commands.py",
+          "startLine": 235,
+          "endLine": 252,
+          "primary": false,
+          "sourceSha256": "093c5d2dc314e84204c0d1592077f16b21aa1078afcdac98596b4cf93e34edc7",
+          "spanSha256": "778a3b1c13c9fa46daed2a058cc03cbc27c8fcdf62a4e9659db926a44644d224"
+        }
+      ]
+    },
+    {
+      "id": "attached-short-value",
+      "repository": "cobra",
+      "question": "A Cobra CLI accepts a short option immediately followed by its value during normal execution, but pressing Tab on a partial token such as -nprod yields no value suggestions. Does this pinned version treat that token as a value request or an option-name request? Contrast a separated value and an equals form, including several short options combined before the value-taking option. Locate the responsible logic and relevant tests; do not infer that every form accepted by the argument parser is supported by completion.",
+      "origin": "https://github.com/spf13/cobra/issues/1629",
+      "facts": [
+        "A current token starting with dash without equals returns from checkIfFlagCompletion as no flag/value target, retaining the whole token.",
+        "The later path consequently offers option names matching that whole prefix rather than invoking the value completer for -nprod.",
+        "An equals form extracts the long name or final shorthand before equals and sends the suffix as the incomplete value.",
+        "A separated pending option inspects the previous token and takes its last shorthand; a value-taking flag is separated from args, while optional-value/boolean flags are treated differently.",
+        "The multiple-shorthand test covers combined booleans and final string option with space/equals; it does not establish attached value without equals support or pflag parser internals."
+      ],
+      "references": [
+        {
+          "path": "completions.go",
+          "startLine": 639,
+          "endLine": 722,
+          "primary": true,
+          "sourceSha256": "16ddb6261682dab96929fec3785860190aa622041da29f05bfcfa493b18d1d68",
+          "spanSha256": "d0c81b2361708c0f97d06054f33291dd3613cbeb773577934c8bb078e3a0a494"
+        },
+        {
+          "path": "completions.go",
+          "startLine": 425,
+          "endLine": 448,
+          "primary": true,
+          "sourceSha256": "16ddb6261682dab96929fec3785860190aa622041da29f05bfcfa493b18d1d68",
+          "spanSha256": "b8e583abe8151276666c84f2a2e3d986620af8328688c76f35cd82ddd8d230b2"
+        },
+        {
+          "path": "completions.go",
+          "startLine": 550,
+          "endLine": 563,
+          "primary": true,
+          "sourceSha256": "16ddb6261682dab96929fec3785860190aa622041da29f05bfcfa493b18d1d68",
+          "spanSha256": "ff2b42803acd6b0afd54cd6e4ccebd28fbf5b5e045a0131252c20f7dd55d64aa"
+        },
+        {
+          "path": "completions_test.go",
+          "startLine": 2694,
+          "endLine": 2768,
+          "primary": false,
+          "sourceSha256": "4ee83dff14adf8faaa2ed8cd199e9510c8fa611396550dacbd1ebcd54105de07",
+          "spanSha256": "62610971806ae3f2128c61b2eb6451a612aa7acfb3a3babfa11baaf163f8c83e"
+        }
+      ]
+    }
+  ],
+  "order": [
+    ["deferred-file", "local"],
+    ["deferred-file", "lexical"],
+    ["deferred-file", "semantic"],
+    ["internal-command", "lexical"],
+    ["internal-command", "semantic"],
+    ["internal-command", "local"],
+    ["attached-short-value", "semantic"],
+    ["attached-short-value", "local"],
+    ["attached-short-value", "lexical"]
+  ],
+  "limits": {
+    "sessions": 9,
+    "secondsPerSession": 240,
+    "commandsPerSession": 20,
+    "callsPerIndexedSession": 8,
+    "searchesPerIndexedSession": 4,
+    "maxDocumentTokens": 400000,
+    "maxQueryEmbeddings": 15,
+    "maxTaskCalls": 48,
+    "stageSearches": 6,
+    "maxQueryCharacters": 1024,
+    "resultLimit": 5
+  }
+}
