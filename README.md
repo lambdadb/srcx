@@ -449,6 +449,9 @@ verifies exact source delivery across CLI/SDK releases from a fresh client witho
 local source attachments. It is a scripted known-range diagnostic, not an agent
 benchmark. Local Git reads are much faster in this run; repeated project-wide
 repository discovery is a measured source of remote overhead.
+The subsequent [exact-Collection lookup replay](https://github.com/lambdadb/srcx/blob/develop/eval/DIRECT-LOOKUP-RESULTS.md)
+removes 22 requests per command in that project, with identical source results
+and lower observed read/search latency. It does not measure complete-agent cost.
 
 The internal [lexical chunking pilot](https://github.com/lambdadb/srcx/blob/develop/eval/README.md) compares syntax-aware and
 window chunks on a fixed public corpus and 16 pinned investigation queries.
