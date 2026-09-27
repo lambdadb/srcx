@@ -439,6 +439,11 @@ Agents can use the following search guidance:
 
 ## Evaluate retrieval quality
 
+The [fresh agent navigation comparison](https://github.com/lambdadb/srcx/blob/develop/eval/FRESH-AGENT-NAVIGATION-RESULTS.md)
+measures complete answers, model input and wall time with local tools available in
+both conditions. It does not establish a clear efficiency advantage on a small
+local repository; retrieval quality and agent-workflow benefits remain separate.
+
 The internal [lexical chunking pilot](https://github.com/lambdadb/srcx/blob/develop/eval/README.md) compares syntax-aware and
 window chunks on a fixed public corpus and 16 pinned investigation queries.
 `npm run eval:prepare` builds and validates the comparison offline. Live evaluation

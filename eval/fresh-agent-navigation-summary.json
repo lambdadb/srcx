@@ -1,0 +1,381 @@
+{
+  "protocolCommit": "0b3c535",
+  "productCommit": "c98a76f3ae77873a664014a66cab0d5cf9cd5f8d",
+  "model": "gpt-6-astra",
+  "reasoning": "high",
+  "node": "v24.15.0",
+  "codex": "0.157.1",
+  "auditSha256": "ac440c15b3d24fed7603aa18d8d198af57a0093e209240af0c7f4d674323d9bf",
+  "gradesSha256": "143bfd34bd50442aff3668acdd4209fb19f17e23eea13a5c4cf096c30bf2a148",
+  "frozenInputCount": 31,
+  "previewCount": 18,
+  "readCount": 0,
+  "means": {
+    "local": {
+      "complete": 4,
+      "input": 115558.5,
+      "cached": 91520,
+      "uncached": 24038.5,
+      "output": 2205.25,
+      "seconds": 84.5344133330509,
+      "commands": 18,
+      "commandFailures": 0
+    },
+    "srcx": {
+      "complete": 4,
+      "input": 111917.5,
+      "cached": 92448,
+      "uncached": 19469.5,
+      "output": 2301.25,
+      "seconds": 89.88550447928719,
+      "commands": 33,
+      "commandFailures": 2
+    }
+  },
+  "rows": [
+    {
+      "task": "cookie-collision-ko",
+      "arm": "local",
+      "seconds": 69.94832608290017,
+      "commandCount": 2,
+      "usage": {
+        "input_tokens": 72899,
+        "cached_input_tokens": 49408,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1848,
+        "reasoning_output_tokens": 105
+      },
+      "counts": {
+        "lexical": 0,
+        "semantic": 0,
+        "reads": 0,
+        "implementation": 0,
+        "failures": 0,
+        "help": 0,
+        "stdoutTokens": 0
+      },
+      "answerSha256": "8a4fb154822ac093263b983ffd8aa994018c24d2589cd72d3e0fb7682bdaa2c4",
+      "grade": {
+        "attempt": "cookie-collision-ko-local",
+        "answerSha256": "8a4fb154822ac093263b983ffd8aa994018c24d2589cd72d3e0fb7682bdaa2c4",
+        "facts": [
+          "supported",
+          "supported",
+          "supported",
+          "supported",
+          "supported"
+        ],
+        "complete": true,
+        "materialErrors": [],
+        "sourceReadMarkers": [
+          "_find_no_duplicates",
+          "dictionary[cookie.name]",
+          "test_cookie_duplicate_names"
+        ],
+        "reviewNote": "All five facts supported. Explicitly distinguishes KeyError default from CookieConflictError, exact domain/path selection, and lossy get_dict; cites both duplicate-domain/path tests and distinguishes untested cases."
+      },
+      "commandFailureCount": 0
+    },
+    {
+      "task": "cookie-collision-ko",
+      "arm": "srcx",
+      "seconds": 73.7581471670419,
+      "commandCount": 6,
+      "usage": {
+        "input_tokens": 69910,
+        "cached_input_tokens": 55936,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1933,
+        "reasoning_output_tokens": 211
+      },
+      "counts": {
+        "lexical": 1,
+        "semantic": 0,
+        "reads": 0,
+        "implementation": 0,
+        "failures": 0,
+        "help": 0,
+        "stdoutTokens": 1631
+      },
+      "answerSha256": "16a95551a3ec5c5f20b218e70d049846865bad590ab6270df5b2afa227aa84be",
+      "grade": {
+        "attempt": "cookie-collision-ko-srcx",
+        "answerSha256": "16a95551a3ec5c5f20b218e70d049846865bad590ab6270df5b2afa227aa84be",
+        "facts": [
+          "supported",
+          "supported",
+          "supported",
+          "supported",
+          "supported"
+        ],
+        "complete": true,
+        "materialErrors": [],
+        "sourceReadMarkers": [
+          "_find_no_duplicates",
+          "dictionary[cookie.name]",
+          "test_cookie_duplicate_names"
+        ],
+        "reviewNote": "All five facts supported with pinned GitHub citations. Lexical search is followed by local reads; no srcx read is used. Duplicate-value caveat is applicable to the non-None cookie values in this question."
+      },
+      "commandFailureCount": 0
+    },
+    {
+      "task": "json-decoding",
+      "arm": "srcx",
+      "seconds": 84.21697891689837,
+      "commandCount": 8,
+      "usage": {
+        "input_tokens": 101436,
+        "cached_input_tokens": 80384,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2209,
+        "reasoning_output_tokens": 205
+      },
+      "counts": {
+        "lexical": 1,
+        "semantic": 0,
+        "reads": 0,
+        "implementation": 0,
+        "failures": 0,
+        "help": 0,
+        "stdoutTokens": 1633
+      },
+      "answerSha256": "8e553484ffd3c1a3bdd39078199b9668b2d80ad646aec6041de6e452fc0ae2af",
+      "grade": {
+        "attempt": "json-decoding-srcx",
+        "answerSha256": "8e553484ffd3c1a3bdd39078199b9668b2d80ad646aec6041de6e452fc0ae2af",
+        "facts": [
+          "supported",
+          "supported",
+          "supported",
+          "supported",
+          "supported"
+        ],
+        "complete": true,
+        "materialErrors": [],
+        "sourceReadMarkers": [
+          "def json",
+          "guess_json_utf",
+          "test_json_decode_compatibility_for_alt_utf_encodings"
+        ],
+        "reviewNote": "All five facts supported. Also correctly distinguishes no declared charset from response.encoding being falsey, and invalid bytes from JSON syntax errors. Correctly notes the alternate-UTF test is malformed JSON rather than UnicodeDecodeError fallback."
+      },
+      "commandFailureCount": 0
+    },
+    {
+      "task": "json-decoding",
+      "arm": "local",
+      "seconds": 87.03834766615182,
+      "commandCount": 6,
+      "usage": {
+        "input_tokens": 148392,
+        "cached_input_tokens": 115840,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2257,
+        "reasoning_output_tokens": 101
+      },
+      "counts": {
+        "lexical": 0,
+        "semantic": 0,
+        "reads": 0,
+        "implementation": 0,
+        "failures": 0,
+        "help": 0,
+        "stdoutTokens": 0
+      },
+      "answerSha256": "f0d14a8be2cbcc140807de75d0622f2e5a67e834bc6f0c75ddca1eb233a020a9",
+      "grade": {
+        "attempt": "json-decoding-local",
+        "answerSha256": "f0d14a8be2cbcc140807de75d0622f2e5a67e834bc6f0c75ddca1eb233a020a9",
+        "facts": [
+          "supported",
+          "supported",
+          "supported",
+          "supported",
+          "supported"
+        ],
+        "complete": true,
+        "materialErrors": [],
+        "sourceReadMarkers": [
+          "def json",
+          "guess_json_utf",
+          "test_json_decode_compatibility_for_alt_utf_encodings"
+        ],
+        "reviewNote": "All five facts supported. Explicit header-derived encoding versus absent encoding, detection and strict-decode fallback distinctions, normalized JSON errors and actual test scope are correct. Additional preservation-of-doc test was inspected."
+      },
+      "commandFailureCount": 0
+    },
+    {
+      "task": "redirect-upload-offset",
+      "arm": "local",
+      "seconds": 86.9847945002839,
+      "commandCount": 5,
+      "usage": {
+        "input_tokens": 123551,
+        "cached_input_tokens": 102656,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2187,
+        "reasoning_output_tokens": 155
+      },
+      "counts": {
+        "lexical": 0,
+        "semantic": 0,
+        "reads": 0,
+        "implementation": 0,
+        "failures": 0,
+        "help": 0,
+        "stdoutTokens": 0
+      },
+      "answerSha256": "c136d9fb23d52ed08d3079244a42863934833d9809019c436f58ed6f6488fe8a",
+      "grade": {
+        "attempt": "redirect-upload-offset-local",
+        "answerSha256": "c136d9fb23d52ed08d3079244a42863934833d9809019c436f58ed6f6488fe8a",
+        "facts": [
+          "supported",
+          "supported",
+          "supported",
+          "supported",
+          "supported"
+        ],
+        "complete": true,
+        "materialErrors": [],
+        "sourceReadMarkers": [
+          "self._body_position = body.tell()",
+          "rewind_body(prepared_request)",
+          "test_rewind_partially_read_body"
+        ],
+        "reviewNote": "All five facts supported. Correctly qualifies consumption before preparation, preserved offset rather than zero, 307 versus clearing redirects, non-replayable iterables and OSError-specific tell/seek behavior. Distinguishes partial-body helper and separate 307 integration tests."
+      },
+      "commandFailureCount": 0
+    },
+    {
+      "task": "redirect-upload-offset",
+      "arm": "srcx",
+      "seconds": 84.64573337510228,
+      "commandCount": 9,
+      "usage": {
+        "input_tokens": 128708,
+        "cached_input_tokens": 106880,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2093,
+        "reasoning_output_tokens": 210
+      },
+      "counts": {
+        "lexical": 1,
+        "semantic": 0,
+        "reads": 0,
+        "implementation": 0,
+        "failures": 0,
+        "help": 0,
+        "stdoutTokens": 1132
+      },
+      "answerSha256": "3bf98cd71563734dafde5bf193e99aabbbbf69bcabc3b02f953357c407b8603b",
+      "grade": {
+        "attempt": "redirect-upload-offset-srcx",
+        "answerSha256": "3bf98cd71563734dafde5bf193e99aabbbbf69bcabc3b02f953357c407b8603b",
+        "facts": [
+          "supported",
+          "supported",
+          "supported",
+          "supported",
+          "supported"
+        ],
+        "complete": true,
+        "materialErrors": [],
+        "sourceReadMarkers": [
+          "self._body_position = body.tell()",
+          "rewind_body(prepared_request)",
+          "test_rewind_partially_read_body"
+        ],
+        "reviewNote": "All five facts supported. Identifies initial preparation offset, retained body headers and rewind conditions, differentiates absent and failing tell and OSError-only handlers. Uses local source reads after one lexical lookup; correctly separates helper test from 307 integration evidence."
+      },
+      "commandFailureCount": 0
+    },
+    {
+      "task": "timeout-budget",
+      "arm": "srcx",
+      "seconds": 116.92115845810622,
+      "commandCount": 10,
+      "usage": {
+        "input_tokens": 147616,
+        "cached_input_tokens": 126592,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2970,
+        "reasoning_output_tokens": 151
+      },
+      "counts": {
+        "lexical": 0,
+        "semantic": 1,
+        "reads": 0,
+        "implementation": 0,
+        "failures": 0,
+        "help": 0,
+        "stdoutTokens": 1628
+      },
+      "answerSha256": "5a694f5d8e438759ba93d9c98ff2211a65fc3d280d13d253ba94dbf65314284d",
+      "grade": {
+        "attempt": "timeout-budget-srcx",
+        "answerSha256": "5a694f5d8e438759ba93d9c98ff2211a65fc3d280d13d253ba94dbf65314284d",
+        "facts": [
+          "supported",
+          "supported",
+          "supported",
+          "supported",
+          "supported"
+        ],
+        "complete": true,
+        "materialErrors": [],
+        "sourceReadMarkers": [
+          "resolved_timeout = TimeoutSauce(connect=connect, read=read)",
+          "Neither the connect nor read timeouts",
+          "def test_read_timeout"
+        ],
+        "reviewNote": "All five facts supported. Correct tuple/scalar forwarding and non-wall-clock semantics; qualifies exception mapping and adds the correct iter_content ConnectionError distinction. Identifies named tests without mistaking total_timeout_connect for a total elapsed-time test. Extra body-timeout test and pyproject dependency evidence were source-checked."
+      },
+      "commandFailureCount": 2
+    },
+    {
+      "task": "timeout-budget",
+      "arm": "local",
+      "seconds": 94.16618508286774,
+      "commandCount": 5,
+      "usage": {
+        "input_tokens": 117392,
+        "cached_input_tokens": 98176,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2529,
+        "reasoning_output_tokens": 135
+      },
+      "counts": {
+        "lexical": 0,
+        "semantic": 0,
+        "reads": 0,
+        "implementation": 0,
+        "failures": 0,
+        "help": 0,
+        "stdoutTokens": 0
+      },
+      "answerSha256": "74a7d07ff28a03238aaa4dc6bb2dcc5025b4b93df23d1c3a8f4a51bd9c4640e5",
+      "grade": {
+        "attempt": "timeout-budget-local",
+        "answerSha256": "74a7d07ff28a03238aaa4dc6bb2dcc5025b4b93df23d1c3a8f4a51bd9c4640e5",
+        "facts": [
+          "supported",
+          "supported",
+          "supported",
+          "supported",
+          "supported"
+        ],
+        "complete": true,
+        "materialErrors": [],
+        "sourceReadMarkers": [
+          "resolved_timeout = TimeoutSauce(connect=connect, read=read)",
+          "Neither the connect nor read timeouts",
+          "def test_read_timeout"
+        ],
+        "reviewNote": "All five facts supported. Correct phase limits, unchanged delegation, qualified exception mapping and eager-body ConnectionError path. Correctly notes total_timeout_connect and stream_timeout do not prove an overall deadline. Citation labels include some disjoint ranges sharing a file anchor; the referenced source was inspected."
+      },
+      "commandFailureCount": 0
+    }
+  ]
+}

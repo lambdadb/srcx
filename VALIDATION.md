@@ -1,5 +1,22 @@
 # Validation record
 
+## Fresh adaptive agent navigation
+
+[Eight fresh sessions](eval/FRESH-AGENT-NAVIGATION-RESULTS.md) compare local tools
+against local tools plus srcx on four new Requests behavior questions. Both arms
+support all frozen facts under assistant source review. Mean total input is 3.2%
+lower with srcx, while mean wall time is 6.3% longer; one observation per condition
+does not establish a general efficiency advantage. Three lexical searches and one
+semantic search were followed by local reads; no srcx implementation read occurred.
+
+All 18 previews/handles match pinned source and version metadata, eight checkouts
+remain clean, and 31 frozen inputs match their pre-run hashes. Setup/audit resolution
+confirms the same immutable Snapshot. Argument and exhausted-budget guard checks
+passed before execution. Two recoverable local command errors remain in the data;
+all sessions and service calls completed. No reindexing, document embeddings,
+ranking changes or agent reruns were performed. Raw task workspaces were archived
+with all 1,310 file hashes verified; historical evaluations remain unchanged.
+
 ## Optional overload implementation reads
 
 [Offline navigation results](eval/IMPLEMENTATION-READ-RESULTS.md) cover six fresh
