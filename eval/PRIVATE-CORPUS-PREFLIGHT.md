@@ -3,6 +3,10 @@
 The September 27, 2026 pilot was stopped after discovering missing source files.
 It does not establish a semantic-search quality, cost or latency advantage.
 
+The separate corrected run is documented in
+[Private-repository agent value pilot](PRIVATE-AGENT-VALUE.md). The counts below
+describe the original aborted run and are not combined with that run's outcomes.
+
 ## Intended comparison
 
 Twelve frozen maintenance questions from a private Java repository: four exact
