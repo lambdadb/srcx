@@ -573,6 +573,14 @@ srcx git sync-tags --repo <name>
 srcx resolve --repo <name> --ref v1.0.0
 ```
 
+Prefer the exact `collection` value returned by `repo list` when the repository
+is already known. Generated Collection names (`code-<slug>-<hash>`) are looked up
+directly and take precedence over repository aliases with the same spelling.
+Repository names and keys still use discovery and reject ambiguous matches across
+presets. Only a missing Collection (HTTP 404) falls back to alias discovery;
+permission, service, descriptor and schema errors remain errors. This does not
+cache or bypass immutable-version and source-integrity checks.
+
 `read --implementation` follows a contiguous Python or TypeScript/TSX overload
 group to its unique implementation in the same file and AST scope. It reads the
 stored source at the result's immutable Tag; no reindexing or embedding is needed.

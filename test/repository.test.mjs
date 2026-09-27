@@ -33,6 +33,9 @@ class ProvisionRemote {
   async collections() {
     return [...this.metadata.values()];
   }
+  async collection(name) {
+    return this.metadata.get(name);
+  }
   async create(collectionName, indexConfigs, description, tags) {
     this.metadata.set(collectionName, {
       collectionName,
@@ -250,4 +253,150 @@ test("analyzer sets round-trip through registration and detect schema drift", as
     metadata.indexConfigs = indexConfigs(preset);
   }
   assert.equal((await discover(remote)).repositories.length, 4);
+});
+
+test("exact Collection lookup avoids discovery and retains descriptor/schema validation", async () => {
+  const name = collectionName("github.com/example/repo", "repo", hash(PRESET));
+  const original = {
+    id: "__repo__",
+    kind: "manifest",
+    role: "repository",
+    initialization: "ready",
+    preset: PRESET,
+    repoKey: "github.com/example/repo",
+    repoId: "repo-id",
+    indexId: "index-id",
+    configHash: hash(PRESET),
+    name: "repo",
+  };
+  const metadata = {
+    collectionName: name,
+    description: "fixture",
+    indexConfigs: indexConfigs(PRESET),
+    tags: {
+      purpose: "code-search-v1",
+      "index-id": original.indexId,
+      "config-hash": original.configHash,
+    },
+  };
+  let doc, current, reads;
+  const remote = {
+    async collection(selector) {
+      assert.equal(selector, name);
+      return current;
+    },
+    async collections() {
+      throw Error("must not discover unrelated repositories");
+    },
+    store(selector) {
+      assert.equal(selector, name);
+      return {
+        async fetch(ref, ids, consistent) {
+          reads++;
+          assert.deepEqual(ref, { kind: "branch", name: "main" });
+          assert.deepEqual(ids, ["__repo__"]);
+          assert.equal(consistent, true);
+          return doc ? [doc] : [];
+        },
+      };
+    },
+  };
+  const reset = () => {
+    doc = structuredClone(original);
+    current = structuredClone(metadata);
+    reads = 0;
+  };
+  reset();
+  assert.equal((await selectRepository(remote, name)).repoId, original.repoId);
+  assert.equal(reads, 1);
+  for (const [change, message] of [
+    [
+      () => {
+        doc = undefined;
+      },
+      /partially initialized/,
+    ],
+    [
+      () => {
+        doc.initialization = "pending";
+      },
+      /partially initialized/,
+    ],
+    [
+      () => {
+        doc.configHash = "wrong";
+      },
+      /unsupported preset/,
+    ],
+    [
+      () => {
+        current.tags["index-id"] = "wrong";
+      },
+      /labels disagree/,
+    ],
+    [
+      () => {
+        current.indexConfigs = { kind: { type: "text" } };
+      },
+      /schema differs/,
+    ],
+    [
+      () => {
+        current.tags.purpose = "foreign";
+      },
+      /not a srcx repository/,
+    ],
+    [
+      () => {
+        current.collectionName = "wrong";
+      },
+      /different name/,
+    ],
+  ]) {
+    reset();
+    change();
+    await assert.rejects(selectRepository(remote, name), message);
+  }
+  reset();
+  remote.collection = async () => {
+    throw Error("lookup unavailable");
+  };
+  await assert.rejects(selectRepository(remote, name), /lookup unavailable/);
+  assert.equal(reads, 0);
+});
+
+test("a missing Collection-shaped selector can still resolve as a repository alias", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  const prior = process.env.SRCX_STATE_DIR;
+  process.env.SRCX_STATE_DIR = join(f.root, "selector-state");
+  t.after(() => {
+    if (prior === undefined) delete process.env.SRCX_STATE_DIR;
+    else process.env.SRCX_STATE_DIR = prior;
+  });
+  const remote = new ProvisionRemote();
+  const r = await register(remote, { path: f.path });
+  const alias = "code-alias-0123456789abcdef";
+  const store = remote.store(r.collection);
+  const [doc] = await store.fetch(
+    { kind: "branch", name: "main" },
+    ["__repo__"],
+    true,
+  );
+  await store.upsert("main", [{ ...doc, name: alias }]);
+  assert.equal(
+    (await selectRepository(remote, alias)).collection,
+    r.collection,
+  );
+  await assert.rejects(
+    selectRepository(remote, "code-missing-0123456789abcdef"),
+    /Repository not found/,
+  );
+  remote.collection = async () => {
+    throw Error("ordinary aliases must not make a direct request");
+  };
+  assert.equal(
+    (await selectRepository(remote, r.repoKey)).collection,
+    r.collection,
+  );
 });

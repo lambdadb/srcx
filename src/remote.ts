@@ -77,6 +77,17 @@ export class LambdaRemote {
         (await this.client.listAllCollections({ size: 100 })).collections,
     );
   }
+  async collection(name: string) {
+    return request("get collection", async () => {
+      try {
+        return (await this.client.collection(name).get()).collection;
+      } catch (error) {
+        if ((error as { statusCode?: number }).statusCode === 404)
+          return undefined;
+        throw error;
+      }
+    });
+  }
   async create(
     name: string,
     indexConfigs: Record<string, IndexConfigsUnion>,

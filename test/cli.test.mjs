@@ -46,7 +46,7 @@ async function cliContract(t, preset) {
   const store = managed
     ? new ManagedStore(preset.embedding.dimensions)
     : new MemoryStore();
-  const collection = "code-review";
+  const collection = "code-review-0123456789abcdef";
   const binding = {
     repoId: "review-repo",
     indexId: "review-index",
@@ -66,6 +66,25 @@ async function cliContract(t, preset) {
     },
   ]);
   const httpErrors = [];
+  let collectionLists = 0,
+    collectionGets = 0;
+  const metadata = {
+    projectName: "fixture",
+    collectionName: collection,
+    numPartitions: 1,
+    numDocs: 1,
+    updatedAt: 1,
+    createdAt: 1,
+    description: "Synthetic CLI fixture",
+    indexConfigs: indexConfigs(preset),
+    tags: {
+      purpose: "code-search-v1",
+      "index-id": binding.indexId,
+      "config-hash": binding.configHash,
+    },
+    defaultBranchName: "main",
+    snapshotRetentionInDays: 7,
+  };
   // Real CLI + SDK transport, backed only by the fault-injection store.
   const server = createServer(async (req, res) => {
     try {
@@ -82,27 +101,14 @@ async function cliContract(t, preset) {
       });
       let result;
       if (path.endsWith("/collections") && req.method === "GET") {
-        result = {
-          collections: [
-            {
-              projectName: "fixture",
-              collectionName: collection,
-              numPartitions: 1,
-              numDocs: 1,
-              updatedAt: 1,
-              createdAt: 1,
-              description: "Synthetic CLI fixture",
-              indexConfigs: indexConfigs(preset),
-              tags: {
-                purpose: "code-search-v1",
-                "index-id": binding.indexId,
-                "config-hash": binding.configHash,
-              },
-              defaultBranchName: "main",
-              snapshotRetentionInDays: 7,
-            },
-          ],
-        };
+        collectionLists++;
+        result = { collections: [metadata] };
+      } else if (
+        path.endsWith(`/collections/${collection}`) &&
+        req.method === "GET"
+      ) {
+        collectionGets++;
+        result = { collection: metadata };
       } else if (path.endsWith("/docs/fetch")) {
         result = page(
           await store.fetch(body.ref, body.ids, body.consistentRead),
@@ -292,10 +298,12 @@ async function cliContract(t, preset) {
     ]);
     assert.equal(resolved.commitOid, f.b);
   }
+  const listsBeforeSearch = collectionLists,
+    getsBeforeSearch = collectionGets;
   const hits = await runCli([
     "search",
     "--repo",
-    "review",
+    collection,
     "--version",
     f.b,
     "--mode",
@@ -305,6 +313,8 @@ async function cliContract(t, preset) {
     "--path",
     "code.ts",
   ]);
+  assert.equal(collectionLists, listsBeforeSearch);
+  assert.equal(collectionGets, getsBeforeSearch + 1);
   assert.ok(hits.length > 0);
   assert.ok(hits.every((h) => !("rerankScore" in h)));
   const reranked = await promisify(execFile)(

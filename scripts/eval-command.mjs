@@ -6,6 +6,7 @@ import { atomic, optionalJson } from "../dist/common.js";
 const exec = promisify(execFile);
 const operations = new Set([
   "list collections",
+  "get collection",
   "create collection",
   "fetch omitted vectors",
   "fetch",
