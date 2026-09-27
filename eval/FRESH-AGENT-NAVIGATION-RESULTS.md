@@ -49,13 +49,18 @@ not that every byte of the reference regions was retrieved.
 | timeout-budget         | srcx      | 5/5   |     147,616 |      126,592 |  2,970 |   116.9 |       10 | 1 semantic |
 | timeout-budget         | local     | 5/5   |     117,392 |       98,176 |  2,529 |    94.2 |        5 | 0          |
 
-| Mean per task  |     Local | srcx-assisted |
-| -------------- | --------: | ------------: |
-| Total input    | 115,558.5 |     111,917.5 |
-| Cached input   |  91,520.0 |      92,448.0 |
-| Uncached input |  24,038.5 |      19,469.5 |
-| Output         |   2,205.2 |       2,301.2 |
-| Seconds        |      84.5 |          89.9 |
+| Mean per task    |      Local | srcx-assisted |
+| ---------------- | ---------: | ------------: |
+| Total input      | 115,558.50 |    111,917.50 |
+| Cached input     |  91,520.00 |     92,448.00 |
+| Uncached input   |  24,038.50 |     19,469.50 |
+| Output           |   2,205.25 |      2,301.25 |
+| Seconds          |      84.53 |         89.89 |
+| Commands         |       4.50 |          8.25 |
+| Command failures |       0.00 |          0.50 |
+
+The JSON `means` contains per-task averages; `totals` records run counts,
+completed tasks, commands and command failures across each condition.
 
 Cached input is part of total input, not additional usage. Uncached input falls
 19.0%, but that is not a measured billing saving. Output rises 4.4%. Skill reading,

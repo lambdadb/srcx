@@ -12,22 +12,34 @@
   "readCount": 0,
   "means": {
     "local": {
-      "complete": 4,
       "input": 115558.5,
       "cached": 91520,
       "uncached": 24038.5,
       "output": 2205.25,
       "seconds": 84.5344133330509,
-      "commands": 18,
+      "commands": 4.5,
       "commandFailures": 0
     },
     "srcx": {
-      "complete": 4,
       "input": 111917.5,
       "cached": 92448,
       "uncached": 19469.5,
       "output": 2301.25,
       "seconds": 89.88550447928719,
+      "commands": 8.25,
+      "commandFailures": 0.5
+    }
+  },
+  "totals": {
+    "local": {
+      "runs": 4,
+      "complete": 4,
+      "commands": 18,
+      "commandFailures": 0
+    },
+    "srcx": {
+      "runs": 4,
+      "complete": 4,
       "commands": 33,
       "commandFailures": 2
     }
