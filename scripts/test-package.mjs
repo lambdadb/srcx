@@ -38,6 +38,8 @@ try {
       .sort(),
     [
       "runtime/grammars/README.md",
+      "runtime/grammars/tree-sitter-bash.LICENSE",
+      "runtime/grammars/tree-sitter-bash.wasm",
       "runtime/grammars/tree-sitter-sql.LICENSE",
       "runtime/grammars/tree-sitter-sql.wasm",
       "runtime/grammars/tree-sitter-wasm.LICENSE",
@@ -83,18 +85,23 @@ try {
       pkg.gitHead,
       "Development artifact must identify the verified source commit.",
     );
-  const sqlGrammar = readFileSync(
-    join(
-      consumer,
-      "node_modules",
-      pkg.name,
-      "runtime/grammars/tree-sitter-sql.wasm",
-    ),
-  );
-  assert.equal(
-    createHash("sha256").update(sqlGrammar).digest("hex"),
-    "b77530893b1dd6d1d4814eacf34d25bcbe4a12ec9a25a8c45b320d447265f42b",
-  );
+  for (const [grammar, digest] of [
+    ["sql", "b77530893b1dd6d1d4814eacf34d25bcbe4a12ec9a25a8c45b320d447265f42b"],
+    [
+      "bash",
+      "5daf3f2ac1cea01a64cfd6878ef7d247310925a4c62238eb4b8c1feb5dce355a",
+    ],
+  ]) {
+    const bytes = readFileSync(
+      join(
+        consumer,
+        "node_modules",
+        pkg.name,
+        `runtime/grammars/tree-sitter-${grammar}.wasm`,
+      ),
+    );
+    assert.equal(createHash("sha256").update(bytes).digest("hex"), digest);
+  }
   const bin = join(consumer, "node_modules", pkg.name, "dist/cli.js");
   if (process.platform !== "win32") {
     const executable = join(consumer, "node_modules", ".bin", "srcx");

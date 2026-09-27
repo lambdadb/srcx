@@ -1,5 +1,99 @@
 # Validation record
 
+## File selection and embedding policy
+
+Offline validation on Node 24.15.0 passed 128 tests and seven installed-package
+checks, plus typecheck, version and formatting checks. Synthetic tracked files
+verify credential/crypto/image exclusions, case-insensitive minified assets,
+virtual environments, dependency/cache paths and logs. Lockfiles, generated code,
+snapshots and data retain source and lexical chunks without managed inputs.
+Ordinary source, tests, manifests, templates and configurable Sphinx documentation
+remain eligible. Ordered path overrides, configuration identity, baseline rejection,
+unchanged-file reuse, managed publication and CLI override rejection are covered.
+The CLI evaluator's actual offline prepare test includes an in-tree answer fixture
+and verifies it is absent from the prepared corpus.
+
+Fresh offline inventories reused the audited source commits:
+
+| Repository                                              | Result                                                                                                                                                                                                                      |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Requests `611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60`     | Excludes 12 certificate/key payload files. Estimated managed input decreases from the image-only build's 179,548 to 159,849 tokens; legal/author files stay lexical-only and docs/conf.py stays eligible.                   |
+| srcx `e83134b44a11d78a79c5941c0e1f907383f238b3`         | Explicit `eval/**` exclusion removes 45 evaluation files: total chunk tokens decrease from 316,889 to 202,835. This is a corpus boundary, not a claim that earlier answers used leaked labels.                              |
+| lambdadb-cli `513af6e4d262edd380013c86d51a20aad16274d7` | Retains all 38 files and 200 chunks; package-lock.json (22,076 chunk tokens), LICENSE and JSONL examples have no managed input. The retained baseline was lexical-only, so this is not a measured embedding-cost reduction. |
+
+All excluded paths have zero file/chunk records and all lexical-only files have
+zero embedding inputs in these rebuilt artifacts. No service writes, provider calls
+or agent sessions were performed. Existing remote Collections and historical
+results are unchanged. The pinned policy selects a new configuration; no legacy
+preset compatibility or migration layer was added. Generated detection is limited
+to explicit markers/suffixes, `.gitattributes` is not interpreted, and credential
+rules are not a general secret scanner. Additional evaluation-label locations must
+be added to the explicit evaluation policy before running a different suite.
+
+## Image exclusion
+
+Image assets are excluded by case-insensitive extension before source records,
+chunking or embedding, including SVG and text pixel maps. Source and installed
+CLI checks cover image exclusion for lexical and managed presets; TSX containing
+inline SVG still produces managed chunks. The regression fails against the
+archived pre-fix runtime. All 125 tests, six installed-package checks, typecheck,
+version and formatting checks passed on Node 24.15.0.
+
+A credential-free rebuild of the same Requests commit used in the semantic pilot
+excluded the logo SVG: managed input fell from 806,268 to 179,548 estimated tokens
+(77.7%), and managed chunks from 1,864 to 1,081. No remote import, agent rerun or
+retrieval improvement was measured. Previous results and their runtime are retained.
+
+## Semantic agent investigation
+
+[The semantic follow-up](eval/SEMANTIC-AGENT-RESULTS.md) covers twelve fresh sessions
+on four frozen Requests questions, with the same local checkout in all conditions.
+All answers covered the required facts under assistant source review. Mean times
+were 69.9 seconds for local tools, 68.6 for lexical-first and 68.0 for semantic-first;
+these single-run differences do not establish an efficiency gain. Semantic used
+more total model input than both other conditions. All srcx sessions used one
+search followed by local reads.
+
+All 35 task previews and five separate diagnostic previews matched pinned source
+and immutable version metadata; twelve checkouts and 26 runtime/harness fingerprints
+passed verification. Payload validation does not establish nearest-neighbor recall:
+one unfiltered semantic query returned SVG chunks, while a Python-filtered query
+returned relevant methods with higher scores. The report preserves this unresolved
+retrieval discrepancy separately from the original agent comparison. No product
+search policy, embedding model or ranking default changed.
+
+## Agent workflow diagnostic
+
+[The agent workflow record](eval/AGENT-WORKFLOW-PILOT.md) covers eight fresh Codex
+sessions on three frozen questions against pinned public srcx/lambdadb-cli source.
+Optional srcx access was unused in all three paired development environments.
+A separate explicit-invocation confirmation used three searches and seven reads
+without cloning. Both it and the Git/local baseline answered correctly under
+assistant source review; srcx took 94.2 seconds versus 65.8, with more total model
+input but less uncached input. No token-cost, latency or accuracy win is claimed.
+Six successful reads and ten search previews matched pinned source/version data.
+The report separates preparation cost, guided invocation, evolving environment
+conditions and the audited wrapper reservation defect from product correctness.
+
+## Bash grammar runtime compatibility
+
+Preparing the agent workflow pilot exposed a real import failure in the public
+`lambdadb-cli` repository at `513af6e4d262edd380013c86d51a20aad16274d7`:
+`scripts/test-homebrew.sh` aborted local materialization with
+`TypeError: resolved is not a function`. A minimal `[[ "$value" == 1 ]]`
+comparison reproduces it with the previous Bash grammar/runtime combination.
+The replacement grammar is bundled with its license and pinned checksum in
+`CHUNKER.shellGrammar`; other language runtimes remain unchanged.
+
+The regression fixture fails before the replacement and passes afterward,
+preserving complete source-byte coverage and syntax spans. The same fixture is
+included in installed-package import checks. On Node 24.15.0, all 124 tests,
+six installed-package tests, formatting/version checks and typecheck passed.
+The two public pilot corpora also passed local materialization after the fix:
+139 files/928 chunks for srcx and 38 files/200 chunks for lambdadb-cli, with no
+embeddings. These checks establish indexing/packaging correctness, not an agent
+accuracy or efficiency improvement.
+
 ## Agent skill installation
 
 The npm artifact includes `skills/srcx-search/SKILL.md`. The `skills` command

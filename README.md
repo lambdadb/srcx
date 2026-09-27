@@ -142,9 +142,60 @@ Each artifact contains `build.json` (inventory, configuration, counts, hashes,
 change/deletion plan) and `records.jsonl` (exact file records and retrieval chunks).
 Artifacts contain source code; keep them with the same access policy as the repo.
 Every tree entry is accounted for, including explicit exclusions for symlinks,
-submodules, LFS pointers, dependencies/build output, binary/invalid UTF-8 data,
+submodules, LFS pointers, dependencies/build output, image assets (including SVG), binary/invalid UTF-8 data,
 invalid UTF-8 paths, and files above 1 MiB. Excluded paths are preserved losslessly
 in `pathBase64`.
+Image extensions are matched case-insensitively and excluded before chunking or
+embedding, even when their payload is readable text. Source files containing
+inline images, such as a TSX component with SVG markup, remain included.
+
+File selection and embedding eligibility are separate:
+
+| Default treatment                                   | Examples                                                                                                                                                                                                                                                        |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Exclude source and chunks                           | Credential files (`.env`, `.env.*`, `.npmrc`, `.netrc`, `.aws/`, `.ssh/`), key/certificate payloads, images, binaries, installed dependencies (`.venv/`, `node_modules/`, `vendor/`, `third_party/`), build/cache output, logs, minified assets and source maps |
+| Keep source and lexical chunks; skip embeddings     | Lockfiles, license/author files, CSV/TSV/JSONL data, snapshots, generated code identified by common suffixes or an explicit generated/do-not-edit comment in the first 8 KiB                                                                                    |
+| Keep source, lexical chunks and eligible embeddings | Authored code, tests, documentation, package manifests, CI/build configuration and other readable text                                                                                                                                                          |
+
+`.env.example`, `.env.sample`, `.env.template` and equivalent suffixes remain
+included as templates. Private-key PEM headers also exclude files with unrelated
+extensions. These are targeted exclusions, **not a general secret scanner**;
+review the dry-run inventory before uploading. `.gitignore` does not remove
+already tracked Git objects, and `.gitattributes` is not interpreted for selection.
+
+Use `--file-policy policy.json` with `repo add` or `import --dry-run --path` to
+adjust the scope explicitly. The JSON contents are pinned in the repository
+preset; subsequent connected imports use that preset, not the local policy file.
+
+```json
+{
+  "version": 1,
+  "rules": [
+    { "pattern": "eval/**", "action": "exclude" },
+    { "pattern": "third_party/special/**", "action": "lexical" },
+    { "pattern": "generated/api.pb.go", "action": "semantic" }
+  ]
+}
+```
+
+Patterns match case-sensitive, repository-relative paths. `*` and `?` stay within
+one path segment; `**` must occupy a whole segment and matches any depth. Rules
+run in order; the last match wins. `semantic` permits embeddings when enabled but
+still skips structural/import-only chunks. Rules override dependency/generated/
+data defaults, but cannot override credential, crypto, image, binary, private-key
+content, size, encoding, symlink or LFS exclusions. `retrieval` and `policyReason`
+in dry-run coverage explain each included file's policy; chunk records retain
+`embeddingSkipReason`. A changed policy selects a distinct Collection/configuration.
+
+```sh
+srcx import --path . --ref develop --dry-run --embedding text-embedding-3-small --file-policy policy.json --output /tmp/srcx-preview
+srcx repo add --path . --embedding text-embedding-3-small --file-policy policy.json
+```
+
+Evaluation labels need an explicit corpus boundary. The checkout evaluation
+harnesses use [this policy](eval/source-corpus-policy.json) to exclude `eval/**`;
+labels stored elsewhere require additional exclusions before a new evaluation.
+General-purpose imports do not discard all evaluation or test directories.
 
 Java, TypeScript/TSX, JavaScript/JSX, Python, Go, Rust, C/C++, Shell and SQL use
 pinned Tree-sitter WASM grammars.
@@ -161,8 +212,8 @@ pinned Tree-sitter WASM grammars.
 
 `.h` files use the C grammar deterministically; C++ headers should use a listed
 C++ extension for syntax chunking. Shell does not infer extensionless scripts from
-shebangs or claim Zsh/Fish/PowerShell support. SQL uses the bundled
-[grammar artifact](runtime/grammars/README.md); dialect-specific syntax unsupported
+shebangs or claim Zsh/Fish/PowerShell support. Shell and SQL use bundled
+[grammar artifacts](runtime/grammars/README.md); SQL dialect-specific syntax unsupported
 by that grammar falls back to text. SQL strings and supported dollar-quoted bodies
 are parsed as part of their containing statement, not split at each semicolon.
 Rust macros/`cfg` and C/C++ preprocessor conditions are not expanded or evaluated;
@@ -339,6 +390,16 @@ For practical search → read → change-planning examples, see the
 [developer workflow pilot](https://github.com/lambdadb/srcx/blob/develop/eval/DEVELOPER-WORKFLOW-PILOT.md).
 It follows three maintenance investigations through related source and tests,
 including the limitations of previews and optional reranking.
+
+The [agent workflow diagnostic](https://github.com/lambdadb/srcx/blob/develop/eval/AGENT-WORKFLOW-PILOT.md)
+compares fresh agent sessions with Git/local tools and optional or explicitly
+invoked srcx. It found no established efficiency advantage on the small public
+corpora and records the remaining workflow hypotheses.
+
+The [semantic agent follow-up](https://github.com/lambdadb/srcx/blob/develop/eval/SEMANTIC-AGENT-RESULTS.md)
+compares local, lexical-first and semantic-first investigations on Requests. It
+finds no established agent efficiency gain and records an unresolved candidate
+retrieval discrepancy and excessive embedding of a generated SVG asset.
 
 ## Query language and agent use
 

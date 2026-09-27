@@ -206,7 +206,12 @@ test("managed prepare pins source-only artifacts, original labels and budgets; d
       const build = JSON.parse(
         await readFile(join(a.path, "build.json"), "utf8"),
       );
-      assert.deepEqual(build.preset, MANAGED_PRESET);
+      assert.deepEqual(build.preset, {
+        ...MANAGED_PRESET,
+        filePolicy: JSON.parse(
+          await readFile("eval/source-corpus-policy.json", "utf8"),
+        ),
+      });
       assert.deepEqual(build.preset.analyzers, ["standard"]);
       const docs = (await readFile(join(a.path, "records.jsonl"), "utf8"))
         .trim()

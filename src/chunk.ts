@@ -14,12 +14,14 @@ export const CHUNKER = {
   grammars: "tree-sitter-wasms@0.1.13",
   sqlGrammar:
     "tree-sitter-wasm@2.0.2/sql/b77530893b1dd6d1d4814eacf34d25bcbe4a12ec9a25a8c45b320d447265f42b",
+  shellGrammar:
+    "tree-sitter-wasm@2.0.2/bash/5daf3f2ac1cea01a64cfd6878ef7d247310925a4c62238eb4b8c1feb5dce355a",
   tokenizer: "js-tiktoken@1.0.21/cl100k_base",
   targetTokens: 800,
   maxTokens: 1500,
   fallbackOverlap: 0.1,
   enrichment: "path-scope-symbol-v1",
-  policy: "source-v1",
+  policy: "source-v2",
 } as const;
 export type Span = {
   startByte: number;
@@ -49,16 +51,14 @@ async function language(name: string): Promise<Language> {
   let l = languages.get(name);
   if (!l) {
     l = await Language.load(
-      name === "sql"
+      name === "sql" || name === "shell"
         ? fileURLToPath(
             new URL(
-              "../runtime/grammars/tree-sitter-sql.wasm",
+              `../runtime/grammars/tree-sitter-${name === "shell" ? "bash" : "sql"}.wasm`,
               import.meta.url,
             ),
           )
-        : require.resolve(
-            `tree-sitter-wasms/out/tree-sitter-${name === "shell" ? "bash" : name}.wasm`,
-          ),
+        : require.resolve(`tree-sitter-wasms/out/tree-sitter-${name}.wasm`),
     );
     languages.set(name, l);
   }

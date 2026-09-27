@@ -40,7 +40,11 @@ const { values, positionals } = parseArgs({
 const root = resolve(values.root);
 const modes = ["syntax", "window"];
 // Frozen protocol: analyzer selection must not follow product defaults.
-const evalPreset = presetFor("none", ["standard"]);
+const evalPreset = presetFor(
+  "none",
+  ["standard"],
+  JSON.parse(await readFile("eval/source-corpus-policy.json", "utf8")),
+);
 const planFile = join(root, "plan.json");
 const reportFile = join(root, "report.json");
 async function fingerprint() {
@@ -48,6 +52,7 @@ async function fingerprint() {
     "package-lock.json",
     "scripts/retrieval-eval.mjs",
     "scripts/retrieval-eval-lib.mjs",
+    "eval/source-corpus-policy.json",
     ...(await readdir("dist"))
       .filter((f) => f.endsWith(".js"))
       .sort()

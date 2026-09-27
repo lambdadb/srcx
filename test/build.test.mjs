@@ -3,10 +3,16 @@ import assert from "node:assert/strict";
 import { join } from "node:path";
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
-import { fixture, git } from "./fixture.mjs";
+import { fixture, git, imageFiles } from "./fixture.mjs";
 import { chunk, CHUNKER, tokens } from "../dist/chunk.js";
 import { hash, lineAt } from "../dist/common.js";
-import { materialize, records, validateBuild, PRESET } from "../dist/build.js";
+import {
+  materialize,
+  records,
+  validateBuild,
+  PRESET,
+  MANAGED_PRESET,
+} from "../dist/build.js";
 import { normalizeRemote, resolveCommit, inventory } from "../dist/git.js";
 import { configure, validateSettings } from "../dist/settings.js";
 
@@ -117,6 +123,42 @@ test("two committed builds account for exclusions, reuse and explicit deletion; 
   assert.equal(report.commitOid, f.a);
   await writeFile(join(f.buildA.directory, "records.jsonl"), "{}\n");
   await assert.rejects(validateBuild(f.buildA), /Corrupted/);
+});
+test("image assets never become source or managed embedding records, while inline SVG code stays searchable", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  await writeFile(
+    join(f.path, "icon.svg.tsx"),
+    'export function Icon() { return <svg><path d="M0 0L1 1" /></svg>; }\n',
+  );
+  git(f.path, "add", "icon.svg.tsx");
+  git(f.path, "commit", "-qm", "inline SVG component");
+  const managed = await materialize({
+    identity: f.source,
+    ref: git(f.path, "rev-parse", "HEAD"),
+    output: join(f.root, "image-policy"),
+    preset: MANAGED_PRESET,
+  });
+  for (const build of [f.buildA, managed]) {
+    const docs = [];
+    for await (const doc of records(build.directory)) docs.push(doc);
+    for (const path of imageFiles) {
+      const entry = build.inventory.find((item) => item.path === path);
+      assert.equal(entry.status, "excluded", path);
+      assert.equal(entry.reason, "image-extension", path);
+      assert.equal(entry.fileId, undefined, path);
+      assert.ok(!docs.some((doc) => doc.path === path), path);
+    }
+    if (build === managed)
+      assert.ok(
+        docs.some(
+          (doc) =>
+            doc.path === "icon.svg.tsx" &&
+            doc.embeddingStatus === "managed" &&
+            doc.embeddingText.includes("<svg>"),
+        ),
+      );
+  }
 });
 test("embedding cache follows full enriched input, not line numbers, and failures abort builds", async (t) => {
   const f = await fixture();

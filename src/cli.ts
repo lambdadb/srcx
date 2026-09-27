@@ -17,6 +17,7 @@ import {
   normalizeAnalyzers,
   ANALYZERS,
 } from "./build.js";
+import { normalizeFilePolicy } from "./file-policy.js";
 import { invariant, optionalJson } from "./common.js";
 import { LambdaRemote } from "./remote.js";
 import {
@@ -63,6 +64,13 @@ const analyzerOption = (description: string) =>
     description + ` (${ANALYZERS.join(", ")}; default: standard)`,
   ).argParser((value) =>
     normalizeAnalyzers(value.split(",").map((name) => name.trim())),
+  );
+const filePolicyOption = () =>
+  new Option(
+    "--file-policy <json>",
+    "Path to file policy JSON; pinned at registration or local dry run",
+  ).argParser((path) =>
+    normalizeFilePolicy(JSON.parse(readFileSync(path, "utf8"))),
   );
 async function connected() {
   const settings = await loadSettings();
@@ -131,6 +139,7 @@ repo
   .option("--description <text>")
   .option("--tag <key=value>", "One optional Collection metadata tag")
   .addOption(analyzerOption("Comma-separated text analyzers"))
+  .addOption(filePolicyOption())
   .addOption(
     new Option(
       "--embedding <model>",
@@ -153,7 +162,7 @@ repo
         remote: o.remote,
         description: o.description,
         labels,
-        preset: presetFor(o.embedding, o.analyzers),
+        preset: presetFor(o.embedding, o.analyzers, o.filePolicy),
       }),
     );
   });
@@ -181,6 +190,7 @@ cli
   .option("--repo <name>", "Registered remote repository")
   .option("--ref <ref>", "Local branch, Git tag, or commit OID")
   .option("--dry-run", "Only materialize and validate a local build")
+  .addOption(filePolicyOption())
   .addOption(
     new Option(
       "--embedding <model>",
@@ -211,6 +221,10 @@ cli
     invariant(
       !o.analyzers || (o.dryRun && o.path),
       "--analyzers is only accepted with --dry-run --path; connected imports use the repository preset.",
+    );
+    invariant(
+      !o.filePolicy || (o.dryRun && o.path),
+      "--file-policy is only accepted with --dry-run --path; connected imports use the repository preset.",
     );
     invariant(!(o.path && o.repo), "Choose --path or --repo.");
     invariant(
@@ -261,7 +275,7 @@ cli
         await validateBuild(b);
       } else {
         let source;
-        let preset = presetFor(o.embedding, o.analyzers);
+        let preset = presetFor(o.embedding, o.analyzers, o.filePolicy);
         if (o.path) source = await identity(o.path, o.remote);
         else {
           invariant(o.repo, "Use --path for a credential-free dry run.");
@@ -289,6 +303,8 @@ cli
           path: e.path,
           status: e.status,
           reason: e.reason,
+          retrieval: e.retrieval,
+          policyReason: e.policyReason,
           parseStatus: e.parseStatus,
         })),
         uploaded: false,

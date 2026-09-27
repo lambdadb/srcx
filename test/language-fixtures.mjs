@@ -70,6 +70,7 @@ hi; there 😀
 EOF
 }
 if true; then echo hi; fi
+if [[ "$value" == 1 ]]; then echo match; fi
 `;
 
 export const sql =

@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Separate file selection from embedding eligibility. Exclude credential and
+  crypto payloads, virtual environments, caches and logs; keep lockfiles, generated
+  code, snapshots, tabular data and legal/author files available lexically without
+  embedding them. Fix case-sensitive minified-asset exclusions. Add pinned
+  `--file-policy` JSON rules for registration and local previews, explicit inventory
+  reasons and evaluation corpus exclusions for `eval/**`.
+
+- Exclude image assets, including text SVG and portable pixel maps, before
+  indexing or embedding. Match image extensions case-insensitively, preserve
+  exclusion metadata, and keep inline SVG in source files searchable. Include
+  the source policy change in preset identity.
+
+- Fix Shell indexing crashes on Bash comparisons such as `[[ "$value" == 1 ]]`
+  by bundling a runtime-compatible, checksum-pinned Bash grammar with its license.
+  Include the grammar in preset identity and installed-package validation.
+
 - Bundle the srcx-search agent skill in npm and add `skills install`, `update`,
   `remove` and `status` for Codex and Claude Code, with user/project scopes,
   explicit setup and preservation of customized or unowned files. Removing an

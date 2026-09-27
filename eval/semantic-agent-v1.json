@@ -1,0 +1,249 @@
+{
+  "suite": {
+    "format": 1,
+    "repository": "https://github.com/psf/requests.git",
+    "commit": "611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60",
+    "tasks": [
+      {
+        "id": "missing-error-response",
+        "style": "natural",
+        "issue": "https://github.com/psf/requests/issues/3731",
+        "question": "A logging helper receives the object returned by Requests, but its \"if result:\" branch skips a server error even though a reply was received. Explain what that check actually means, whether a redirect passes it, and the correct condition when the caller only wants to distinguish a missing object from an HTTP error. Locate the implementation and relevant tests."
+      },
+      {
+        "id": "replaced-credentials",
+        "style": "natural",
+        "issue": "https://github.com/psf/requests/issues/5419",
+        "question": "An application supplies a token in the Authorization header and no separate authentication argument. On one developer laptop, the outgoing request instead contains Basic credentials; on a clean machine the token survives. There is no redirect and the URL contains no credentials. Trace a source-supported explanation, show how to retain the token, and explain the broader effects of that remedy. Include relevant test evidence and distinguish a plausible diagnosis from a confirmed machine configuration."
+      },
+      {
+        "id": "stream-replay-ko",
+        "style": "korean",
+        "issue": "https://github.com/psf/requests/issues/6656",
+        "question": "Requests로 큰 응답을 조금씩 받아 처리했습니다. 마지막 조각까지 처리한 뒤 파싱 결과가 잘못된 것을 발견해서 같은 응답 객체에서 전체 원문을 다시 읽으려 하니 실패합니다. 반복해서 읽으면 자동으로 원문이 보관되는 것 아닌가요? 이 동작의 구현을 찾고, 정상적으로 끝까지 읽은 경우와 중간에 읽기가 실패한 경우를 구분해서 설명해주세요. 메모리에 모두 올릴 수 있는 경우와 없는 경우 각각 원문을 나중에 확인할 방법도 제안하고 관련 테스트를 확인해주세요."
+      },
+      {
+        "id": "merge-setting-control",
+        "style": "identifier",
+        "issue": null,
+        "question": "In requests.sessions.merge_setting, how do per-request and session settings combine? Cover either whole argument being None, conflicting mapping keys, mapping values set to None, and a non-mapping option such as verify. Show how Session.prepare_request uses this for headers and identify relevant tests. Do not propose a code change."
+      }
+    ],
+    "order": [
+      ["missing-error-response", "local"],
+      ["missing-error-response", "lexical"],
+      ["missing-error-response", "semantic"],
+      ["replaced-credentials", "lexical"],
+      ["replaced-credentials", "semantic"],
+      ["replaced-credentials", "local"],
+      ["stream-replay-ko", "semantic"],
+      ["stream-replay-ko", "local"],
+      ["stream-replay-ko", "lexical"],
+      ["merge-setting-control", "semantic"],
+      ["merge-setting-control", "lexical"],
+      ["merge-setting-control", "local"]
+    ]
+  },
+  "rubric": {
+    "missing-error-response": {
+      "facts": [
+        "Truthiness delegates to Response.ok, not existence or body presence.",
+        "ok catches HTTPError from raise_for_status; 4xx and 5xx fail.",
+        "A 3xx reply is truthy even without a successful final 2xx.",
+        "Use result is not None for presence, and separate status handling.",
+        "Cite implementation and relevant actual tests; do not claim tests ran."
+      ],
+      "evidence": [
+        {
+          "path": "src/requests/models.py",
+          "startLine": 837,
+          "endLine": 878,
+          "fileSha256": "a3351c3c12a86bf5ed211533875350bc4791e9327a685f8c19ba54343e471e26",
+          "spanSha256": "5d2299bdf8ff83b5069e0ada9a006cc6fd828b390c4777e632fc5a323aa191a3"
+        },
+        {
+          "path": "src/requests/models.py",
+          "startLine": 1144,
+          "endLine": 1181,
+          "fileSha256": "a3351c3c12a86bf5ed211533875350bc4791e9327a685f8c19ba54343e471e26",
+          "spanSha256": "030215f51e7fef60dbe4dbe27ccd507d2f69cca91d17d1025d0f1b8fa0ee71a2"
+        },
+        {
+          "path": "tests/test_requests.py",
+          "startLine": 930,
+          "endLine": 942,
+          "fileSha256": "5eacf6341d236e225ce6a37a592f3b410f20e69ec17641f0e2c99b03a79b904d",
+          "spanSha256": "470bfc2e6a9cc215f7307264ac5459c3d9bfa42a721a224fefe10bc362914c08"
+        }
+      ]
+    },
+    "replaced-credentials": {
+      "facts": [
+        "Session.trust_env defaults true; absent request/session auth permits netrc lookup.",
+        "Machine-specific netrc is a plausible cause, not proved from a prompt.",
+        "Headers are prepared before auth; tuple credentials become HTTPBasicAuth and overwrite Authorization.",
+        "Session.trust_env=False suppresses discovery, allowing supplied header; explicitly discuss environment proxies and CA bundle consequences.",
+        "Explicit auth precedence and relevant tests identified; no claim live network reproduction."
+      ],
+      "evidence": [
+        {
+          "path": "src/requests/sessions.py",
+          "startLine": 480,
+          "endLine": 555,
+          "fileSha256": "3d2089736ced93b2b405624a943f866d22652b17df06a85eb010f86272fc3e7d",
+          "spanSha256": "432ee96c77e66bf1627ae9760e6a58d0861a66713d6d318caf69fe5e2db4d863"
+        },
+        {
+          "path": "src/requests/models.py",
+          "startLine": 429,
+          "endLine": 452,
+          "fileSha256": "a3351c3c12a86bf5ed211533875350bc4791e9327a685f8c19ba54343e471e26",
+          "spanSha256": "9ad6a43564884f84fd18eeaffcc4e8fe27d5bc96fc2b4cff908f788fe88ae34d"
+        },
+        {
+          "path": "src/requests/models.py",
+          "startLine": 670,
+          "endLine": 697,
+          "fileSha256": "a3351c3c12a86bf5ed211533875350bc4791e9327a685f8c19ba54343e471e26",
+          "spanSha256": "11a7c034d9510999e64e30865daf0e777c186ec9983a92018651f3d2d14be580"
+        },
+        {
+          "path": "src/requests/auth.py",
+          "startLine": 109,
+          "endLine": 115,
+          "fileSha256": "fdc8bb34a8a5a088b169ca13277d107b0bc94ee63ed5e89dd4f5569d9b2bb04c",
+          "spanSha256": "263f7af9b310cfa0f60f51003d84a79d53026a6a84af4830aa0541a1ef4e96a5"
+        },
+        {
+          "path": "src/requests/utils.py",
+          "startLine": 231,
+          "endLine": 279,
+          "fileSha256": "b879cb3f671cf1c28e8ff9b2b02151bcdb8974b4820a514cfdd1f5a038443cd2",
+          "spanSha256": "cf10df0b1f04a6360eb8fcee9163f774f8b1a904f45d486ca7817037e24888c6"
+        },
+        {
+          "path": "src/requests/sessions.py",
+          "startLine": 834,
+          "endLine": 872,
+          "fileSha256": "3d2089736ced93b2b405624a943f866d22652b17df06a85eb010f86272fc3e7d",
+          "spanSha256": "007b46c22a29c25fc4ec2b39e58067a1e89d349e2c6c959ecf85da5792172a3b"
+        },
+        {
+          "path": "tests/test_requests.py",
+          "startLine": 683,
+          "endLine": 716,
+          "fileSha256": "5eacf6341d236e225ce6a37a592f3b410f20e69ec17641f0e2c99b03a79b904d",
+          "spanSha256": "df8ff294c38aa9751de8318f584d20e70825511664a946710ff19816a158432b"
+        }
+      ]
+    },
+    "stream-replay-ko": {
+      "facts": [
+        "Streaming yields bytes without accumulating the complete body in _content.",
+        "Normal iterator exhaustion marks consumed while cache remains false; later content/text raises, repeated iter_content raises StreamConsumedError.",
+        "Reading content first caches bytes and allows later repeated access/iteration, at full-body memory cost.",
+        "A partial/network-failed iteration is not guaranteed to set normal-exhaustion flag, and reading remaining bytes cannot reconstruct earlier bytes or repair failure.",
+        "For bounded memory tee chunks to a file while reading; record incomplete downloads; for small bodies buffer once before parsing.",
+        "Relevant tests or explicit gap identified; do not infer full coverage or run tests."
+      ],
+      "evidence": [
+        {
+          "path": "src/requests/models.py",
+          "startLine": 935,
+          "endLine": 985,
+          "fileSha256": "a3351c3c12a86bf5ed211533875350bc4791e9327a685f8c19ba54343e471e26",
+          "spanSha256": "bb112ae935a117521519870819fd30c88bc9c870d968b182afb5c0c3deae764b"
+        },
+        {
+          "path": "src/requests/models.py",
+          "startLine": 1035,
+          "endLine": 1085,
+          "fileSha256": "a3351c3c12a86bf5ed211533875350bc4791e9327a685f8c19ba54343e471e26",
+          "spanSha256": "310640296bceb2eaf32d56911aa2f85891bec87a8544c8b2df0779f53b3433b3"
+        },
+        {
+          "path": "tests/test_requests.py",
+          "startLine": 1465,
+          "endLine": 1545,
+          "fileSha256": "5eacf6341d236e225ce6a37a592f3b410f20e69ec17641f0e2c99b03a79b904d",
+          "spanSha256": "b92c0c46765948f032d4ded5fe13038380fb2e9e55b19ffeb75d3204a7f29a7a"
+        }
+      ]
+    },
+    "merge-setting-control": {
+      "facts": [
+        "Whole session None returns request; whole request None returns session.",
+        "Two mappings copy session then override with request.",
+        "None-valued keys are removed from merged mapping, including session-only None.",
+        "If either non-mapping, use request value; verify=False overrides True.",
+        "prepare_request uses CaseInsensitiveDict for headers; relevant header removal/override tests identified."
+      ],
+      "evidence": [
+        {
+          "path": "src/requests/sessions.py",
+          "startLine": 76,
+          "endLine": 105,
+          "fileSha256": "3d2089736ced93b2b405624a943f866d22652b17df06a85eb010f86272fc3e7d",
+          "spanSha256": "aafb4f0c4591e7e906f6a7b8bd8823910bf97499dd15b910ed0b53ef06dd9cde"
+        },
+        {
+          "path": "src/requests/sessions.py",
+          "startLine": 539,
+          "endLine": 555,
+          "fileSha256": "3d2089736ced93b2b405624a943f866d22652b17df06a85eb010f86272fc3e7d",
+          "spanSha256": "3a6f803dd9eeb9090161f6af48b15ee88f70401b8b31d625e2b50347d6451d62"
+        },
+        {
+          "path": "tests/test_requests.py",
+          "startLine": 496,
+          "endLine": 505,
+          "fileSha256": "5eacf6341d236e225ce6a37a592f3b410f20e69ec17641f0e2c99b03a79b904d",
+          "spanSha256": "fc5c8f3bbec42340cd133e9a9efedd16038cdf8932176eb28dd830a44c7c422b"
+        },
+        {
+          "path": "tests/test_requests.py",
+          "startLine": 1740,
+          "endLine": 1763,
+          "fileSha256": "5eacf6341d236e225ce6a37a592f3b410f20e69ec17641f0e2c99b03a79b904d",
+          "spanSha256": "76b20693355db3c09b0e07fd81d78ca6322da05e02d3e349c3ac1ba8cd65e68d"
+        }
+      ]
+    }
+  },
+  "plan": {
+    "runtimeCommit": "bbf1df41a6765cefc859b8d08995114e8604c69a",
+    "agentModel": "gpt-6-astra",
+    "reasoning": "high",
+    "embeddingModel": "text-embedding-3-small",
+    "dimensions": 1536,
+    "analyzers": ["standard"],
+    "maxAgentAttempts": 12,
+    "maxSecondsPerAttempt": 240,
+    "maxShellCommandsPerAttempt": 20,
+    "maxCallsPerSrcxAttempt": 12,
+    "maxQueryCharacters": 1024,
+    "maxSearchResults": 10,
+    "maxCollections": 1,
+    "maxImports": 1,
+    "maxDocumentEmbeddingTokens": 1000000,
+    "maxTaskEmbeddingReservations": 48,
+    "maxTaskCalls": 96,
+    "maxSetupCalls": 2,
+    "reranker": null,
+    "warmCheckout": true,
+    "queryReformulation": true,
+    "initialSearch": "required lexical or semantic in respective tool arm; later tools free within arm; local has Git/rg only",
+    "sourceCounts": {
+      "files": 122,
+      "excluded": 8,
+      "chunks": 2123,
+      "tokens": 811522,
+      "managed": 1864,
+      "managedTokens": 806268,
+      "embedded": 0,
+      "skipped": 259
+    },
+    "suiteSha256": "a0af0b2c59aeccab20795475974f79b4b1fb733a0070e377074e663b391056d6",
+    "rubricSha256": "3562b8f8a3593675c8e216dac2a8634a44d903964ccdd4b674f1e32efbe2646e"
+  }
+}
