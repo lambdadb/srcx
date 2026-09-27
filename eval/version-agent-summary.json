@@ -1,0 +1,316 @@
+{
+  "protocolCommit": "badbd2e",
+  "productCommit": "642169ee7abdc8fc71508418f43a52ca863dce5f",
+  "measurement": "offered-installed-skill-with-identical-local-sources-not-forced-retrieval",
+  "decision": "No srcx task calls; observed usage/time differences cannot establish retrieval benefit. Stop tuning this prepared-local workflow.",
+  "sources": {
+    "cli": {
+      "repository": "github.com/lambdadb/lambdadb-cli",
+      "release": "v0.1.0",
+      "commit": "c8d389f3264d641ae6eafc7737fedd5ea046ddf1"
+    },
+    "sdk-old": {
+      "repository": "github.com/lambdadb/lambdadb-typescript-client",
+      "release": "v0.4.3",
+      "commit": "a6050ce1ca76ba1201ffee09133d1b96adcfa42b"
+    },
+    "sdk-new": {
+      "repository": "github.com/lambdadb/lambdadb-typescript-client",
+      "release": "v0.5.1",
+      "commit": "856abf48a014185de54ccc541c2f6ee3871133ee"
+    }
+  },
+  "runtime": {
+    "node": "v24.15.0",
+    "codex": "0.157.1",
+    "model": "gpt-6-astra",
+    "reasoning": "high"
+  },
+  "totals": {
+    "local": {
+      "sessions": 3,
+      "completed": 3,
+      "srcxTaskCalls": 0,
+      "factsMet": 14,
+      "factsPartial": 1,
+      "materialErrors": 0,
+      "inputTokens": 595239,
+      "cachedInputTokens": 483456,
+      "uncachedInputTokens": 111783,
+      "outputTokens": 8649,
+      "seconds": 321.19531891774386,
+      "commands": 20,
+      "commandFailures": 0
+    },
+    "srcx": {
+      "sessions": 3,
+      "completed": 3,
+      "srcxTaskCalls": 0,
+      "factsMet": 14,
+      "factsPartial": 1,
+      "materialErrors": 0,
+      "inputTokens": 530047,
+      "cachedInputTokens": 411392,
+      "uncachedInputTokens": 118655,
+      "outputTokens": 8279,
+      "seconds": 295.07442575134337,
+      "commands": 26,
+      "commandFailures": 2
+    }
+  },
+  "means": {
+    "local": {
+      "inputTokens": 198413.0,
+      "cachedInputTokens": 161152.0,
+      "uncachedInputTokens": 37261.0,
+      "outputTokens": 2883.0,
+      "seconds": 107.06510630591463,
+      "commands": 6.666666666666667,
+      "commandFailures": 0.0
+    },
+    "srcx": {
+      "inputTokens": 176682.33333333334,
+      "cachedInputTokens": 137130.66666666666,
+      "uncachedInputTokens": 39551.666666666664,
+      "outputTokens": 2759.6666666666665,
+      "seconds": 98.35814191711445,
+      "commands": 8.666666666666666,
+      "commandFailures": 0.6666666666666666
+    }
+  },
+  "srcxVsLocalPercent": {
+    "inputTokens": -10.952239352596182,
+    "cachedInputTokens": -14.906010060894893,
+    "uncachedInputTokens": 6.147625309751925,
+    "outputTokens": -4.277951208232167,
+    "seconds": -8.132401572480552,
+    "commands": 29.999999999999982
+  },
+  "audit": {
+    "suiteSha256": "674533a0e55f860552617b3cd8db6cc1bc17f37ec2749dd106b3d3e04502cfdb",
+    "frozenInputCount": 31,
+    "uniqueSessions": 6,
+    "previewCount": 0,
+    "readCount": 0
+  },
+  "resolutionCalls": 6,
+  "newImports": 0,
+  "queryEmbeddings": 0,
+  "grading": "assistant-authored, unblinded, source-reviewed; no repository tests executed by task agents",
+  "localWorkspacePreparationSeconds": 1.2353606251999736,
+  "priorIndexProvisioningSeconds": 221.44464375,
+  "rawAuditSha256": "cb5cbe4c66ee02314ca276a294760b52c3c8033833d8a643230d7f7846128c1e",
+  "rows": [
+    {
+      "task": "import-outcome",
+      "arm": "local",
+      "seconds": 113.04325208440423,
+      "exitCode": 0,
+      "stopReason": null,
+      "commandCount": 7,
+      "usage": {
+        "input_tokens": 259960,
+        "cached_input_tokens": 212352,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 3042,
+        "reasoning_output_tokens": 243
+      },
+      "counts": {
+        "lexical": 0,
+        "reads": 0,
+        "implementation": 0,
+        "failures": 0,
+        "help": 0,
+        "stdoutTokens": 0
+      },
+      "answerSha256": "1c409f9b0b684ffb880ffa7bc8176e2dd83e4b1163a45e36522783e62cf0cf37",
+      "commandFailures": 0,
+      "grade": {
+        "task": "import-outcome",
+        "arm": "local",
+        "factStatuses": ["met", "met", "partial", "met", "met"],
+        "materialErrors": [],
+        "notes": [
+          "The requested HTTP 503/400 distinction, counts, exits, no retry and no third batch are correct. The frozen retry fact additionally names connection-error retries; neither answer states that detail explicitly, so that fact is partial rather than silently relaxing the rubric. All core task distinctions are supported."
+        ]
+      },
+      "sourceCitations": 16
+    },
+    {
+      "task": "import-outcome",
+      "arm": "srcx",
+      "seconds": 94.42418924998492,
+      "exitCode": 0,
+      "stopReason": null,
+      "commandCount": 8,
+      "usage": {
+        "input_tokens": 170832,
+        "cached_input_tokens": 116352,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2687,
+        "reasoning_output_tokens": 254
+      },
+      "counts": {
+        "lexical": 0,
+        "reads": 0,
+        "implementation": 0,
+        "failures": 0,
+        "help": 0,
+        "stdoutTokens": 0
+      },
+      "answerSha256": "d1363f61ec1ff9df1da832379ea6a2f3bbab0e7d15bb387f4657652547295815",
+      "commandFailures": 1,
+      "grade": {
+        "task": "import-outcome",
+        "arm": "srcx",
+        "factStatuses": ["met", "met", "partial", "met", "met"],
+        "materialErrors": [],
+        "notes": [
+          "The requested HTTP 503/400 distinction, counts, exits, no retry and no third batch are correct. The frozen retry fact additionally names connection-error retries; neither answer states that detail explicitly, so that fact is partial rather than silently relaxing the rubric. All core task distinctions are supported."
+        ]
+      },
+      "sourceCitations": 13
+    },
+    {
+      "task": "offloaded-download",
+      "arm": "srcx",
+      "seconds": 82.90792379248887,
+      "exitCode": 0,
+      "stopReason": null,
+      "commandCount": 8,
+      "usage": {
+        "input_tokens": 160059,
+        "cached_input_tokens": 130048,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2273,
+        "reasoning_output_tokens": 160
+      },
+      "counts": {
+        "lexical": 0,
+        "reads": 0,
+        "implementation": 0,
+        "failures": 0,
+        "help": 0,
+        "stdoutTokens": 0
+      },
+      "answerSha256": "de9110f1c20af5742261f1fdc92d713a4479ec38f75320bff51309b19330f33b",
+      "commandFailures": 0,
+      "grade": {
+        "task": "offloaded-download",
+        "arm": "srcx",
+        "factStatuses": ["met", "met", "met", "met", "met"],
+        "materialErrors": [],
+        "notes": [
+          "Array versus legacy object handling, API/transfer header separation, cancellation and CLI deadline are supported by implementation and mock tests. Live-service proof is explicitly disclaimed.",
+          "Minor citation wording: the docs-url unit test explicitly checks API key/custom-header presence on the API leg and authorization absence on the transfer leg; it does not explicitly assert authorization presence on the API leg. The answer groups these as verifying they reach the API. This overstates that specific test assertion; the core no-forwarding conclusion is supported."
+        ]
+      },
+      "sourceCitations": 12
+    },
+    {
+      "task": "offloaded-download",
+      "arm": "local",
+      "seconds": 81.31787933316082,
+      "exitCode": 0,
+      "stopReason": null,
+      "commandCount": 5,
+      "usage": {
+        "input_tokens": 142526,
+        "cached_input_tokens": 115072,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2082,
+        "reasoning_output_tokens": 59
+      },
+      "counts": {
+        "lexical": 0,
+        "reads": 0,
+        "implementation": 0,
+        "failures": 0,
+        "help": 0,
+        "stdoutTokens": 0
+      },
+      "answerSha256": "ffbbbe039df8680c0a82ee71a1769d348f83444f037ccc6952aa5f8b1bd9cedd",
+      "commandFailures": 0,
+      "grade": {
+        "task": "offloaded-download",
+        "arm": "local",
+        "factStatuses": ["met", "met", "met", "met", "met"],
+        "materialErrors": [],
+        "notes": [
+          "Array versus legacy object handling, API/transfer header separation, cancellation and CLI deadline are supported by implementation and mock tests. Live-service proof is explicitly disclaimed."
+        ]
+      },
+      "sourceCitations": 11
+    },
+    {
+      "task": "delete-migration-ko",
+      "arm": "local",
+      "seconds": 126.83418750017881,
+      "exitCode": 0,
+      "stopReason": null,
+      "commandCount": 8,
+      "usage": {
+        "input_tokens": 192753,
+        "cached_input_tokens": 156032,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 3525,
+        "reasoning_output_tokens": 262
+      },
+      "counts": {
+        "lexical": 0,
+        "reads": 0,
+        "implementation": 0,
+        "failures": 0,
+        "help": 0,
+        "stdoutTokens": 0
+      },
+      "answerSha256": "152e96faf2da978950cfec0f642c205e534b42fd8cdef75ff6508bed8d356a21",
+      "commandFailures": 0,
+      "grade": {
+        "task": "delete-migration-ko",
+        "arm": "local",
+        "factStatuses": ["met", "met", "met", "met", "met"],
+        "materialErrors": [],
+        "notes": [
+          "Both SDK types and schemas, pre-network safeParse rejection, scoped filter example, optional Branch default and lack of server-deletion proof are supported. The answer also correctly avoids claiming old server semantics from permissive old SDK validation."
+        ]
+      },
+      "sourceCitations": 16
+    },
+    {
+      "task": "delete-migration-ko",
+      "arm": "srcx",
+      "seconds": 117.74231270886958,
+      "exitCode": 0,
+      "stopReason": null,
+      "commandCount": 10,
+      "usage": {
+        "input_tokens": 199156,
+        "cached_input_tokens": 164992,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 3319,
+        "reasoning_output_tokens": 103
+      },
+      "counts": {
+        "lexical": 0,
+        "reads": 0,
+        "implementation": 0,
+        "failures": 0,
+        "help": 0,
+        "stdoutTokens": 0
+      },
+      "answerSha256": "95a91eee167c79289f890ad7e8a7fc96c602e7b5b4c5cc237912d97e3f65d125",
+      "commandFailures": 1,
+      "grade": {
+        "task": "delete-migration-ko",
+        "arm": "srcx",
+        "factStatuses": ["met", "met", "met", "met", "met"],
+        "materialErrors": [],
+        "notes": [
+          "The same five migration facts are supported as in the local condition, including a tenant-scoped filter example and the old SDK/server distinction. No srcx retrieval was used."
+        ]
+      },
+      "sourceCitations": 14
+    }
+  ]
+}

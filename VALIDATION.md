@@ -1,5 +1,25 @@
 # Validation record
 
+## Agent choice across repositories and versions
+
+The [six-session comparison](eval/VERSION-AGENT-RESULTS.md) offers the installed
+srcx skill alongside identical local CLI/SDK source trees for three fresh
+maintenance questions. All three srcx-condition agents read the skill but make
+zero srcx calls. Both conditions meet 14 frozen facts and partially meet one;
+no material answer errors were found under assistant source review. All 82 linked
+citation ranges were opened and checked. Tests cited by agents were not executed.
+
+Mean total input is 11.0% lower and time 8.1% lower with srcx offered, but uncached
+input is 6.1% higher. With no retrieval calls, these are session differences, not
+evidence of srcx search efficiency or cost savings. Stop tuning this prepared-local
+workflow; any team pilot needs an actual recurring source-access need.
+
+All six sessions finish within budget, all 18 source checkouts stay clean at their
+pins, and all 31 frozen inputs match. Six before/after resolution checks confirm
+unchanged commit/Tag/Snapshot identities. No imports, task searches, embeddings or
+remote writes occur. The protocol, rubric and runtime hashes were committed before
+execution; raw sessions and source evidence remain in the local evaluation archive.
+
 ## Direct Collection lookup
 
 Exact generated Collection selectors now fetch only the selected metadata and
