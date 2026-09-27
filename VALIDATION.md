@@ -1,5 +1,20 @@
 # Validation record
 
+## Optional overload implementation reads
+
+[Offline navigation results](eval/IMPLEMENTATION-READ-RESULTS.md) cover six fresh
+Python/TypeScript/TSX fixtures and a separate replay of exposed Requests results.
+All twelve synthetic declaration starts reach their expected bodies. Ten of 115
+archived reads resolve to streaming implementations, improving required-span
+coverage on four query/mode rows while total read-output tokens increase 9.7%.
+No complete-task, agent-efficiency or semantic ranking advantage is established.
+
+All 158 tests and seven installed-package tests pass on Node 24.15.0, along with
+six installed-module navigation assertions, typecheck, version, formatting and
+bundled skill validation. Source/Tag integrity, conservative refusal, source-token
+limits, accurate citations and unchanged ordinary reads are covered. No service
+writes, embeddings, new searches or agent sessions were performed.
+
 ## File selection and embedding policy
 
 Offline validation on Node 24.15.0 passed 128 tests and seven installed-package

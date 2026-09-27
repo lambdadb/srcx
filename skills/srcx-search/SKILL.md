@@ -52,7 +52,15 @@ the task and configured access, not as an automatic remedy for every missed hit.
 
 A hit in the right file is not necessarily the answering implementation. Follow
 relevant definitions, callers and tests and read enough source to establish the
-behavior. For a related range, keep the resolved commit:
+behavior. For a Python or TypeScript/TSX overload declaration, use
+`srcx read --result <resultId> --implementation` when you need its body. Check
+`implementation.status`: `resolved` returns the linked body and its citation;
+other statuses retain the original span. The option requires a result handle and
+cannot be combined with context/full-file/range options. Multiple overload hits
+can return the same body, so avoid repeating reads once you have enough evidence.
+This is a syntax link, not cross-file or runtime dispatch resolution.
+
+For a related range, keep the resolved commit:
 
 ```sh
 srcx read --repo <collection> --version <resolved-commit> \

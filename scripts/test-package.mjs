@@ -4,6 +4,8 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { implementationCases } from "../test/implementation-fixtures.mjs";
 
 const temp = mkdtempSync(join(tmpdir(), "srcx-package-"));
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
@@ -124,6 +126,28 @@ try {
     execFileSync(process.execPath, [bin, "--help"], { encoding: "utf8" }),
     /Usage: srcx/,
   );
+  assert.match(
+    execFileSync(process.execPath, [bin, "read", "--help"], {
+      encoding: "utf8",
+    }),
+    /--implementation/,
+  );
+  const installedModule = (name) =>
+    import(
+      pathToFileURL(join(consumer, "node_modules", pkg.name, `dist/${name}.js`))
+        .href
+    );
+  const { chunk } = await installedModule("chunk");
+  const { implementationSpan } = await installedModule("implementation");
+  for (const c of implementationCases) {
+    const span = (await chunk(c.source, c.path)).spans.find(
+      (s) => s.symbol === c.symbol,
+    );
+    assert.equal(
+      (await implementationSpan(c.source, c.path, span)).status,
+      "resolved",
+    );
+  }
   execFileSync(
     process.execPath,
     ["--test", "test/cli.test.mjs", "test/skills-cli.test.mjs"],

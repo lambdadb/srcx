@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add optional `read --implementation` for contiguous Python and TypeScript/TSX
+  overload groups. Return the pinned implementation with accurate citations;
+  preserve the selected span when linking is unsupported, ambiguous or too large.
+  Keep indexing and search defaults unchanged.
+
 - Separate file selection from embedding eligibility. Exclude credential and
   crypto payloads, virtual environments, caches and logs; keep lockfiles, generated
   code, snapshots, tabular data and legal/author files available lexically without
