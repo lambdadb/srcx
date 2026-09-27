@@ -107,6 +107,19 @@ export function privateKeyContent(source: string): boolean {
   );
 }
 
+function excludedDirectory(path: string): boolean {
+  // Under a Java source-set root, build/dist/target/coverage can be package
+  // names. Output directories above that root still exclude the whole tree.
+  const javaRoot = /(^|\/)src\/[^/]+\/java\//i.exec(path);
+  const outputPath =
+    javaRoot && /\.java$/i.test(path) ? path.slice(0, javaRoot.index) : path;
+  return (
+    /(^|\/)(node_modules|vendor|vendored|third_party|third-party|\.git|\.next|\.nuxt|\.venv|venv|__pycache__|\.cache|\.pytest_cache|\.mypy_cache|\.ruff_cache|\.tox|\.nox|\.srcx)(\/|$)/i.test(
+      path,
+    ) || /(^|\/)(dist|build|target|coverage)(\/|$)/i.test(outputPath)
+  );
+}
+
 /** Explicit rules override defaults, in order; the final matching rule wins. */
 export function fileDecision(
   path: string,
@@ -114,11 +127,7 @@ export function fileDecision(
   source?: string,
 ): FileDecision {
   let decision: FileDecision = { action: "semantic", reason: "source" };
-  if (
-    /(^|\/)(node_modules|vendor|vendored|third_party|third-party|dist|build|target|coverage|\.git|\.next|\.nuxt|\.venv|venv|__pycache__|\.cache|\.pytest_cache|\.mypy_cache|\.ruff_cache|\.tox|\.nox|\.srcx)(\/|$)/i.test(
-      path,
-    )
-  )
+  if (excludedDirectory(path))
     decision = { action: "exclude", reason: "dependency-or-build-output" };
   else if (/\.(min\.(js|css)|map)$/i.test(path))
     decision = { action: "exclude", reason: "generated-output" };

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Preserve Java source and test packages named `build`, `dist`, `target` or
+  `coverage` under `src/<source-set>/java/`, while still excluding output trees
+  above the source root and nested dependencies/caches. Advance the pinned source
+  policy to `source-v3`; new registrations/builds use a distinct configuration,
+  and presets from the earlier source policy are not accepted by this runtime.
+
 - Look up explicit generated Collection names directly instead of discovering
   every repository. Exact Collection names take precedence over aliases; only
   missing Collections fall back to discovery. Preserve descriptor, schema and
