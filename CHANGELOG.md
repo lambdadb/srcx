@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Look up explicit generated Collection names directly instead of discovering
+  every repository. Exact Collection names take precedence over aliases; only
+  missing Collections fall back to discovery. Preserve descriptor, schema and
+  immutable-version validation and ambiguity checks for repository names/keys.
+
 - Add optional `read --implementation` for contiguous Python and TypeScript/TSX
   overload groups. Return the pinned implementation with accurate citations;
   preserve the selected span when linking is unsupported, ambiguous or too large.

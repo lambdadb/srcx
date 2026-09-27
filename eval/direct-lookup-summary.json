@@ -1,0 +1,508 @@
+{
+  "baselineProductCommit": "b8985da513109e33668492688988772b172f5080",
+  "optimizedProductCommit": "b73b832",
+  "runtime": "v24.15.0",
+  "measurement": "paired-read-only-transport-replay-not-agent-benchmark",
+  "rawResultSha256": "39d3a1418cbe44135213319c7d11c4e3ab887f12c44262a1410dbf0a92f6a6de",
+  "ledgerSha256": "4cce0fc3bb95553ff0dc26a608b59cf85a4f62d11fba36d42aaef8f9868aca8b",
+  "freezeSha256": "44141d5e7421af59311c1067dfb0bd864f6d5c36a8e5784f2fc69f9818c7fae4",
+  "totals": {
+    "cliCalls": 38,
+    "readPairs": 8,
+    "searchPairs": 5,
+    "verifiedReads": 16,
+    "verifiedPreviews": 50,
+    "failedCalls": 0,
+    "imports": 0,
+    "embeddings": 0
+  },
+  "means": {
+    "read": {
+      "baseline": {
+        "durationMs": 1905.4396040000006,
+        "outputTokens": 546
+      },
+      "optimized": {
+        "durationMs": 706.2133751250001,
+        "outputTokens": 546
+      }
+    },
+    "search": {
+      "baseline": {
+        "durationMs": 2399.274091600001,
+        "outputTokens": 1763.4
+      },
+      "optimized": {
+        "durationMs": 1202.9306580000004,
+        "outputTokens": 1765.2
+      }
+    }
+  },
+  "rows": [
+    {
+      "id": "cli-query",
+      "kind": "read",
+      "target": "cli",
+      "identicalOutput": true,
+      "verifiedItems": 2,
+      "arms": {
+        "baseline": {
+          "durationMs": 1808.141458000001,
+          "outputTokens": 515,
+          "requests": {
+            "count": 34,
+            "byOperation": {
+              "collections": 1,
+              "fetch": 7,
+              "repository-descriptor": 23,
+              "tags": 3
+            }
+          }
+        },
+        "optimized": {
+          "durationMs": 648.6788749999996,
+          "outputTokens": 515,
+          "requests": {
+            "count": 12,
+            "byOperation": {
+              "collection": 1,
+              "fetch": 7,
+              "repository-descriptor": 1,
+              "tags": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "sdk-query",
+      "kind": "read",
+      "target": "sdk-new",
+      "identicalOutput": true,
+      "verifiedItems": 2,
+      "arms": {
+        "optimized": {
+          "durationMs": 857.0660000000007,
+          "outputTokens": 528,
+          "requests": {
+            "count": 14,
+            "byOperation": {
+              "collection": 1,
+              "fetch": 9,
+              "repository-descriptor": 1,
+              "tags": 3
+            }
+          }
+        },
+        "baseline": {
+          "durationMs": 2009.7321250000005,
+          "outputTokens": 528,
+          "requests": {
+            "count": 36,
+            "byOperation": {
+              "collections": 1,
+              "fetch": 9,
+              "repository-descriptor": 23,
+              "tags": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "cli-rejection-test",
+      "kind": "read",
+      "target": "cli",
+      "identicalOutput": true,
+      "verifiedItems": 2,
+      "arms": {
+        "baseline": {
+          "durationMs": 1889.113292,
+          "outputTokens": 792,
+          "requests": {
+            "count": 34,
+            "byOperation": {
+              "collections": 1,
+              "fetch": 7,
+              "repository-descriptor": 23,
+              "tags": 3
+            }
+          }
+        },
+        "optimized": {
+          "durationMs": 655.5495840000003,
+          "outputTokens": 792,
+          "requests": {
+            "count": 12,
+            "byOperation": {
+              "collection": 1,
+              "fetch": 7,
+              "repository-descriptor": 1,
+              "tags": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "cli-branch-test",
+      "kind": "read",
+      "target": "cli",
+      "identicalOutput": true,
+      "verifiedItems": 2,
+      "arms": {
+        "optimized": {
+          "durationMs": 648.0341669999998,
+          "outputTokens": 399,
+          "requests": {
+            "count": 12,
+            "byOperation": {
+              "collection": 1,
+              "fetch": 7,
+              "repository-descriptor": 1,
+              "tags": 3
+            }
+          }
+        },
+        "baseline": {
+          "durationMs": 1902.6660410000004,
+          "outputTokens": 399,
+          "requests": {
+            "count": 34,
+            "byOperation": {
+              "collections": 1,
+              "fetch": 7,
+              "repository-descriptor": 23,
+              "tags": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "old-upsert",
+      "kind": "read",
+      "target": "sdk-old",
+      "identicalOutput": true,
+      "verifiedItems": 2,
+      "arms": {
+        "baseline": {
+          "durationMs": 2040.2409160000025,
+          "outputTokens": 515,
+          "requests": {
+            "count": 36,
+            "byOperation": {
+              "collections": 1,
+              "fetch": 9,
+              "repository-descriptor": 23,
+              "tags": 3
+            }
+          }
+        },
+        "optimized": {
+          "durationMs": 775.335959,
+          "outputTokens": 515,
+          "requests": {
+            "count": 14,
+            "byOperation": {
+              "collection": 1,
+              "fetch": 9,
+              "repository-descriptor": 1,
+              "tags": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "new-upsert",
+      "kind": "read",
+      "target": "sdk-new",
+      "identicalOutput": true,
+      "verifiedItems": 2,
+      "arms": {
+        "optimized": {
+          "durationMs": 772.898541999999,
+          "outputTokens": 576,
+          "requests": {
+            "count": 14,
+            "byOperation": {
+              "collection": 1,
+              "fetch": 9,
+              "repository-descriptor": 1,
+              "tags": 3
+            }
+          }
+        },
+        "baseline": {
+          "durationMs": 1983.4058330000007,
+          "outputTokens": 576,
+          "requests": {
+            "count": 36,
+            "byOperation": {
+              "collections": 1,
+              "fetch": 9,
+              "repository-descriptor": 23,
+              "tags": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "cli-write-option",
+      "kind": "read",
+      "target": "cli",
+      "identicalOutput": true,
+      "verifiedItems": 2,
+      "arms": {
+        "baseline": {
+          "durationMs": 1794.8525000000009,
+          "outputTokens": 651,
+          "requests": {
+            "count": 34,
+            "byOperation": {
+              "collections": 1,
+              "fetch": 7,
+              "repository-descriptor": 23,
+              "tags": 3
+            }
+          }
+        },
+        "optimized": {
+          "durationMs": 650.9614159999983,
+          "outputTokens": 651,
+          "requests": {
+            "count": 12,
+            "byOperation": {
+              "collection": 1,
+              "fetch": 7,
+              "repository-descriptor": 1,
+              "tags": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "cli-write-forward",
+      "kind": "read",
+      "target": "cli",
+      "identicalOutput": true,
+      "verifiedItems": 2,
+      "arms": {
+        "optimized": {
+          "durationMs": 641.182458000003,
+          "outputTokens": 392,
+          "requests": {
+            "count": 12,
+            "byOperation": {
+              "collection": 1,
+              "fetch": 7,
+              "repository-descriptor": 1,
+              "tags": 3
+            }
+          }
+        },
+        "baseline": {
+          "durationMs": 1815.364666999998,
+          "outputTokens": 392,
+          "requests": {
+            "count": 34,
+            "byOperation": {
+              "collections": 1,
+              "fetch": 7,
+              "repository-descriptor": 23,
+              "tags": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "cli-consistency",
+      "kind": "search",
+      "target": "cli",
+      "identicalOutput": true,
+      "verifiedItems": 10,
+      "arms": {
+        "baseline": {
+          "durationMs": 2381.573083000003,
+          "outputTokens": 1841,
+          "requests": {
+            "count": 48,
+            "byOperation": {
+              "collections": 1,
+              "fetch": 16,
+              "query": 1,
+              "repository-descriptor": 23,
+              "tags": 7
+            }
+          }
+        },
+        "optimized": {
+          "durationMs": 1105.138833000001,
+          "outputTokens": 1837,
+          "requests": {
+            "count": 26,
+            "byOperation": {
+              "collection": 1,
+              "fetch": 16,
+              "query": 1,
+              "repository-descriptor": 1,
+              "tags": 7
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "sdk-consistency",
+      "kind": "search",
+      "target": "sdk-new",
+      "identicalOutput": true,
+      "verifiedItems": 10,
+      "arms": {
+        "optimized": {
+          "durationMs": 1253.473750000001,
+          "outputTokens": 1685,
+          "requests": {
+            "count": 28,
+            "byOperation": {
+              "collection": 1,
+              "fetch": 18,
+              "query": 1,
+              "repository-descriptor": 1,
+              "tags": 7
+            }
+          }
+        },
+        "baseline": {
+          "durationMs": 2469.537333,
+          "outputTokens": 1679,
+          "requests": {
+            "count": 50,
+            "byOperation": {
+              "collections": 1,
+              "fetch": 18,
+              "query": 1,
+              "repository-descriptor": 23,
+              "tags": 7
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "cli-write",
+      "kind": "search",
+      "target": "cli",
+      "identicalOutput": true,
+      "verifiedItems": 10,
+      "arms": {
+        "baseline": {
+          "durationMs": 2306.283666999996,
+          "outputTokens": 2008,
+          "requests": {
+            "count": 48,
+            "byOperation": {
+              "collections": 1,
+              "fetch": 16,
+              "query": 1,
+              "repository-descriptor": 23,
+              "tags": 7
+            }
+          }
+        },
+        "optimized": {
+          "durationMs": 1177.2239580000023,
+          "outputTokens": 2008,
+          "requests": {
+            "count": 26,
+            "byOperation": {
+              "collection": 1,
+              "fetch": 16,
+              "query": 1,
+              "repository-descriptor": 1,
+              "tags": 7
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "sdk-old-write",
+      "kind": "search",
+      "target": "sdk-old",
+      "identicalOutput": true,
+      "verifiedItems": 10,
+      "arms": {
+        "optimized": {
+          "durationMs": 1220.959041000002,
+          "outputTokens": 1660,
+          "requests": {
+            "count": 28,
+            "byOperation": {
+              "collection": 1,
+              "fetch": 18,
+              "query": 1,
+              "repository-descriptor": 1,
+              "tags": 7
+            }
+          }
+        },
+        "baseline": {
+          "durationMs": 2450.9400830000013,
+          "outputTokens": 1657,
+          "requests": {
+            "count": 50,
+            "byOperation": {
+              "collections": 1,
+              "fetch": 18,
+              "query": 1,
+              "repository-descriptor": 23,
+              "tags": 7
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "sdk-new-write",
+      "kind": "search",
+      "target": "sdk-new",
+      "identicalOutput": true,
+      "verifiedItems": 10,
+      "arms": {
+        "baseline": {
+          "durationMs": 2388.0362920000043,
+          "outputTokens": 1632,
+          "requests": {
+            "count": 50,
+            "byOperation": {
+              "collections": 1,
+              "fetch": 18,
+              "query": 1,
+              "repository-descriptor": 23,
+              "tags": 7
+            }
+          }
+        },
+        "optimized": {
+          "durationMs": 1257.857707999996,
+          "outputTokens": 1636,
+          "requests": {
+            "count": 28,
+            "byOperation": {
+              "collection": 1,
+              "fetch": 18,
+              "query": 1,
+              "repository-descriptor": 1,
+              "tags": 7
+            }
+          }
+        }
+      }
+    }
+  ]
+}

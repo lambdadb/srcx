@@ -142,6 +142,26 @@ export async function selectRepository(
   remote: LambdaRemote,
   selector: string,
 ): Promise<Repository> {
+  // Names emitted by collectionName are explicit destinations. Avoid reading
+  // every repository descriptor just to select one Collection. A missing name
+  // can still be a Git repository alias with this spelling.
+  if (/^code-[a-z0-9-]{1,24}-[a-f0-9]{16}$/.test(selector)) {
+    const c = await remote.collection(selector);
+    if (c) {
+      invariant(
+        c.collectionName === selector,
+        "Collection lookup returned a different name.",
+      );
+      invariant(
+        c.tags.purpose === PURPOSE,
+        "Collection is not a srcx repository.",
+      );
+      return decode(
+        await one(remote.store(selector), branch("main"), "__repo__", true),
+        c,
+      );
+    }
+  }
   const { repositories, partial } = await discover(remote);
   const selected = repositories.filter(
     (r) =>

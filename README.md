@@ -449,6 +449,9 @@ verifies exact source delivery across CLI/SDK releases from a fresh client witho
 local source attachments. It is a scripted known-range diagnostic, not an agent
 benchmark. Local Git reads are much faster in this run; repeated project-wide
 repository discovery is a measured source of remote overhead.
+The subsequent [exact-Collection lookup replay](https://github.com/lambdadb/srcx/blob/develop/eval/DIRECT-LOOKUP-RESULTS.md)
+removes 22 requests per command in that project, with identical source results
+and lower observed read/search latency. It does not measure complete-agent cost.
 
 The internal [lexical chunking pilot](https://github.com/lambdadb/srcx/blob/develop/eval/README.md) compares syntax-aware and
 window chunks on a fixed public corpus and 16 pinned investigation queries.
@@ -572,6 +575,14 @@ srcx read --result <result-id> --full-file
 srcx git sync-tags --repo <name>
 srcx resolve --repo <name> --ref v1.0.0
 ```
+
+Prefer the exact `collection` value returned by `repo list` when the repository
+is already known. Generated Collection names (`code-<slug>-<hash>`) are looked up
+directly and take precedence over repository aliases with the same spelling.
+Repository names and keys still use discovery and reject ambiguous matches across
+presets. Only a missing Collection (HTTP 404) falls back to alias discovery;
+permission, service, descriptor and schema errors remain errors. This does not
+cache or bypass immutable-version and source-integrity checks.
 
 `read --implementation` follows a contiguous Python or TypeScript/TSX overload
 group to its unique implementation in the same file and AST scope. It reads the

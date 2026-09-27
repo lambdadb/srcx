@@ -1,5 +1,26 @@
 # Validation record
 
+## Direct Collection lookup
+
+Exact generated Collection selectors now fetch only the selected metadata and
+repository descriptor; names/keys retain discovery and ambiguity checks. Only
+HTTP 404 falls back to alias discovery. Tests cover schema/descriptor rejection,
+missing Collection-shaped aliases, non-404 failure handling, sanitized errors,
+and the actual CLI/SDK path. All 165 tests and seven installed-package checks pass
+on Node 24.15.0, along with typecheck, version, formatting and diff checks.
+
+The [controlled read-only replay](eval/DIRECT-LOOKUP-RESULTS.md) compares archived
+baseline runtime with the optimization on the same three immutable versions.
+All 38 calls complete; 16 reads and 50 previews/handles verify against source.
+Read outputs and search rankings/scores/excerpts are identical, excluding local
+result IDs. Before/after version identities and frozen input hashes match.
+No imports, embeddings or remote mutations occur.
+
+Each measured operation saves 22 HTTP requests. Known-range reads fall from
+34–36 to 12–14 requests and average 1.905 to 0.706 seconds; lexical searches fall
+from 48–50 to 26–28 requests and average 2.399 to 1.203 seconds. These are
+alternating-order single observations, not a general latency or agent-cost claim.
+
 ## Cross-repository versioned source delivery
 
 The [bounded workflow diagnostic](eval/VERSION-WORKFLOW-RESULTS.md) covers

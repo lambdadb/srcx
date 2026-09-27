@@ -270,3 +270,74 @@ test("query hydration preserves hit order and scores, fetching only missing mana
   failure = "changed";
   await assert.rejects(query(), /payloads disagree/);
 });
+
+test("direct Collection metadata lookup treats only 404 as missing and sanitizes failures", async (t) => {
+  const requests = [];
+  let status = 200,
+    malformed = false;
+  const collection = {
+    projectName: "fixture",
+    collectionName: "code-one-0123456789abcdef",
+    description: "fixture",
+    tags: {},
+    indexConfigs: INDEX_CONFIGS,
+    numPartitions: 1,
+    numDocs: 0,
+    createdAt: 1,
+    updatedAt: 1,
+    defaultBranchName: "main",
+    snapshotRetentionInDays: 7,
+  };
+  const server = createServer((req, res) => {
+    requests.push({ method: req.method, url: req.url });
+    res.statusCode = status;
+    res.setHeader("Content-Type", "application/json");
+    res.end(
+      JSON.stringify(
+        status === 200 && !malformed
+          ? { collection }
+          : { message: "private-source-secret" },
+      ),
+    );
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  process.env.SRCX_COLLECTION_TEST_KEY = "fixture";
+  t.after(() => delete process.env.SRCX_COLLECTION_TEST_KEY);
+  const remote = new LambdaRemote({
+    endpoint: `http://127.0.0.1:${server.address().port}`,
+    project: "fixture",
+    apiKeyEnv: "SRCX_COLLECTION_TEST_KEY",
+  });
+  assert.equal(
+    (await remote.collection(collection.collectionName)).collectionName,
+    collection.collectionName,
+  );
+  status = 404;
+  assert.equal(await remote.collection(collection.collectionName), undefined);
+  for (status of [401, 403, 429, 500]) {
+    await assert.rejects(
+      remote.collection(collection.collectionName),
+      (error) => {
+        assert.ok(error instanceof RemoteError);
+        assert.match(error.message, /get collection failed/);
+        assert.doesNotMatch(error.message, /private-source-secret/);
+        return true;
+      },
+    );
+  }
+  status = 200;
+  malformed = true;
+  await assert.rejects(
+    remote.collection(collection.collectionName),
+    RemoteError,
+  );
+  assert.equal(requests.length, 7, "metadata requests must not retry");
+  assert.ok(
+    requests.every(
+      (r) =>
+        r.method === "GET" &&
+        r.url === `/projects/fixture/collections/${collection.collectionName}`,
+    ),
+  );
+});
