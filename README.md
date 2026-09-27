@@ -453,6 +453,12 @@ The subsequent [exact-Collection lookup replay](https://github.com/lambdadb/srcx
 removes 22 requests per command in that project, with identical source results
 and lower observed read/search latency. It does not measure complete-agent cost.
 
+In the subsequent [agent choice comparison](https://github.com/lambdadb/srcx/blob/develop/eval/VERSION-AGENT-RESULTS.md),
+all three agents offered srcx read its installed skill but used local tools only
+to investigate the prepared CLI/SDK versions. No srcx retrieval benefit was
+established; multiple repositories and historical versions alone did not lead to
+tool adoption when their source trees were already available locally.
+
 The internal [lexical chunking pilot](https://github.com/lambdadb/srcx/blob/develop/eval/README.md) compares syntax-aware and
 window chunks on a fixed public corpus and 16 pinned investigation queries.
 `npm run eval:prepare` builds and validates the comparison offline. Live evaluation
