@@ -444,6 +444,12 @@ measures complete answers, model input and wall time with local tools available 
 both conditions. It does not establish a clear efficiency advantage on a small
 local repository; retrieval quality and agent-workflow benefits remain separate.
 
+The [cross-repository version workflow](https://github.com/lambdadb/srcx/blob/develop/eval/VERSION-WORKFLOW-RESULTS.md)
+verifies exact source delivery across CLI/SDK releases from a fresh client without
+local source attachments. It is a scripted known-range diagnostic, not an agent
+benchmark. Local Git reads are much faster in this run; repeated project-wide
+repository discovery is a measured source of remote overhead.
+
 The internal [lexical chunking pilot](https://github.com/lambdadb/srcx/blob/develop/eval/README.md) compares syntax-aware and
 window chunks on a fixed public corpus and 16 pinned investigation queries.
 `npm run eval:prepare` builds and validates the comparison offline. Live evaluation

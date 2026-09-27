@@ -1,0 +1,834 @@
+{
+  "protocolCommit": "c7c146d",
+  "productCommit": "b8985da513109e33668492688988772b172f5080",
+  "measurement": "scripted-known-range-source-delivery-not-agent-usage",
+  "runtime": "v24.15.0",
+  "sources": {
+    "cli": {
+      "repository": "github.com/lambdadb/lambdadb-cli",
+      "release": "v0.1.0",
+      "commit": "c8d389f3264d641ae6eafc7737fedd5ea046ddf1"
+    },
+    "sdk-old": {
+      "repository": "github.com/lambdadb/lambdadb-typescript-client",
+      "release": "v0.4.3",
+      "commit": "a6050ce1ca76ba1201ffee09133d1b96adcfa42b"
+    },
+    "sdk-new": {
+      "repository": "github.com/lambdadb/lambdadb-typescript-client",
+      "release": "v0.5.1",
+      "commit": "856abf48a014185de54ccc541c2f6ee3871133ee"
+    }
+  },
+  "rawResultSha256": "8c3d7cec7dae79d6e02e7477ef86cfef7d478127be7ff3b7fc9a8c67f2d46793",
+  "ledgerSha256": "94233333e44074ff1042820821cb87e62faef9c24d13675ef058715f892f1e8e",
+  "frozenInputCount": 23,
+  "preparationMs": 20666.961084000002,
+  "provisioningMs": 221444.64375000002,
+  "runMs": 263361.4665,
+  "corpora": {
+    "cli": {
+      "records": 219,
+      "files": 34,
+      "sourceBytes": 243216,
+      "counts": {
+        "files": 34,
+        "excluded": 0,
+        "chunks": 185,
+        "tokens": 69741,
+        "embedded": 0,
+        "skipped": 185
+      }
+    },
+    "sdk-old": {
+      "records": 1455,
+      "files": 188,
+      "sourceBytes": 779453,
+      "counts": {
+        "files": 188,
+        "excluded": 0,
+        "chunks": 1267,
+        "tokens": 202298,
+        "embedded": 0,
+        "skipped": 1267
+      }
+    },
+    "sdk-new": {
+      "records": 1751,
+      "files": 209,
+      "sourceBytes": 971977,
+      "counts": {
+        "files": 209,
+        "excluded": 0,
+        "chunks": 1542,
+        "tokens": 251249,
+        "embedded": 0,
+        "skipped": 1542
+      }
+    }
+  },
+  "reused": {
+    "cli": {
+      "collection": false,
+      "version": false
+    },
+    "sdk-old": {
+      "collection": false,
+      "version": false
+    },
+    "sdk-new": {
+      "collection": false,
+      "version": false
+    }
+  },
+  "reuseDefinition": "collection existed before this run; version was published before its import. SDK versions share one Collection.",
+  "collections": {
+    "cli": "code-lambdadb-cli-4c8ce6a3b51a7c3e",
+    "sdk-old": "code-lambdadb-typescript-clie-16a89e61bdaef6aa",
+    "sdk-new": "code-lambdadb-typescript-clie-16a89e61bdaef6aa"
+  },
+  "versions": {
+    "cli": {
+      "id": "version-c8d389f3264d641ae6eafc7737fedd5ea046ddf1",
+      "kind": "manifest",
+      "role": "published",
+      "schemaVersion": 1,
+      "configHash": "a87a0e8bcae63b803c31687f8915dc2e3dbdc8f58a33c37ef5afae1a338e5239",
+      "repoId": "38ae2245-8f54-49ad-840b-9533ae8b4e70",
+      "indexId": "f00ca10f-a652-4fe1-bad0-698a01befd78",
+      "commitOid": "c8d389f3264d641ae6eafc7737fedd5ea046ddf1",
+      "commitTime": "2026-09-19T13:20:18+09:00",
+      "tagName": "ver-e18d592da8f32dc0c89658f8f9b894d62813c89f",
+      "snapshotId": "60cd6c88-f44b-42b0-9049-416c72f14858",
+      "writer": "work-1568215d-4230-4d83-a9e5-7e3fcae85bb1",
+      "buildId": "f80913040f9415ca970000051ca4ce82c0dd0c64955a422c5568d1baeef23f2f",
+      "recordsHash": "a6be7ded4fd6cb574ec538c9d930bf3623458fe1fb4068e815a6125fd7413dc0",
+      "inventoryHash": "25ea56f7297cabe6fc678c42dcb05d3be26b2958963a3404993242396fe21696",
+      "attemptId": "1568215d-4230-4d83-a9e5-7e3fcae85bb1",
+      "counts": {
+        "files": 34,
+        "excluded": 0,
+        "chunks": 185,
+        "tokens": 69741,
+        "embedded": 0,
+        "skipped": 185
+      },
+      "validation": {
+        "inventory": true,
+        "content": true,
+        "query": true
+      }
+    },
+    "sdk-old": {
+      "id": "version-a6050ce1ca76ba1201ffee09133d1b96adcfa42b",
+      "kind": "manifest",
+      "role": "published",
+      "schemaVersion": 1,
+      "configHash": "a87a0e8bcae63b803c31687f8915dc2e3dbdc8f58a33c37ef5afae1a338e5239",
+      "repoId": "8b9babc3-42c7-4d4b-8dfc-79d0e9f71219",
+      "indexId": "4cb9d110-d0df-469e-8cc8-cb0dd324588c",
+      "commitOid": "a6050ce1ca76ba1201ffee09133d1b96adcfa42b",
+      "commitTime": "2026-05-28T00:19:20+09:00",
+      "tagName": "ver-327a2a01d406a32db65b2080df0585d33f4dd5b4",
+      "snapshotId": "2824d348-f332-41e9-926d-7aa67eeb161e",
+      "writer": "work-874961df-bcb8-4058-96d7-13427131ee71",
+      "buildId": "028d4b35cbee5bc2207ad6e115083038e6b606d374fd314260dbda6ce289e0b6",
+      "recordsHash": "a1ea7ec0e4c8d57854d55e6a64e986f2c7edf5831f9209ebd2e5d74371218292",
+      "inventoryHash": "cad9d0a7c5e905b2f32206333e76b6ffdc7bd91e1aa270d1c4725e97fad2b8eb",
+      "attemptId": "874961df-bcb8-4058-96d7-13427131ee71",
+      "counts": {
+        "files": 188,
+        "excluded": 0,
+        "chunks": 1267,
+        "tokens": 202298,
+        "embedded": 0,
+        "skipped": 1267
+      },
+      "validation": {
+        "inventory": true,
+        "content": true,
+        "query": true
+      }
+    },
+    "sdk-new": {
+      "id": "version-856abf48a014185de54ccc541c2f6ee3871133ee",
+      "kind": "manifest",
+      "role": "published",
+      "schemaVersion": 1,
+      "configHash": "a87a0e8bcae63b803c31687f8915dc2e3dbdc8f58a33c37ef5afae1a338e5239",
+      "repoId": "8b9babc3-42c7-4d4b-8dfc-79d0e9f71219",
+      "indexId": "4cb9d110-d0df-469e-8cc8-cb0dd324588c",
+      "commitOid": "856abf48a014185de54ccc541c2f6ee3871133ee",
+      "commitTime": "2026-09-17T00:07:46+09:00",
+      "tagName": "ver-cdf45a1d82ae8dffb45dbcc0f645c9b0018a6262",
+      "snapshotId": "b752e890-0e15-4b32-8f9b-6f837426f678",
+      "writer": "work-5b4d303b-4020-46c9-8d66-ef427909b5f5",
+      "buildId": "1c8b23e44959463026b12ca13ee2cf98e2a3361860c5dd46b7e62c3794f6c07b",
+      "recordsHash": "329103af12766e8b2df0156fea3a6d4e44d89508ac78e8942de58fa131a23498",
+      "inventoryHash": "4f8fa39c4c12da0840c739b3c3c079c7f1717c7281374bddca4434d2ab68f67a",
+      "attemptId": "5b4d303b-4020-46c9-8d66-ef427909b5f5",
+      "counts": {
+        "files": 209,
+        "excluded": 0,
+        "chunks": 1542,
+        "tokens": 251249,
+        "embedded": 0,
+        "skipped": 1542
+      },
+      "validation": {
+        "inventory": true,
+        "content": true,
+        "query": true
+      }
+    }
+  },
+  "totals": {
+    "reads": 8,
+    "previews": 25,
+    "searches": 5,
+    "cliCalls": 31,
+    "failedCliCalls": 0,
+    "setupCliCalls": 10,
+    "documentEmbeddingTokens": 0,
+    "queryEmbeddingRequests": 0
+  },
+  "means": {
+    "local": {
+      "durationMs": 16.304172249998373,
+      "outputTokens": 546
+    },
+    "srcx": {
+      "durationMs": 2107.018020875006,
+      "outputTokens": 546
+    }
+  },
+  "rows": [
+    {
+      "id": "cli-query",
+      "task": "read-consistency",
+      "target": "cli",
+      "citation": "github.com/lambdadb/lambdadb-cli@c8d389f3264d641ae6eafc7737fedd5ea046ddf1:src/input.ts:52-67",
+      "verified": true,
+      "local": {
+        "durationMs": 17.09129199999734,
+        "outputTokens": 515
+      },
+      "srcx": {
+        "durationMs": 1873.738417000015,
+        "outputTokens": 515,
+        "requests": {
+          "total": 34,
+          "byOperation": {
+            "collections": 1,
+            "fetch": 7,
+            "repository-descriptor": 23,
+            "tags": 3
+          },
+          "sumFetchDurationMs": 1617.791836,
+          "repositoryDescriptorMs": 963.95846
+        }
+      }
+    },
+    {
+      "id": "sdk-query",
+      "task": "read-consistency",
+      "target": "sdk-new",
+      "citation": "github.com/lambdadb/lambdadb-typescript-client@856abf48a014185de54ccc541c2f6ee3871133ee:src/models/operations/querycollection.ts:105-134",
+      "verified": true,
+      "local": {
+        "durationMs": 18.036957999982405,
+        "outputTokens": 528
+      },
+      "srcx": {
+        "durationMs": 2093.994667000021,
+        "outputTokens": 528,
+        "requests": {
+          "total": 36,
+          "byOperation": {
+            "collections": 1,
+            "fetch": 9,
+            "repository-descriptor": 23,
+            "tags": 3
+          },
+          "sumFetchDurationMs": 1763.6442929999998,
+          "repositoryDescriptorMs": 953.4642090000004
+        }
+      }
+    },
+    {
+      "id": "cli-rejection-test",
+      "task": "read-consistency",
+      "target": "cli",
+      "citation": "github.com/lambdadb/lambdadb-cli@c8d389f3264d641ae6eafc7737fedd5ea046ddf1:test/cli.test.mjs:185-208",
+      "verified": true,
+      "local": {
+        "durationMs": 12.754792000021553,
+        "outputTokens": 792
+      },
+      "srcx": {
+        "durationMs": 1864.4408750000002,
+        "outputTokens": 792,
+        "requests": {
+          "total": 34,
+          "byOperation": {
+            "collections": 1,
+            "fetch": 7,
+            "repository-descriptor": 23,
+            "tags": 3
+          },
+          "sumFetchDurationMs": 1625.6491649999996,
+          "repositoryDescriptorMs": 928.3312069999997
+        }
+      }
+    },
+    {
+      "id": "cli-branch-test",
+      "task": "read-consistency",
+      "target": "cli",
+      "citation": "github.com/lambdadb/lambdadb-cli@c8d389f3264d641ae6eafc7737fedd5ea046ddf1:test/cli.test.mjs:261-267",
+      "verified": true,
+      "local": {
+        "durationMs": 18.60891700000502,
+        "outputTokens": 399
+      },
+      "srcx": {
+        "durationMs": 2083.311875000014,
+        "outputTokens": 399,
+        "requests": {
+          "total": 34,
+          "byOperation": {
+            "collections": 1,
+            "fetch": 7,
+            "repository-descriptor": 23,
+            "tags": 3
+          },
+          "sumFetchDurationMs": 1823.361001000001,
+          "repositoryDescriptorMs": 1142.3169590000007
+        }
+      }
+    },
+    {
+      "id": "old-upsert",
+      "task": "write-branch-migration",
+      "target": "sdk-old",
+      "citation": "github.com/lambdadb/lambdadb-typescript-client@a6050ce1ca76ba1201ffee09133d1b96adcfa42b:src/models/operations/upsertdocs.ts:8-43",
+      "verified": true,
+      "local": {
+        "durationMs": 13.591542000009213,
+        "outputTokens": 515
+      },
+      "srcx": {
+        "durationMs": 2613.8142919999955,
+        "outputTokens": 515,
+        "requests": {
+          "total": 36,
+          "byOperation": {
+            "collections": 1,
+            "fetch": 9,
+            "repository-descriptor": 23,
+            "tags": 3
+          },
+          "sumFetchDurationMs": 2309.987000999999,
+          "repositoryDescriptorMs": 1495.5892079999996
+        }
+      }
+    },
+    {
+      "id": "new-upsert",
+      "task": "write-branch-migration",
+      "target": "sdk-new",
+      "citation": "github.com/lambdadb/lambdadb-typescript-client@856abf48a014185de54ccc541c2f6ee3871133ee:src/models/operations/upsertdocs.ts:8-47",
+      "verified": true,
+      "local": {
+        "durationMs": 18.993083999986993,
+        "outputTokens": 576
+      },
+      "srcx": {
+        "durationMs": 2042.5609579999873,
+        "outputTokens": 576,
+        "requests": {
+          "total": 36,
+          "byOperation": {
+            "collections": 1,
+            "fetch": 9,
+            "repository-descriptor": 23,
+            "tags": 3
+          },
+          "sumFetchDurationMs": 1729.7210420000001,
+          "repositoryDescriptorMs": 927.4772509999997
+        }
+      }
+    },
+    {
+      "id": "cli-write-option",
+      "task": "write-branch-migration",
+      "target": "cli",
+      "citation": "github.com/lambdadb/lambdadb-cli@c8d389f3264d641ae6eafc7737fedd5ea046ddf1:src/cli.ts:120-140",
+      "verified": true,
+      "local": {
+        "durationMs": 13.349208999978146,
+        "outputTokens": 651
+      },
+      "srcx": {
+        "durationMs": 2337.4815000000235,
+        "outputTokens": 651,
+        "requests": {
+          "total": 34,
+          "byOperation": {
+            "collections": 1,
+            "fetch": 7,
+            "repository-descriptor": 23,
+            "tags": 3
+          },
+          "sumFetchDurationMs": 2096.067245999999,
+          "repositoryDescriptorMs": 921.9793309999999
+        }
+      }
+    },
+    {
+      "id": "cli-write-forward",
+      "task": "write-branch-migration",
+      "target": "cli",
+      "citation": "github.com/lambdadb/lambdadb-cli@c8d389f3264d641ae6eafc7737fedd5ea046ddf1:src/import-workflow.ts:49-58",
+      "verified": true,
+      "local": {
+        "durationMs": 18.007584000006318,
+        "outputTokens": 392
+      },
+      "srcx": {
+        "durationMs": 1946.8015829999931,
+        "outputTokens": 392,
+        "requests": {
+          "total": 34,
+          "byOperation": {
+            "collections": 1,
+            "fetch": 7,
+            "repository-descriptor": 23,
+            "tags": 3
+          },
+          "sumFetchDurationMs": 1684.631249,
+          "repositoryDescriptorMs": 1000.9019999999998
+        }
+      }
+    }
+  ],
+  "searches": [
+    {
+      "id": "cli-consistency",
+      "target": "cli",
+      "query": "consistentRead",
+      "hits": [
+        {
+          "path": "examples/query.json",
+          "startLine": 1,
+          "endLine": 5,
+          "citation": "github.com/lambdadb/lambdadb-cli@c8d389f3264d641ae6eafc7737fedd5ea046ddf1:examples/query.json:1-5"
+        },
+        {
+          "path": "test/cli.test.mjs",
+          "startLine": 261,
+          "endLine": 293,
+          "citation": "github.com/lambdadb/lambdadb-cli@c8d389f3264d641ae6eafc7737fedd5ea046ddf1:test/cli.test.mjs:261-293"
+        },
+        {
+          "path": "src/cli.ts",
+          "startLine": 150,
+          "endLine": 209,
+          "citation": "github.com/lambdadb/lambdadb-cli@c8d389f3264d641ae6eafc7737fedd5ea046ddf1:src/cli.ts:150-209"
+        },
+        {
+          "path": "README.md",
+          "startLine": 87,
+          "endLine": 152,
+          "citation": "github.com/lambdadb/lambdadb-cli@c8d389f3264d641ae6eafc7737fedd5ea046ddf1:README.md:87-152"
+        },
+        {
+          "path": "DESIGN.md",
+          "startLine": 56,
+          "endLine": 84,
+          "citation": "github.com/lambdadb/lambdadb-cli@c8d389f3264d641ae6eafc7737fedd5ea046ddf1:DESIGN.md:56-84"
+        }
+      ],
+      "durationMs": 2473.333917000011,
+      "outputTokens": 1839,
+      "requests": {
+        "total": 48,
+        "byOperation": {
+          "collections": 1,
+          "fetch": 16,
+          "query": 1,
+          "repository-descriptor": 23,
+          "tags": 7
+        },
+        "sumFetchDurationMs": 2205.674334000002,
+        "repositoryDescriptorMs": 964.9770010000007
+      }
+    },
+    {
+      "id": "sdk-consistency",
+      "target": "sdk-new",
+      "query": "consistentRead",
+      "hits": [
+        {
+          "path": "test/types/data-versioning.ts",
+          "startLine": 151,
+          "endLine": 159,
+          "citation": "github.com/lambdadb/lambdadb-typescript-client@856abf48a014185de54ccc541c2f6ee3871133ee:test/types/data-versioning.ts:151-159"
+        },
+        {
+          "path": "src/models/operations/fetchdocs.ts",
+          "startLine": 81,
+          "endLine": 101,
+          "citation": "github.com/lambdadb/lambdadb-typescript-client@856abf48a014185de54ccc541c2f6ee3871133ee:src/models/operations/fetchdocs.ts:81-101"
+        },
+        {
+          "path": "src/models/operations/querycollection.ts",
+          "startLine": 105,
+          "endLine": 127,
+          "citation": "github.com/lambdadb/lambdadb-typescript-client@856abf48a014185de54ccc541c2f6ee3871133ee:src/models/operations/querycollection.ts:105-127"
+        },
+        {
+          "path": "test/types/data-versioning.ts",
+          "startLine": 160,
+          "endLine": 160,
+          "citation": "github.com/lambdadb/lambdadb-typescript-client@856abf48a014185de54ccc541c2f6ee3871133ee:test/types/data-versioning.ts:160-160"
+        },
+        {
+          "path": "test/types/data-versioning.ts",
+          "startLine": 162,
+          "endLine": 162,
+          "citation": "github.com/lambdadb/lambdadb-typescript-client@856abf48a014185de54ccc541c2f6ee3871133ee:test/types/data-versioning.ts:162-162"
+        }
+      ],
+      "durationMs": 2494.0189580000006,
+      "outputTokens": 1681,
+      "requests": {
+        "total": 50,
+        "byOperation": {
+          "collections": 1,
+          "fetch": 18,
+          "query": 1,
+          "repository-descriptor": 23,
+          "tags": 7
+        },
+        "sumFetchDurationMs": 2154.718208,
+        "repositoryDescriptorMs": 939.1490839999996
+      }
+    },
+    {
+      "id": "cli-write",
+      "target": "cli",
+      "query": "branch",
+      "hits": [
+        {
+          "path": "src/cli.ts",
+          "startLine": 121,
+          "endLine": 149,
+          "citation": "github.com/lambdadb/lambdadb-cli@c8d389f3264d641ae6eafc7737fedd5ea046ddf1:src/cli.ts:121-149"
+        },
+        {
+          "path": "test/cli.test.mjs",
+          "startLine": 111,
+          "endLine": 148,
+          "citation": "github.com/lambdadb/lambdadb-cli@c8d389f3264d641ae6eafc7737fedd5ea046ddf1:test/cli.test.mjs:111-148"
+        },
+        {
+          "path": "CONTRIBUTING.md",
+          "startLine": 1,
+          "endLine": 71,
+          "citation": "github.com/lambdadb/lambdadb-cli@c8d389f3264d641ae6eafc7737fedd5ea046ddf1:CONTRIBUTING.md:1-71"
+        },
+        {
+          "path": "src/import-workflow.ts",
+          "startLine": 16,
+          "endLine": 32,
+          "citation": "github.com/lambdadb/lambdadb-cli@c8d389f3264d641ae6eafc7737fedd5ea046ddf1:src/import-workflow.ts:16-32"
+        },
+        {
+          "path": "test/cli.test.mjs",
+          "startLine": 185,
+          "endLine": 224,
+          "citation": "github.com/lambdadb/lambdadb-cli@c8d389f3264d641ae6eafc7737fedd5ea046ddf1:test/cli.test.mjs:185-224"
+        }
+      ],
+      "durationMs": 2332.744915999996,
+      "outputTokens": 2007,
+      "requests": {
+        "total": 48,
+        "byOperation": {
+          "collections": 1,
+          "fetch": 16,
+          "query": 1,
+          "repository-descriptor": 23,
+          "tags": 7
+        },
+        "sumFetchDurationMs": 2047.5277450000012,
+        "repositoryDescriptorMs": 936.6238320000002
+      }
+    },
+    {
+      "id": "sdk-old-write",
+      "target": "sdk-old",
+      "query": "UpsertDocsRequestBody",
+      "hits": [
+        {
+          "path": "src/models/operations/upsertdocs.ts",
+          "startLine": 37,
+          "endLine": 44,
+          "citation": "github.com/lambdadb/lambdadb-typescript-client@a6050ce1ca76ba1201ffee09133d1b96adcfa42b:src/models/operations/upsertdocs.ts:37-44"
+        },
+        {
+          "path": "src/models/operations/upsertdocs.ts",
+          "startLine": 29,
+          "endLine": 36,
+          "citation": "github.com/lambdadb/lambdadb-typescript-client@a6050ce1ca76ba1201ffee09133d1b96adcfa42b:src/models/operations/upsertdocs.ts:29-36"
+        },
+        {
+          "path": "src/models/operations/upsertdocs.ts",
+          "startLine": 24,
+          "endLine": 27,
+          "citation": "github.com/lambdadb/lambdadb-typescript-client@a6050ce1ca76ba1201ffee09133d1b96adcfa42b:src/models/operations/upsertdocs.ts:24-27"
+        },
+        {
+          "path": "docs/models/operations/upsertdocsrequestbody.md",
+          "startLine": 1,
+          "endLine": 26,
+          "citation": "github.com/lambdadb/lambdadb-typescript-client@a6050ce1ca76ba1201ffee09133d1b96adcfa42b:docs/models/operations/upsertdocsrequestbody.md:1-26"
+        },
+        {
+          "path": "src/models/operations/upsertdocs.ts",
+          "startLine": 8,
+          "endLine": 22,
+          "citation": "github.com/lambdadb/lambdadb-typescript-client@a6050ce1ca76ba1201ffee09133d1b96adcfa42b:src/models/operations/upsertdocs.ts:8-22"
+        }
+      ],
+      "durationMs": 2521.031583999982,
+      "outputTokens": 1654,
+      "requests": {
+        "total": 50,
+        "byOperation": {
+          "collections": 1,
+          "fetch": 18,
+          "query": 1,
+          "repository-descriptor": 23,
+          "tags": 7
+        },
+        "sumFetchDurationMs": 2186.5687059999996,
+        "repositoryDescriptorMs": 917.7150809999996
+      }
+    },
+    {
+      "id": "sdk-new-write",
+      "target": "sdk-new",
+      "query": "UpsertDocsRequestBody",
+      "hits": [
+        {
+          "path": "src/models/operations/upsertdocs.ts",
+          "startLine": 41,
+          "endLine": 48,
+          "citation": "github.com/lambdadb/lambdadb-typescript-client@856abf48a014185de54ccc541c2f6ee3871133ee:src/models/operations/upsertdocs.ts:41-48"
+        },
+        {
+          "path": "src/models/operations/upsertdocs.ts",
+          "startLine": 32,
+          "endLine": 40,
+          "citation": "github.com/lambdadb/lambdadb-typescript-client@856abf48a014185de54ccc541c2f6ee3871133ee:src/models/operations/upsertdocs.ts:32-40"
+        },
+        {
+          "path": "src/models/operations/upsertdocs.ts",
+          "startLine": 26,
+          "endLine": 30,
+          "citation": "github.com/lambdadb/lambdadb-typescript-client@856abf48a014185de54ccc541c2f6ee3871133ee:src/models/operations/upsertdocs.ts:26-30"
+        },
+        {
+          "path": "docs/models/operations/upsertdocsrequestbody.md",
+          "startLine": 1,
+          "endLine": 27,
+          "citation": "github.com/lambdadb/lambdadb-typescript-client@856abf48a014185de54ccc541c2f6ee3871133ee:docs/models/operations/upsertdocsrequestbody.md:1-27"
+        },
+        {
+          "path": "src/models/operations/upsertdocs.ts",
+          "startLine": 50,
+          "endLine": 54,
+          "citation": "github.com/lambdadb/lambdadb-typescript-client@856abf48a014185de54ccc541c2f6ee3871133ee:src/models/operations/upsertdocs.ts:50-54"
+        }
+      ],
+      "durationMs": 2570.8215840000194,
+      "outputTokens": 1640,
+      "requests": {
+        "total": 50,
+        "byOperation": {
+          "collections": 1,
+          "fetch": 18,
+          "query": 1,
+          "repository-descriptor": 23,
+          "tags": 7
+        },
+        "sumFetchDurationMs": 2219.842916000001,
+        "repositoryDescriptorMs": 994.3415430000002
+      }
+    }
+  ],
+  "setupCalls": [
+    {
+      "label": "configure-setup",
+      "durationMs": 142.95233299999995,
+      "outputTokens": 56,
+      "requests": {
+        "total": 0,
+        "byOperation": {},
+        "sumFetchDurationMs": 0,
+        "repositoryDescriptorMs": 0
+      }
+    },
+    {
+      "label": "discover-before-setup",
+      "durationMs": 1668.727833,
+      "outputTokens": 1473,
+      "requests": {
+        "total": 22,
+        "byOperation": {
+          "collections": 1,
+          "repository-descriptor": 21
+        },
+        "sumFetchDurationMs": 1448.5594590000005,
+        "repositoryDescriptorMs": 1117.0602920000006
+      }
+    },
+    {
+      "label": "register-cli",
+      "durationMs": 1272.622625,
+      "outputTokens": 608,
+      "requests": {
+        "total": 7,
+        "byOperation": {
+          "branches": 2,
+          "collections": 3,
+          "other": 1,
+          "repository-descriptor": 1
+        },
+        "sumFetchDurationMs": 1001.9769580000001,
+        "repositoryDescriptorMs": 68.91062499999998
+      }
+    },
+    {
+      "label": "versions-before-cli",
+      "durationMs": 1536.7157910000005,
+      "outputTokens": 1,
+      "requests": {
+        "total": 24,
+        "byOperation": {
+          "collections": 1,
+          "repository-descriptor": 22,
+          "tags": 1
+        },
+        "sumFetchDurationMs": 1298.9975010000003,
+        "repositoryDescriptorMs": 949.7392090000001
+      }
+    },
+    {
+      "label": "import-cli",
+      "durationMs": 86642.69579200001,
+      "outputTokens": 537,
+      "requests": {
+        "total": 123,
+        "byOperation": {
+          "branches": 2,
+          "collections": 1,
+          "fetch": 83,
+          "other": 9,
+          "query": 2,
+          "repository-descriptor": 22,
+          "tags": 4
+        },
+        "sumFetchDurationMs": 5682.7363359999235,
+        "repositoryDescriptorMs": 936.29129
+      }
+    },
+    {
+      "label": "register-sdk-old",
+      "durationMs": 1222.620167000001,
+      "outputTokens": 622,
+      "requests": {
+        "total": 7,
+        "byOperation": {
+          "branches": 2,
+          "collections": 3,
+          "other": 1,
+          "repository-descriptor": 1
+        },
+        "sumFetchDurationMs": 947.6778759999999,
+        "repositoryDescriptorMs": 67.57029199999988
+      }
+    },
+    {
+      "label": "versions-before-sdk-old",
+      "durationMs": 1748.3799160000053,
+      "outputTokens": 1,
+      "requests": {
+        "total": 25,
+        "byOperation": {
+          "collections": 1,
+          "repository-descriptor": 23,
+          "tags": 1
+        },
+        "sumFetchDurationMs": 1501.9244149999997,
+        "repositoryDescriptorMs": 1093.6076229999999
+      }
+    },
+    {
+      "label": "import-sdk-old",
+      "durationMs": 62859.237540999995,
+      "outputTokens": 547,
+      "requests": {
+        "total": 124,
+        "byOperation": {
+          "branches": 2,
+          "collections": 1,
+          "fetch": 57,
+          "other": 35,
+          "query": 2,
+          "repository-descriptor": 23,
+          "tags": 4
+        },
+        "sumFetchDurationMs": 6549.304084000009,
+        "repositoryDescriptorMs": 994.4627059999998
+      }
+    },
+    {
+      "label": "versions-before-sdk-new",
+      "durationMs": 1797.7492910000146,
+      "outputTokens": 551,
+      "requests": {
+        "total": 27,
+        "byOperation": {
+          "collections": 1,
+          "fetch": 2,
+          "repository-descriptor": 23,
+          "tags": 1
+        },
+        "sumFetchDurationMs": 1546.7356690000001,
+        "repositoryDescriptorMs": 1122.389126
+      }
+    },
+    {
+      "label": "import-sdk-new",
+      "durationMs": 61105.141333999985,
+      "outputTokens": 557,
+      "requests": {
+        "total": 161,
+        "byOperation": {
+          "branches": 3,
+          "collections": 1,
+          "fetch": 55,
+          "other": 72,
+          "query": 3,
+          "repository-descriptor": 23,
+          "tags": 4
+        },
+        "sumFetchDurationMs": 7019.1992819999905,
+        "repositoryDescriptorMs": 968.4695380000001
+      }
+    }
+  ]
+}

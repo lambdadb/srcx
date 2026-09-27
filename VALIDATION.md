@@ -1,5 +1,23 @@
 # Validation record
 
+## Cross-repository versioned source delivery
+
+The [bounded workflow diagnostic](eval/VERSION-WORKFLOW-RESULTS.md) covers
+LambdaDB CLI v0.1.0 and TypeScript SDK v0.4.3/v0.5.1. A fresh client with no local
+source attachment verifies all eight requested source spans and 25 lexical
+previews/handles. All three immutable Tag/Snapshot identities remain unchanged
+before/after reads; all 23 frozen runtime/harness inputs match. All 31 reserved
+CLI calls complete. Three dry-run corpora contain 3,425 file/chunk records and
+1,994,646 source bytes across snapshots, with zero embeddings.
+
+Mean known-range read time is 16.3 ms for local Git and 2,107.0 ms for srcx.
+Remote reads make 34–36 HTTP requests each, including 23 repository-descriptor
+fetches. Equal source/identity envelopes intentionally yield equal stdout tokens;
+this is not evidence of model-token savings or autonomous task accuracy. Setup
+costs and source-test inspection are separate from task reads. The next measured
+optimization target is exact-Collection selection without project-wide discovery;
+the product runtime and retrieval defaults are unchanged in this evaluation.
+
 ## Fresh adaptive agent navigation
 
 [Eight fresh sessions](eval/FRESH-AGENT-NAVIGATION-RESULTS.md) compare local tools
