@@ -5,6 +5,10 @@ lexical or semantic access: every subject used local tools exclusively. All thre
 conditions solved the same nine of twelve tasks under the frozen criteria. This
 run is separate from the [aborted corpus preflight](PRIVATE-CORPUS-PREFLIGHT.md).
 
+A separate [required-exposure follow-up](PRIVATE-REQUIRED-EXPOSURE.md) explicitly
+uses lexical or semantic retrieval before local investigation. Its fresh sessions
+and clarified questions are reported separately and are not pooled with this run.
+
 ## Comparison
 
 Twelve English maintenance questions from merged changes in one private Java
