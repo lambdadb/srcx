@@ -35,7 +35,13 @@ import {
   type Published,
 } from "./publish.js";
 import { resolveVersion, syncTags } from "./releases.js";
-import { directHandle, loadHandle, readHandle, search } from "./search.js";
+import {
+  directHandle,
+  loadHandle,
+  readHandle,
+  search,
+  lookup,
+} from "./search.js";
 import { candidateLimit } from "./rerank.js";
 import { manageSkill, SKILL_AGENTS, SKILL_SCOPES } from "./skills.js";
 const cli = new Command()
@@ -452,6 +458,38 @@ cli
             ),
         },
       ),
+    );
+  });
+cli
+  .command("lookup")
+  .description(
+    "Find exact indexed symbol definitions and return their source chunks",
+  )
+  .requiredOption("--repo <name>")
+  .requiredOption("--version <commit-branch-or-release>")
+  .requiredOption("--symbol <name>", "Exact case-sensitive indexed symbol name")
+  .option("--path <path>", "Exact path filter for ambiguous names")
+  .option("--language <name>", "Exact programming-language filter")
+  .option(
+    "--limit <count>",
+    "Maximum source chunks (1–20; results may be partial)",
+    integer,
+    5,
+  )
+  .action(async (o) => {
+    invariant(
+      o.limit >= 1 && o.limit <= 20,
+      "Lookup limit must be between 1 and 20.",
+    );
+    const { remote, settings } = await connected();
+    const r = await selectRepository(remote, o.repo),
+      store = remote.store(r.collection);
+    const v = await resolveVersion(store, r, o.version);
+    output(
+      await lookup(store, settings, r, v, o.symbol, o.limit, {
+        path: o.path,
+        language: o.language,
+      }),
     );
   });
 cli
