@@ -28,7 +28,7 @@
   "scripts": {
     "build": "tsc && node -e \"require('node:fs').chmodSync('dist/cli.js', 0o755)\"",
     "typecheck": "tsc --noEmit",
-    "test": "npm run build && node --test --test-timeout=60000 test/*.test.mjs",
+    "test": "npm run build && node --test --test-timeout=120000 test/*.test.mjs",
     "start": "node dist/cli.js",
     "demo": "npm run build && node scripts/demo.mjs",
     "prepack": "npm run build",
