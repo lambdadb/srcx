@@ -15,7 +15,10 @@ small-public-library workflow.
   [inventory](semantic-value-inventory.json), and [runtime/harness hashes](semantic-value-freeze.json)
   were committed in `1c09d0d` before publication.
 - [Immutable versions](semantic-value-publication.json) were committed in
-  `7cbdcd9` before retrieval and agent sessions. Both commits remain in ancestry.
+  `7cbdcd9` before retrieval and agent sessions. Both commits are ancestors of
+  the original [result commit `bc2e997`](https://github.com/lambdadb/srcx/commit/bc2e997d35627e5345d4a90a943d75c672004b01)
+  in [PR #33](https://github.com/lambdadb/srcx/pull/33). That PR was squash-merged;
+  verify the freeze against the original result commit, not the integration commit.
 - Click `934813e4` and Cobra `40b5bc14`, current product `88abc66`, English analyzer,
   managed `text-embedding-3-small`, no hybrid or reranker. Seven image files were
   excluded; legal files and Cobra's go.sum remained lexical-only. No image
