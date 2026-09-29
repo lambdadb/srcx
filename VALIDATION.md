@@ -1,5 +1,20 @@
 # Validation record
 
+## Semantic value against adaptive keyword search
+
+The [nine-session comparison](eval/SEMANTIC-VALUE-RESULTS.md) on cleaned, pinned
+Click and Cobra corpora finds equal answer coverage across local, lexical-first
+and semantic-first conditions. Semantic-first averages 35.4% more total input,
+36.2% more uncached input and 6.7% more time than local. All six indexed agents
+perform one initial search and then investigate locally. Static full-question
+range hits favor semantic (1/3 versus 0/3), but agent-selected first queries
+favor lexical (3/3 versus 1/3). No unique semantic task benefit is established.
+
+All 60 search previews/handles, 110 linked citation ranges, nine source pins,
+69 frozen inputs and four bracketing resolutions are verified. Two publications
+consume 373,832 estimated document tokens; six query embeddings are used. No
+product settings change, no paid retries occur, and the bounded test stops.
+
 ## Agent choice across repositories and versions
 
 The [six-session comparison](eval/VERSION-AGENT-RESULTS.md) offers the installed

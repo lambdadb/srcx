@@ -1,0 +1,877 @@
+{
+  "format": 1,
+  "protocolCommit": "1c09d0d818323e8e26df4eef911b914dd2f058b1",
+  "publicationCommit": "7cbdcd9",
+  "limitations": "Three public-library tasks; single observation per condition; unblinded assistant labels and grades. Prescribed first search, not voluntary adoption or a statistical benchmark.",
+  "groups": {
+    "local": {
+      "sessions": 3,
+      "meanSeconds": 81.26004111083846,
+      "meanInputTokens": 125462.66666666667,
+      "meanCachedInputTokens": 101973.33333333333,
+      "meanUncachedInputTokens": 23489.333333333332,
+      "meanOutputTokens": 2089,
+      "commands": 14,
+      "factsMet": 12,
+      "factsPartial": 3,
+      "materialErrors": 0
+    },
+    "lexical": {
+      "sessions": 3,
+      "meanSeconds": 92.60443736116092,
+      "meanInputTokens": 147872.66666666666,
+      "meanCachedInputTokens": 119637.33333333333,
+      "meanUncachedInputTokens": 28235.333333333332,
+      "meanOutputTokens": 1976,
+      "commands": 17,
+      "factsMet": 12,
+      "factsPartial": 3,
+      "materialErrors": 0
+    },
+    "semantic": {
+      "sessions": 3,
+      "meanSeconds": 86.73618681977193,
+      "meanInputTokens": 169837.66666666666,
+      "meanCachedInputTokens": 137856,
+      "meanUncachedInputTokens": 31981.666666666668,
+      "meanOutputTokens": 2142.6666666666665,
+      "commands": 20,
+      "factsMet": 12,
+      "factsPartial": 3,
+      "materialErrors": 0
+    }
+  },
+  "stage": [
+    {
+      "task": "deferred-file",
+      "mode": "lexical",
+      "reservedAt": "2026-09-27T12:02:31.015Z",
+      "seconds": 1.272078,
+      "results": [
+        {
+          "path": "docs/commands.rst",
+          "startLine": 306,
+          "endLine": 403,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "docs/why.rst",
+          "startLine": 1,
+          "endLine": 146,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "docs/complex.rst",
+          "startLine": 259,
+          "endLine": 383,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "src/click/types.py",
+          "startLine": 644,
+          "endLine": 673,
+          "primaryIntersection": false,
+          "primaryFile": true
+        },
+        {
+          "path": "docs/commands.rst",
+          "startLine": 1,
+          "endLine": 100,
+          "primaryIntersection": false,
+          "primaryFile": false
+        }
+      ],
+      "verified": true
+    },
+    {
+      "task": "deferred-file",
+      "mode": "semantic",
+      "reservedAt": "2026-09-27T12:02:32.292Z",
+      "seconds": 1.6253921660000001,
+      "results": [
+        {
+          "path": "docs/handling-files.rst",
+          "startLine": 1,
+          "endLine": 90,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "src/click/utils.py",
+          "startLine": 201,
+          "endLine": 204,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "docs/utils.rst",
+          "startLine": 200,
+          "endLine": 408,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "docs/commands.rst",
+          "startLine": 1,
+          "endLine": 100,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "docs/commands.rst",
+          "startLine": 398,
+          "endLine": 571,
+          "primaryIntersection": false,
+          "primaryFile": false
+        }
+      ],
+      "verified": true
+    },
+    {
+      "task": "internal-command",
+      "mode": "semantic",
+      "reservedAt": "2026-09-27T12:02:33.919Z",
+      "seconds": 1.4348567919999995,
+      "results": [
+        {
+          "path": "docs/commands.rst",
+          "startLine": 1,
+          "endLine": 100,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "docs/advanced.rst",
+          "startLine": 96,
+          "endLine": 213,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "src/click/core.py",
+          "startLine": 269,
+          "endLine": 346,
+          "primaryIntersection": false,
+          "primaryFile": true
+        },
+        {
+          "path": "docs/commands.rst",
+          "startLine": 89,
+          "endLine": 197,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "src/click/core.py",
+          "startLine": 737,
+          "endLine": 790,
+          "primaryIntersection": true,
+          "primaryFile": true
+        }
+      ],
+      "verified": true
+    },
+    {
+      "task": "internal-command",
+      "mode": "lexical",
+      "reservedAt": "2026-09-27T12:02:35.356Z",
+      "seconds": 1.231118375,
+      "results": [
+        {
+          "path": "docs/complex.rst",
+          "startLine": 90,
+          "endLine": 183,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "docs/commands.rst",
+          "startLine": 306,
+          "endLine": 403,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "docs/advanced.rst",
+          "startLine": 206,
+          "endLine": 280,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "docs/upgrading.rst",
+          "startLine": 1,
+          "endLine": 131,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "docs/complex.rst",
+          "startLine": 1,
+          "endLine": 99,
+          "primaryIntersection": false,
+          "primaryFile": false
+        }
+      ],
+      "verified": true
+    },
+    {
+      "task": "attached-short-value",
+      "mode": "lexical",
+      "reservedAt": "2026-09-27T12:02:36.589Z",
+      "seconds": 1.2292041669999998,
+      "results": [
+        {
+          "path": "command.go",
+          "startLine": 54,
+          "endLine": 131,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "completions_test.go",
+          "startLine": 674,
+          "endLine": 675,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "powershell_completions.go",
+          "startLine": 179,
+          "endLine": 312,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "site/content/completions/_index.md",
+          "startLine": 512,
+          "endLine": 572,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "bash_completions.go",
+          "startLine": 615,
+          "endLine": 628,
+          "primaryIntersection": false,
+          "primaryFile": false
+        }
+      ],
+      "verified": true
+    },
+    {
+      "task": "attached-short-value",
+      "mode": "semantic",
+      "reservedAt": "2026-09-27T12:02:37.820Z",
+      "seconds": 1.345033540999999,
+      "results": [
+        {
+          "path": "site/content/completions/_index.md",
+          "startLine": 94,
+          "endLine": 171,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "site/content/completions/_index.md",
+          "startLine": 241,
+          "endLine": 321,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "site/content/completions/bash.md",
+          "startLine": 1,
+          "endLine": 66,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "bash_completionsV2.go",
+          "startLine": 276,
+          "endLine": 341,
+          "primaryIntersection": false,
+          "primaryFile": false
+        },
+        {
+          "path": "site/content/completions/zsh.md",
+          "startLine": 1,
+          "endLine": 41,
+          "primaryIntersection": false,
+          "primaryFile": false
+        }
+      ],
+      "verified": true
+    }
+  ],
+  "audit": {
+    "suiteSha256": "739003aa943456cb453721c5cf823b97c5e77f6473ae5bcfce351a5e0404d63f",
+    "frozenInputCount": 69,
+    "uniqueSessions": 9,
+    "previewCount": 30,
+    "readCount": 0,
+    "rows": [
+      {
+        "task": "deferred-file",
+        "arm": "local",
+        "seconds": 91.59531112480909,
+        "exitCode": 0,
+        "stopReason": null,
+        "commandCount": 5,
+        "usage": {
+          "input_tokens": 135467,
+          "cached_input_tokens": 110976,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 2356,
+          "reasoning_output_tokens": 194
+        },
+        "counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "reads": 0,
+          "implementation": 0,
+          "failures": 0,
+          "help": 0,
+          "stdoutTokens": 0
+        },
+        "commandFailures": [
+          {
+            "command": "/bin/zsh -lc \"git -C source rev-parse HEAD; rg -n 'result_callback|chain|ctx\\\\.close|with ctx|with sub_ctx' source/src/click/core.py; rg -n 'class File|def convert|call_on_close|open_stream|class LazyFile' source/src/click/types.py source/src/click/utils.py; rg -n 'pipeline|result_callback|chain=True|close|File\\\\(' source/tests/test_command_chaining.py source/docs/commands.rst\"",
+            "exitCode": 2
+          }
+        ],
+        "answerSha256": "d238bae001d27dcda8b89ad4e8cfd2d67f469d7351ea2612ff9f0c0ad6fe2144",
+        "grade": {
+          "task": "deferred-file",
+          "arm": "local",
+          "facts": ["partial", "met", "met", "met", "met"],
+          "notes": [
+            "Correct normal-file ownership and closure, but omits the frozen already-supplied-file-like bypass detail.",
+            "Correct outer context lifetime and cleanup order.",
+            "Correct manual deferred ownership and warns saving child stream does not cancel cleanup.",
+            "Accurately narrows pipeline test to stdin; supporting context/open_file tests inspected."
+          ],
+          "materialErrors": [],
+          "citationDefects": [],
+          "citationsReviewed": 15
+        },
+        "initialSearch": {}
+      },
+      {
+        "task": "deferred-file",
+        "arm": "lexical",
+        "seconds": 113.97296408284456,
+        "exitCode": 0,
+        "stopReason": null,
+        "commandCount": 7,
+        "usage": {
+          "input_tokens": 190567,
+          "cached_input_tokens": 162816,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 2264,
+          "reasoning_output_tokens": 103
+        },
+        "counts": {
+          "lexical": 1,
+          "semantic": 0,
+          "reads": 0,
+          "implementation": 0,
+          "failures": 0,
+          "help": 0,
+          "stdoutTokens": 1771
+        },
+        "commandFailures": [],
+        "answerSha256": "2f33de7c622ed442b232192672097c7e888bcaffd31cfd7945bf376e0a4b350c",
+        "grade": {
+          "task": "deferred-file",
+          "arm": "lexical",
+          "facts": ["partial", "met", "met", "met", "met"],
+          "notes": [
+            "Correct normal-file ownership and closure, but omits the frozen already-supplied-file-like bypass detail.",
+            "Correct outer context lifetime and cleanup order.",
+            "Correct manual deferred ownership and warns saving child stream does not cancel cleanup.",
+            "Accurately narrows pipeline test to stdin; supporting context/open_file tests inspected."
+          ],
+          "materialErrors": [],
+          "citationDefects": [],
+          "citationsReviewed": 15
+        },
+        "initialSearch": {
+          "query": "chain file closed context result callback",
+          "initialResults": [
+            {
+              "path": "src/click/core.py",
+              "startLine": 599,
+              "endLine": 608
+            },
+            {
+              "path": "tests/test_chain.py",
+              "startLine": 88,
+              "endLine": 106
+            },
+            {
+              "path": "docs/commands.rst",
+              "startLine": 398,
+              "endLine": 571
+            },
+            {
+              "path": "src/click/core.py",
+              "startLine": 1575,
+              "endLine": 1620
+            },
+            {
+              "path": "src/click/utils.py",
+              "startLine": 166,
+              "endLine": 171
+            }
+          ],
+          "primaryRangeHit": true
+        }
+      },
+      {
+        "task": "deferred-file",
+        "arm": "semantic",
+        "seconds": 90.38256575074047,
+        "exitCode": 0,
+        "stopReason": null,
+        "commandCount": 6,
+        "usage": {
+          "input_tokens": 153357,
+          "cached_input_tokens": 126208,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 2294,
+          "reasoning_output_tokens": 150
+        },
+        "counts": {
+          "lexical": 0,
+          "semantic": 1,
+          "reads": 0,
+          "implementation": 0,
+          "failures": 0,
+          "help": 0,
+          "stdoutTokens": 2057
+        },
+        "commandFailures": [],
+        "answerSha256": "c114663e804a015137ab42a86c8d80b34b8664d4ea126cd63c6184eab55774dc",
+        "grade": {
+          "task": "deferred-file",
+          "arm": "semantic",
+          "facts": ["partial", "met", "met", "met", "met"],
+          "notes": [
+            "Correct normal-file ownership and closure, but omits the frozen already-supplied-file-like bypass detail.",
+            "Correct outer context lifetime and cleanup order.",
+            "Correct manual deferred ownership and warns saving child stream does not cancel cleanup.",
+            "Accurately narrows pipeline test to stdin; supporting context/open_file tests inspected."
+          ],
+          "materialErrors": [],
+          "citationDefects": [],
+          "citationsReviewed": 16
+        },
+        "initialSearch": {
+          "query": "Chained commands returning deferred processing functions file argument closed before final result processing context cleanup resource ownership",
+          "initialResults": [
+            {
+              "path": "tests/test_shell_completion.py",
+              "startLine": 51,
+              "endLine": 69
+            },
+            {
+              "path": "examples/imagepipe/imagepipe.py",
+              "startLine": 23,
+              "endLine": 41
+            },
+            {
+              "path": "tests/test_chain.py",
+              "startLine": 221,
+              "endLine": 245
+            },
+            {
+              "path": "tests/test_chain.py",
+              "startLine": 88,
+              "endLine": 106
+            },
+            {
+              "path": "tests/test_chain.py",
+              "startLine": 107,
+              "endLine": 126
+            }
+          ],
+          "primaryRangeHit": false
+        }
+      },
+      {
+        "task": "internal-command",
+        "arm": "lexical",
+        "seconds": 83.91969745885581,
+        "exitCode": 0,
+        "stopReason": null,
+        "commandCount": 5,
+        "usage": {
+          "input_tokens": 117549,
+          "cached_input_tokens": 87424,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1874,
+          "reasoning_output_tokens": 156
+        },
+        "counts": {
+          "lexical": 1,
+          "semantic": 0,
+          "reads": 0,
+          "implementation": 0,
+          "failures": 0,
+          "help": 0,
+          "stdoutTokens": 1791
+        },
+        "commandFailures": [],
+        "answerSha256": "a459b049229da17d6a8e3b48124bd95ecb3c04b285c91a9aca6e71b99ea7238b",
+        "grade": {
+          "task": "internal-command",
+          "arm": "lexical",
+          "facts": ["met", "partial", "met", "partial", "met"],
+          "notes": [
+            "Correct CLI-entry distinction, child context, defaults, explicit override precedence, and existing tests.",
+            "Omits the frozen missing-callback error detail.",
+            "Omits the frozen restriction that forward accepts Commands only.",
+            "No second CLI parse is described; the source-bound callback invocation is explained."
+          ],
+          "materialErrors": [],
+          "citationDefects": [],
+          "citationsReviewed": 12
+        },
+        "initialSearch": {
+          "query": "invoke command context defaults forward",
+          "initialResults": [
+            {
+              "path": "src/click/core.py",
+              "startLine": 790,
+              "endLine": 809
+            },
+            {
+              "path": "src/click/core.py",
+              "startLine": 737,
+              "endLine": 790
+            },
+            {
+              "path": "src/click/core.py",
+              "startLine": 959,
+              "endLine": 965
+            },
+            {
+              "path": "src/click/core.py",
+              "startLine": 729,
+              "endLine": 737
+            },
+            {
+              "path": "src/click/core.py",
+              "startLine": 1432,
+              "endLine": 1445
+            }
+          ],
+          "primaryRangeHit": true
+        }
+      },
+      {
+        "task": "internal-command",
+        "arm": "semantic",
+        "seconds": 87.02623174991459,
+        "exitCode": 0,
+        "stopReason": null,
+        "commandCount": 7,
+        "usage": {
+          "input_tokens": 148772,
+          "cached_input_tokens": 125696,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 2154,
+          "reasoning_output_tokens": 121
+        },
+        "counts": {
+          "lexical": 0,
+          "semantic": 1,
+          "reads": 0,
+          "implementation": 0,
+          "failures": 0,
+          "help": 0,
+          "stdoutTokens": 1881
+        },
+        "commandFailures": [],
+        "answerSha256": "6e7c10b946b33e8e1eb1f6b86d914f3b286f3451227f5161ab2ae9486da91da3",
+        "grade": {
+          "task": "internal-command",
+          "arm": "semantic",
+          "facts": ["met", "partial", "met", "partial", "met"],
+          "notes": [
+            "Correct CLI-entry distinction, child context, defaults, explicit override precedence, and existing tests.",
+            "Omits the frozen missing-callback error detail.",
+            "Omits the frozen restriction that forward accepts Commands only.",
+            "No second CLI parse is described; the source-bound callback invocation is explained."
+          ],
+          "materialErrors": [],
+          "citationDefects": [],
+          "citationsReviewed": 14
+        },
+        "initialSearch": {
+          "query": "Calling another decorated command inside a callback with a context, explicit option values or defaults, and reuse parsed parameters",
+          "initialResults": [
+            {
+              "path": "src/click/decorators.py",
+              "startLine": 27,
+              "endLine": 37
+            },
+            {
+              "path": "docs/advanced.rst",
+              "startLine": 96,
+              "endLine": 213
+            },
+            {
+              "path": "docs/options.rst",
+              "startLine": 553,
+              "endLine": 655
+            },
+            {
+              "path": "src/click/core.py",
+              "startLine": 737,
+              "endLine": 790
+            },
+            {
+              "path": "docs/advanced.rst",
+              "startLine": 206,
+              "endLine": 280
+            }
+          ],
+          "primaryRangeHit": true
+        }
+      },
+      {
+        "task": "internal-command",
+        "arm": "local",
+        "seconds": 83.03797749988735,
+        "exitCode": 0,
+        "stopReason": null,
+        "commandCount": 4,
+        "usage": {
+          "input_tokens": 102833,
+          "cached_input_tokens": 82176,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 2264,
+          "reasoning_output_tokens": 195
+        },
+        "counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "reads": 0,
+          "implementation": 0,
+          "failures": 0,
+          "help": 0,
+          "stdoutTokens": 0
+        },
+        "commandFailures": [],
+        "answerSha256": "59a0c36fe0a1c48a6c7accc094ffce67d248cef1af7b08081dc86ec0fc0053ab",
+        "grade": {
+          "task": "internal-command",
+          "arm": "local",
+          "facts": ["met", "partial", "met", "partial", "met"],
+          "notes": [
+            "Correct CLI-entry distinction, child context, defaults, explicit override precedence, and existing tests.",
+            "Omits the frozen missing-callback error detail.",
+            "Omits the frozen restriction that forward accepts Commands only.",
+            "No second CLI parse is described; the source-bound callback invocation is explained."
+          ],
+          "materialErrors": [],
+          "citationDefects": [],
+          "citationsReviewed": 13
+        },
+        "initialSearch": {}
+      },
+      {
+        "task": "attached-short-value",
+        "arm": "semantic",
+        "seconds": 82.79976295866072,
+        "exitCode": 0,
+        "stopReason": null,
+        "commandCount": 7,
+        "usage": {
+          "input_tokens": 207384,
+          "cached_input_tokens": 161664,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1980,
+          "reasoning_output_tokens": 204
+        },
+        "counts": {
+          "lexical": 0,
+          "semantic": 1,
+          "reads": 0,
+          "implementation": 0,
+          "failures": 0,
+          "help": 0,
+          "stdoutTokens": 1386
+        },
+        "commandFailures": [],
+        "answerSha256": "3725e5f1962d678097663a9dfb6a7cb7a69024e5713c3e25706989d91d11cc2e",
+        "grade": {
+          "task": "attached-short-value",
+          "arm": "semantic",
+          "facts": ["met", "met", "met", "met", "met"],
+          "notes": [
+            "Correctly traces early return for attached no-equals input, whole-prefix name completion, space/equals handling, final shorthand, and NoOptDefVal requirement.",
+            "Accurately distinguishes supported multiple-shorthand tests from attached-value inference and parser behavior."
+          ],
+          "materialErrors": [],
+          "citationDefects": [],
+          "citationsReviewed": 9
+        },
+        "initialSearch": {
+          "query": "shell completion short flag attached value shorthand combined flags equals sign value completion",
+          "initialResults": [
+            {
+              "path": "bash_completions.go",
+              "startLine": 497,
+              "endLine": 507
+            },
+            {
+              "path": "shell_completions.go",
+              "startLine": 21,
+              "endLine": 23
+            },
+            {
+              "path": "shell_completions.go",
+              "startLine": 35,
+              "endLine": 37
+            },
+            {
+              "path": "shell_completions.go",
+              "startLine": 81,
+              "endLine": 82
+            },
+            {
+              "path": "shell_completions.go",
+              "startLine": 94,
+              "endLine": 95
+            }
+          ],
+          "primaryRangeHit": false
+        }
+      },
+      {
+        "task": "attached-short-value",
+        "arm": "local",
+        "seconds": 69.14683470781893,
+        "exitCode": 0,
+        "stopReason": null,
+        "commandCount": 5,
+        "usage": {
+          "input_tokens": 138088,
+          "cached_input_tokens": 112768,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1647,
+          "reasoning_output_tokens": 45
+        },
+        "counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "reads": 0,
+          "implementation": 0,
+          "failures": 0,
+          "help": 0,
+          "stdoutTokens": 0
+        },
+        "commandFailures": [],
+        "answerSha256": "d1c80743506ebe675bc7a4ae40aa0d5758a58b150d8d09665cb8dc30582e648b",
+        "grade": {
+          "task": "attached-short-value",
+          "arm": "local",
+          "facts": ["met", "met", "met", "met", "met"],
+          "notes": [
+            "Correctly traces early return for attached no-equals input, whole-prefix name completion, space/equals handling, final shorthand, and NoOptDefVal requirement.",
+            "Accurately distinguishes supported multiple-shorthand tests from attached-value inference and parser behavior."
+          ],
+          "materialErrors": [],
+          "citationDefects": [],
+          "citationsReviewed": 7
+        },
+        "initialSearch": {}
+      },
+      {
+        "task": "attached-short-value",
+        "arm": "lexical",
+        "seconds": 79.92065054178238,
+        "exitCode": 0,
+        "stopReason": null,
+        "commandCount": 5,
+        "usage": {
+          "input_tokens": 135502,
+          "cached_input_tokens": 108672,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1790,
+          "reasoning_output_tokens": 116
+        },
+        "counts": {
+          "lexical": 1,
+          "semantic": 0,
+          "reads": 0,
+          "implementation": 0,
+          "failures": 0,
+          "help": 0,
+          "stdoutTokens": 2019
+        },
+        "commandFailures": [],
+        "answerSha256": "9c806d65c768193ee83ab8b9cc8ba00d0986cfb09084e2c5ab9f6be53f789ee6",
+        "grade": {
+          "task": "attached-short-value",
+          "arm": "lexical",
+          "facts": ["met", "met", "met", "met", "met"],
+          "notes": [
+            "Correctly traces early return for attached no-equals input, whole-prefix name completion, space/equals handling, final shorthand, and NoOptDefVal requirement.",
+            "Accurately distinguishes supported multiple-shorthand tests from attached-value inference and parser behavior."
+          ],
+          "materialErrors": [],
+          "citationDefects": [],
+          "citationsReviewed": 9
+        },
+        "initialSearch": {
+          "query": "completion shorthand flag value",
+          "initialResults": [
+            {
+              "path": "completions.go",
+              "startLine": 639,
+              "endLine": 724
+            },
+            {
+              "path": "completions_test.go",
+              "startLine": 2694,
+              "endLine": 2786
+            },
+            {
+              "path": "command_test.go",
+              "startLine": 583,
+              "endLine": 603
+            },
+            {
+              "path": "completions.go",
+              "startLine": 301,
+              "endLine": 303
+            },
+            {
+              "path": "completions_test.go",
+              "startLine": 157,
+              "endLine": 321
+            }
+          ],
+          "primaryRangeHit": true
+        }
+      }
+    ]
+  },
+  "citationsReviewed": 110,
+  "usage": {
+    "estimatedManagedDocumentTokens": 373832,
+    "publicationCliSeconds": 121.996761792,
+    "stageSearches": 6,
+    "agentSearches": 6,
+    "agentReads": 0,
+    "queryEmbeddings": 6,
+    "bracketingResolutions": 4
+  }
+}
