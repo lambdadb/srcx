@@ -317,6 +317,70 @@ async function cliContract(t, preset) {
   assert.equal(collectionGets, getsBeforeSearch + 1);
   assert.ok(hits.length > 0);
   assert.ok(hits.every((h) => !("rerankScore" in h)));
+  const definitions = await runCli([
+    "lookup",
+    "--repo",
+    collection,
+    "--version",
+    f.a,
+    "--symbol",
+    "changed",
+    "--path",
+    "code.ts",
+    "--language",
+    "typescript",
+  ]);
+  assert.equal(definitions.length, 1);
+  assert.equal(definitions[0].symbol, "changed");
+  assert.match(definitions[0].sourceText, /oldword/);
+  assert.doesNotMatch(definitions[0].sourceText, /newword|DIRTY WORKTREE/);
+  assert.equal(definitions[0].commitOid, f.a);
+  assert.equal(definitions[0].chunkKind, "function");
+  assert.ok(!("excerpt" in definitions[0]));
+  const pinnedDefinition = await runCli([
+    "read",
+    "--result",
+    definitions[0].resultId,
+  ]);
+  assert.equal(
+    pinnedDefinition.contentHash,
+    (
+      await runCli([
+        "read",
+        "--repo",
+        collection,
+        "--version",
+        f.a,
+        "--path",
+        "code.ts",
+      ])
+    ).contentHash,
+  );
+  assert.deepEqual(
+    await runCli([
+      "lookup",
+      "--repo",
+      collection,
+      "--version",
+      f.a,
+      "--symbol",
+      "Changed",
+    ]),
+    [],
+  );
+  assert.deepEqual(
+    await runCli([
+      "lookup",
+      "--repo",
+      collection,
+      "--version",
+      f.a,
+      "--symbol",
+      "oldword",
+    ]),
+    [],
+    "A body mention is not a symbol definition.",
+  );
   const reranked = await promisify(execFile)(
     process.execPath,
     [

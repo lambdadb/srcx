@@ -50,6 +50,24 @@ managed embeddings and incur query embedding usage. Use them when appropriate to
 the task and configured access, not as an automatic remedy for every missed hit.
 `--language` filters the programming language; it does not select a query language.
 
+When the question or inspected source supplies a symbol name, use exact lookup
+rather than searching every occurrence of that identifier:
+
+```sh
+srcx lookup --repo <collection> --version <resolved-commit> \
+  --symbol readToFile --limit 5
+```
+
+Lookup returns indexed definitions/declarations with `sourceText`, scope, path,
+lines and a pinned result handle in one call; do not reread identical source just
+to obtain a citation. Names are exact and case-sensitive. For `Type.method`, use
+`method` and check returned scope/path; add `--path` when the file is known.
+Same-name symbols, declarations and split chunks may all appear. This is not
+reference finding or runtime dispatch resolution, and a limit-sized or empty
+response does not prove completeness or absence. Use natural-language search to
+find an entry point when identifiers are unknown, then inspect connected
+implementation and tests as needed. Lookup uses no query embedding.
+
 A hit in the right file is not necessarily the answering implementation. Follow
 relevant definitions, callers and tests and read enough source to establish the
 behavior. For a Python or TypeScript/TSX overload declaration, use
