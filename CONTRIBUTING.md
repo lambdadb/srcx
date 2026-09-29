@@ -36,6 +36,10 @@ version/help, Git import and WASM parsing, resumable publication against a
 loopback fixture, version-selected search, and exact reads. It does not call
 LambdaDB or publish npm packages.
 
+The Node test runner has a two-minute timeout per test-file process. The CLI
+contract file runs several sequential subprocess-based scenarios, so its combined
+runtime on shared CI runners can exceed one minute even when each scenario passes.
+
 Keep package and lockfile versions synchronized; the executable reads the package
 version. Add changes to `CHANGELOG.md`. Document flag/JSON/exit-code migrations
 before shipping incompatible behavior. During 0.x, use a minor version for

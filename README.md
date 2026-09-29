@@ -163,6 +163,12 @@ extensions. These are targeted exclusions, **not a general secret scanner**;
 review the dry-run inventory before uploading. `.gitignore` does not remove
 already tracked Git objects, and `.gitattributes` is not interpreted for selection.
 
+Java files under `src/<source-set>/java/` keep package directories named `build`,
+`dist`, `target` or `coverage`. For example, `src/main/java/example/build/Builder.java`
+is source, while `build/generated/src/main/java/example/Builder.java` is excluded.
+Dependency and cache exclusions still apply inside source roots. Other ambiguous
+layouts can use explicit file-policy rules below.
+
 Use `--file-policy policy.json` with `repo add` or `import --dry-run --path` to
 adjust the scope explicitly. The JSON contents are pinned in the repository
 preset; subsequent connected imports use that preset, not the local policy file.
@@ -589,6 +595,25 @@ Repository names and keys still use discovery and reject ambiguous matches acros
 presets. Only a missing Collection (HTTP 404) falls back to alias discovery;
 permission, service, descriptor and schema errors remain errors. This does not
 cache or bypass immutable-version and source-integrity checks.
+
+`lookup --symbol <name>` returns exact, case-sensitive indexed symbol matches
+and their verified `sourceText` in one call:
+
+```sh
+srcx lookup --repo <collection> --version <resolved-commit> \
+  --symbol readToFile --limit 5
+```
+
+Use a name found in the question, search results or source. For `Type.method`,
+look up `method` and inspect the returned `scope` and `path`; use `--path` or
+`--language` to narrow ambiguity. Lookup uses the existing keyword index and
+requires no managed embeddings or reindexing. Results include definitions and
+declarations, including same-name symbols and pieces of token-split definitions.
+They are source chunks, not guaranteed complete function bodies or resolved
+call targets. The limit defaults to five chunks and accepts 1–20. Results are
+bounded, not an exhaustive symbol inventory; an empty result is not proof of
+absence. `resultId` remains usable with `read` for surrounding lines or a full
+file. Supplied source text can be cited directly without another read.
 
 `read --implementation` follows a contiguous Python or TypeScript/TSX overload
 group to its unique implementation in the same file and AST scope. It reads the

@@ -628,6 +628,11 @@ and generated code (common suffixes or explicit generated/do-not-edit comments i
 lexical-only by default. Tests, ordinary docs, manifests and build/CI config remain
 eligible. Embedded license headers are not removed from source chunks.
 
+For Java files in `src/<source-set>/java/`, package components named `build`,
+`dist`, `target`, or `coverage` do not imply build output. Those directory names
+still exclude trees above the source root; dependency/cache directories retain
+their exclusions throughout. The source policy revision is part of preset identity.
+
 `--file-policy` accepts JSON on registration and local path dry runs. Last matching
 rule wins (`exclude`, `lexical`, `semantic`); rules use case-sensitive relative
 paths, `*`, `?` and whole-segment `**`. Rules can override default purpose decisions,
