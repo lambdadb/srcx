@@ -137,6 +137,75 @@ export async function search(
     "Semantic/hybrid search requires a managed embedding Collection; register with --embedding text-embedding-3-small or text-embedding-3-large.",
   );
   const request = retrievalQuery(query, count, filters, mode);
+  return queryResults(
+    store,
+    s,
+    r,
+    v,
+    request,
+    count,
+    size,
+    query,
+    options,
+    started,
+  );
+}
+
+/** Exact indexed symbol lookup; declarations and same-name definitions remain visible. */
+export async function lookup(
+  store: CollectionStore,
+  s: Settings,
+  r: Repository,
+  v: Published,
+  symbol: string,
+  size = 5,
+  filters: { path?: string; language?: string } = {},
+): Promise<unknown[]> {
+  const started = performance.now();
+  invariant(
+    symbol.trim().length > 0 && symbol.length <= 200,
+    "Symbol must contain 1–200 characters.",
+  );
+  invariant(
+    Number.isInteger(size) && size >= 1 && size <= 20,
+    "Lookup limit must be between 1 and 20.",
+  );
+  const request = {
+    bool: Object.entries({ kind: "chunk", symbol, ...filters })
+      .filter(([, value]) => value !== undefined)
+      .map(([field, value]) => ({
+        queryString: { query: value, defaultField: field, skipSyntax: true },
+        occur: "filter",
+      })),
+  };
+  return queryResults(
+    store,
+    s,
+    r,
+    v,
+    request,
+    size,
+    size,
+    symbol,
+    {},
+    started,
+    true,
+  );
+}
+
+async function queryResults(
+  store: CollectionStore,
+  s: Settings,
+  r: Repository,
+  v: Published,
+  request: Record<string, unknown>,
+  count: number,
+  size: number,
+  query: string,
+  options: RerankOptions,
+  started: number,
+  includeSource = false,
+): Promise<unknown[]> {
   const entries = await inventoryAt(store, r, v);
   const files = new Map(
     entries.filter((e) => e.status === "included").map((e) => [e.fileId, e]),
@@ -153,6 +222,7 @@ export async function search(
       e = files.get(d.fileId as string);
     invariant(
       d.kind === "chunk" &&
+        (!includeSource || d.symbol === query) &&
         d.configHash === r.configHash &&
         e?.chunkIds?.includes(d.id) &&
         d.contentHash === e.contentHash &&
@@ -176,7 +246,7 @@ export async function search(
     };
     // Check the exact source/ranges before persisting an evidence handle.
     const evidence = await readHandle(store, s, handle, {
-      exactChunk: !!options.rerank,
+      exactChunk: includeSource || !!options.rerank,
     });
     candidates.push({
       handle,
@@ -191,8 +261,13 @@ export async function search(
         startLine: d.startLine,
         endLine: d.endLine,
         symbol: d.symbol,
-        score: hit.score,
-        excerpt: evidence.sourceText.slice(0, 600),
+        ...(includeSource
+          ? {
+              scope: d.scope,
+              chunkKind: d.chunkKind,
+              sourceText: evidence.sourceText,
+            }
+          : { score: hit.score, excerpt: evidence.sourceText.slice(0, 600) }),
         citation: evidence.citation,
       },
     });
@@ -214,11 +289,11 @@ export async function search(
       .map((c, index) => ({ ...c, rerankScore: response.scores[index]! }))
       .sort((a, b) => b.rerankScore - a.rerankScore || a.index - b.index);
   }
-  if (options.rerank)
+  if (options.rerank || includeSource)
     invariant(
       (await store.tags()).find((t) => t.name === v.tagName)?.snapshotId ===
         v.snapshotId,
-      "Pinned Tag was deleted or recreated during reranking.",
+      "Pinned Tag was deleted or recreated during result preparation.",
     );
   const result = [];
   for (const c of ranked.slice(0, size)) {
