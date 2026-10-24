@@ -12,6 +12,7 @@ import {
 } from "./common.js";
 import {
   corpusMetadata,
+  loadBuild,
   records,
   recordHash,
   supportedPreset,
@@ -269,6 +270,72 @@ export async function published(
       a.commitOid.localeCompare(b.commitOid),
   );
 }
+/** A local artifact is only a cache for this exact, previously published baseline. */
+async function baselineHashes(
+  store: CollectionStore,
+  binding: Binding,
+  preset: Build["preset"],
+  baseline: Published,
+  state: string,
+  gitRef?: string,
+  local?: Build,
+): Promise<Map<string, string>> {
+  const pin = (await store.tags()).find((t) => t.name === baseline.tagName);
+  const root = await one(store, tag(baseline.tagName), "__manifest__");
+  invariant(
+    pin?.snapshotId === baseline.snapshotId &&
+      root?.repoId === binding.repoId &&
+      root.indexId === binding.indexId &&
+      root.configHash === binding.configHash &&
+      root.buildId === baseline.buildId &&
+      root.commitOid === baseline.commitOid &&
+      root.attemptId === baseline.attemptId &&
+      root.recordsHash === baseline.recordsHash &&
+      root.inventoryHash === baseline.inventoryHash,
+    "Baseline Tag is missing or changed.",
+  );
+  if (!local) {
+    const last = await optionalJson<{ artifact: string }>(
+      lastBuildPath(state, gitRef),
+    );
+    if (last) {
+      try {
+        local = await loadBuild(last.artifact);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
+    }
+  }
+  if (
+    local &&
+    local.repoKey === binding.repoKey &&
+    local.configHash === binding.configHash &&
+    local.buildId === baseline.buildId &&
+    local.commitOid === baseline.commitOid &&
+    local.recordsHash === baseline.recordsHash &&
+    local.inventoryHash === baseline.inventoryHash
+  ) {
+    try {
+      await validateBuild(local);
+      const hashes = new Map(Object.entries(local.recordHashes));
+      for (const doc of corpusMetadata(
+        local,
+        binding.repoId,
+        binding.indexId,
+        baseline.attemptId,
+      ))
+        hashes.set(doc.id, hash(doc));
+      return hashes;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+  }
+  // Retain recovery without local files, including explicit same-artifact retries.
+  const hashes = new Map<string, string>();
+  for await (const doc of store.list(tag(baseline.tagName)))
+    hashes.set(doc.id, recordHash(doc, preset));
+  return hashes;
+}
 /** Caller holds the per-collection lock for the complete import. */
 export async function publish(args: {
   store: CollectionStore;
@@ -519,18 +586,22 @@ export async function publish(args: {
   const marker = metadata.at(-1)!;
   if (j.phase === "writing") {
     // Reconcile from the immutable old Tag, never from a half-written writer.
-    const oldIds = new Set<string>();
-    const oldHashes = new Map<string, string>();
-    if (j.baseline)
-      for await (const d of store.list(tag(j.baseline.tagName))) {
-        oldIds.add(d.id);
-        oldHashes.set(d.id, recordHash(d, b.preset));
-      }
+    const oldHashes = j.baseline
+      ? await baselineHashes(
+          store,
+          binding,
+          b.preset,
+          j.baseline,
+          state,
+          j.gitRef,
+          args.baseline?.build,
+        )
+      : new Map<string, string>();
     const newIds = new Set([
       ...Object.keys(b.recordHashes),
       ...metadata.map((d) => d.id),
     ]);
-    const obsolete = [...oldIds].filter((id) => !newIds.has(id));
+    const obsolete = [...oldHashes.keys()].filter((id) => !newIds.has(id));
     const mutate = async (
       operation: string,
       payload: unknown,
@@ -554,7 +625,8 @@ export async function publish(args: {
     async function* changed() {
       for await (const d of records(b.directory))
         if (oldHashes.get(d.id) !== hash(d)) yield d;
-      for (const d of metadata.slice(0, -1)) yield d;
+      for (const d of metadata.slice(0, -1))
+        if (oldHashes.get(d.id) !== hash(d)) yield d;
     }
     for await (const docs of batches(changed()))
       await mutate("upsert", docs, () => store.upsert(j!.writer, docs));
@@ -570,6 +642,7 @@ export async function publish(args: {
   const deadline = Date.now() + (args.timeoutMs ?? 120_000);
   const pause = args.pollMs ?? 1000;
   let rejectedSnapshot: string | undefined;
+  let validatedHere = false;
   while (j.phase === "waiting") {
     invariant(
       Date.now() < deadline,
@@ -598,16 +671,25 @@ export async function publish(args: {
       continue;
     }
     j.candidate = candidate;
+    validatedHere = true;
     j.phase = "publishing";
     await save();
   }
   invariant(j.candidate, "Missing validated candidate.");
+  // Never persist this shortcut: a resumed journal must revalidate the full corpus.
+  if (!validatedHere)
+    invariant(
+      await validateCandidate(store, j.candidate.name, b, binding, j.attemptId),
+      "Validated candidate is missing or changed.",
+    );
+  const pins = await store.tags();
   invariant(
-    await validateCandidate(store, j.candidate.name, b, binding, j.attemptId),
-    "Validated candidate is missing or changed.",
+    pins.find((t) => t.name === j!.candidate!.name)?.snapshotId ===
+      j.candidate.snapshotId,
+    "Validated candidate Tag is missing or changed.",
   );
   const name = versionTag(b.commitOid);
-  const found = (await store.tags()).find((t) => t.name === name);
+  const found = pins.find((t) => t.name === name);
   const final = found ?? (await store.tag(name, tag(j.candidate.name)));
   invariant(
     existing

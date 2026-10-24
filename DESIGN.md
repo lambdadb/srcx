@@ -422,6 +422,17 @@ connection or remote repository lookup. No `--backend` option is needed for that
 Use ordinary SDK upsert/delete for this workaround. Bulk ingestion remains later
 work; do not assume its asynchronous processing obeys the same marker ordering.
 
+For baseline comparison, prefer a local artifact only after matching repository,
+configuration, commit, build, record and inventory identities to the journal's
+remote baseline, checking its Tag/Snapshot and manifest, and fully validating the
+artifact. Reconstruct the old file/chunk and metadata hash map from that artifact.
+The local artifact is a cache, never publication evidence: missing files or a
+different build fall back to the immutable baseline's full listing; corruption
+of a matching artifact fails closed. A write-stage retry uses the same rule and
+does not require the previous local artifact. Compare inventory-part hashes too,
+so unchanged metadata parts are not uploaded again. Always write the new root
+marker separately after all required mutation ACKs.
+
 ### Replacing one file
 
 Replace a modified file's chunk set as a unit in the build plan, using the previous
@@ -989,6 +1000,23 @@ If creation of a published Tag has an unknown result, list and inspect the expec
 name/Snapshot/manifest before retrying. Existing valid publication is reused.
 A crash after candidate validation but before publication can be recovered by
 revalidating that candidate and publishing; a `try-*` name alone is never enough.
+
+Within one invocation, reuse the successful complete candidate check instead of
+immediately scanning it twice. Before publication, require that the candidate Tag
+still points to the Snapshot returned when it was created. This result exists
+only in memory: resuming a publication-stage journal performs full candidate
+validation again and verifies the Tag/Snapshot identity. The final Tag is still
+created from the candidate Tag, with the existing Snapshot equality check.
+
+These optimizations retain full Git enumeration, local artifact copying and
+validation, full inventory construction, and at least one complete remote
+candidate verification. Cold recovery also lists the old remote baseline.
+Achieving remote validation proportional to a delta requires a verified backend
+contract tying a candidate Snapshot to the exact validated baseline plus all
+acknowledged upserts/deletes, preserving all other records and establishing index
+and managed-embedding readiness. No such contract is assumed by this importer;
+marker visibility, matching counts and changed-document sampling cannot replace
+the complete comparison. Dependency ingestion remains outside this workflow.
 
 ## 10. Git tags, exact version selection, and recovery
 
