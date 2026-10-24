@@ -277,15 +277,31 @@ export async function materialize(args: {
   const output = await open(join(directory, "records.jsonl"), "wx", 0o600);
   const recordHashes: Record<string, string> = {};
   let writeError = false;
+  const pending: string[] = [];
+  let pendingBytes = 0;
+  const writeBufferBytes = 64 * 1024;
+  async function flush() {
+    if (!pending.length) return;
+    await output.write(pending.join(""));
+    pending.length = 0;
+    pendingBytes = 0;
+  }
   async function emit(doc: Doc) {
     const data = canonical(doc);
+    const bytes = Buffer.byteLength(data);
     invariant(
-      Buffer.byteLength(data) <= 4_800_000,
+      bytes <= 4_800_000,
       `Serialized document exceeds safe limit: ${doc.id}`,
     );
     invariant(!recordHashes[doc.id], "Duplicate document ID.");
-    recordHashes[doc.id] = hash(doc);
-    await output.write(data + "\n");
+    // Hash the same canonical bytes written, without serializing the record twice.
+    recordHashes[doc.id] = hash(data);
+    if (pendingBytes + bytes + 1 > writeBufferBytes) await flush();
+    if (bytes + 1 >= writeBufferBytes) await output.write(data + "\n");
+    else {
+      pending.push(data + "\n");
+      pendingBytes += bytes + 1;
+    }
   }
   const items: InventoryItem[] = [];
   const blobs = new Blobs(args.identity.path);
@@ -478,6 +494,7 @@ export async function materialize(args: {
           reuse.delete(doc.id);
         }
     invariant(reuse.size === 0, "Previous artifact lacks retained records.");
+    await flush();
   } catch (e) {
     writeError = true;
     throw e;

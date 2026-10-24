@@ -918,6 +918,67 @@ discovery also still reads version metadata. Further delta-only validation needs
 a verified backend completeness/preservation/readiness contract; a marker or
 changed-record sample is not a substitute. Dependency ingestion is outside scope.
 
+## Local build profiling and buffered artifact writes
+
+A synthetic TypeScript corpus with 24 functions per file was profiled at 120,
+600 and 1,200 files. Each incremental build has one addition, one modification
+and one deletion; only two files require chunking. Separate cold builds and
+source-identical commits verify the same record hashes and expose the full-corpus
+work that remains. These measurements cover local `materialize()` only, excluding
+publication, source upload, database operations and embeddings.
+
+An instrumented scratch copy of the builder at `605dc2f` times previous-artifact
+validation, Git inventory/blob reads, changed-source chunking, canonicalization,
+record hashing/writes and final validation. Native record streams and file-handle
+writes are observed for logical bytes and call counts. Every instrumented build
+is compared with an uninstrumented build for equal `recordsHash` and
+`inventoryHash`. CPU profiles and raw reports remain local diagnostic evidence;
+the maintained regression fixture is in `test/build-io.test.mjs`.
+
+Before the change, the 1,200-file instrumented incremental build took a median
+1.918 seconds, with about 1.262 seconds (66%) in previous/final validation and
+0.470 seconds in record canonicalization, hashing and writes. A source-identical
+commit still reads the old artifact twice and the new artifact once. The Git
+inventory and actual changed-file chunking are a small fraction of this fixture's
+total time; skipping unchanged Git blobs alone does not make local builds scale
+with the changed-code size.
+
+The following before/after times are medians of three **uninstrumented** builds
+per size on the same local host and Node.js 24.15.0, with warm filesystem/parser
+state (Apple M5 Pro, macOS arm64). After builds retain the same record/inventory
+hashes as the baseline.
+
+| Files | Chunks | Before (ms) | After (ms) | Time reduction | Record write calls before / after |
+| ----- | ------ | ----------- | ---------- | -------------- | --------------------------------- |
+| 120   | 2,880  | 228.4       | 201.8      | 11.7%          | 3,000 / 46                        |
+| 600   | 14,400 | 959.9       | 781.7      | 18.6%          | 15,000 / 227                      |
+| 1,200 | 28,800 | 1,898.6     | 1,537.4    | 19.0%          | 30,000 / 454                      |
+
+For 1,200 files, both versions deliver 88,351,006 bytes across three full
+`records.jsonl` read passes and write 29,450,206 artifact bytes. The reduction
+is in `FileHandle.write` calls (98.5%) and duplicate serialization, not total bytes
+or validation coverage. Logical stream bytes are not physical disk I/O; buffered
+writes are not an fsync/durability guarantee. Host-specific timings are diagnostic
+results, not a general performance promise or LambdaDB measurement.
+
+The buffer remains bounded at 64 KiB; larger permitted records bypass it intact.
+`test/build-io.test.mjs` checks small/large record boundaries, final flushes, exact
+canonical JSONL and record hashes, unchanged managed inputs, fewer write calls,
+and cleanup after intermediate/final write failures without changing prior
+artifacts. Builtin filesystem mocks are isolated to a test-file process and
+restored between tests.
+
+Validation passed on Node.js 24.15.0 and 22.23.4: 186 full-suite tests and seven
+installed-package CLI tests on each runtime, plus typechecking on both. Formatting,
+version consistency, diff checks and the five CI Python suites (17 tests) also
+passed. No database calls, source uploads, paid operations or package publication
+were performed.
+
+Further gains require reducing full artifact copying and validation, rather than
+removing additional write calls. A segmented immutable-artifact design would need
+explicit integrity, availability and recovery rules before reusing validation
+across builds. No local or remote full-validation shortcut is introduced here.
+
 ## Local checks
 
 Runtime used: Node.js 24.15.0, npm 11.12.1. Dependencies are pinned in
