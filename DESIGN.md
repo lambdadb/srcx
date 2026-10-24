@@ -390,6 +390,15 @@ readers on multiple machines do not require local registration state.
    serialized sizes and record-set hashes before starting uploads. The execution
    journal supplies the separate attempt ID when sealing the final manifest.
 
+Local `records.jsonl` output batches complete canonical record lines in a 64 KiB
+buffer, flushing before a line would exceed that bound. Larger individual lines
+are written directly after flushing earlier records. Hash the existing canonical
+representation, which is byte-equivalent to hashing the record object, rather
+than serializing the object again. Flush all records before writing build metadata
+and running full artifact validation. Write failures remove the partial output
+directory; previous artifacts remain untouched. This changes write-call overhead,
+not artifact bytes, order, schema or validation requirements.
+
 Dry-run executes the same inventory/chunking path but performs no database mutation
 or embedding call. Report `managed` eligible chunks and `managedTokens` (estimated
 input tokens for the complete corpus), with `embedded=0` in the local artifact.

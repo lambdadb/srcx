@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Batch local artifact records in a bounded 64 KiB write buffer and hash their
+  existing canonical representation instead of serializing each record twice.
+  Preserve the artifact format, record order/hashes, document limits and full
+  validation; write larger records directly and remove partial output on failure.
+  Add write-count, canonical-byte and failure-cleanup regressions, and document
+  local build profiles separately from database performance.
+
 - Reduce incremental publication reads by comparing against a fully validated,
   identity-matched local baseline when available, with immutable remote fallback
   after local file loss. Reuse complete candidate validation within one invocation
