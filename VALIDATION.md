@@ -864,6 +864,60 @@ work around propagation. Local evidence is retained in `registry-dev3.json`,
 `attestations-dev3.json`, and `provenance-dev3.json` under the release directory
 above. No stable release, GitHub Release, or Homebrew formula was created.
 
+## Incremental publication read reductions
+
+Local comparison against `0e4de30` uses 120 fixed text files, one added path,
+one modified path and one deleted path. Both versions contain 240 source records
+plus an inventory part and root marker. The old revision was compiled separately
+and exercised with the same fixture and fault-injection stores as the new code.
+Managed vectors are synthetic 1536-dimensional fixture values; no provider or
+LambdaDB calls are involved.
+
+| Preset        | Local baseline | Full list passes before / after | Listed documents before / after | Canonical document bytes before / after | Reduction |
+| ------------- | -------------- | ------------------------------- | ------------------------------- | --------------------------------------- | --------- |
+| Lexical       | Available      | 3 / 1                           | 726 / 242                       | 1,047,827 / 348,865                     | 66.71%    |
+| Lexical       | Missing state  | 3 / 2                           | 726 / 484                       | 1,047,827 / 698,962                     | 33.29%    |
+| Managed small | Available      | 3 / 1                           | 726 / 242                       | 4,095,746 / 1,364,635                   | 66.68%    |
+| Managed small | Missing state  | 3 / 2                           | 726 / 484                       | 4,095,746 / 2,731,111                   | 33.32%    |
+
+Bytes sum canonical JSON for documents yielded by `CollectionStore.list`, including
+synthetic vectors. Passes are whole-corpus iterator invocations, not HTTP requests
+or pages. These figures exclude control/marker fetches, query responses, Tag/Branch
+metadata, transport overhead and server work. They are local fixture measurements,
+not measured LambdaDB latency, operation charges, indexing or embedding performance.
+The matched baseline shortcut trades a remote full-content read for full local
+artifact validation; it does not remove that local CPU/I/O work.
+
+Both implementations upsert six corpus documents for this update (68,089 lexical
+bytes or 72,937 managed-input bytes), delete four obsolete source IDs and leave
+unchanged records alone. The candidate still receives full validation. For a new
+commit with identical source, the regression test also checks that only the root
+marker is written, with the unchanged inventory part retained.
+
+`test/incremental-import.test.mjs` covers matching, missing and mismatched local
+baselines; missing local record files; corruption detection; missing unchanged
+candidate chunks, unexpected IDs and stale markers; unknown delete/upsert results
+and retries with or without prior local artifacts; publication-stage full
+revalidation; replaced baseline/candidate Tags; unchanged managed-vector retention;
+and operation/byte bounds. Existing CLI/package tests retain loopback coverage for
+resumption and immutable source reads, including managed vector hydration.
+
+Local checks on Node.js 24.15.0 and 22.23.4: all 182 Node tests passed on each
+runtime, and typechecking and the exact installed-package suite passed on both
+(seven package CLI tests each). `npm ci --ignore-scripts`, `npm run format:check`,
+`npm run check:version` and `git diff --check` passed. The Python checks from CI
+also passed: `local_rerank_test.py` (3), `qwen_worker_test.py` (6),
+`benchmark_data_test.py` (2), `cosqa_bm25_test.py` (3) and `cosqa_rerank_test.py` (3).
+The benchmark checks used an isolated environment with dependencies pinned in
+`eval/bm25-requirements.txt`; no benchmark dataset or model was downloaded.
+
+Remaining full-corpus work includes Git tree enumeration, local record copying
+and validation, inventory construction, and one complete candidate comparison.
+Missing local baselines add a remote baseline comparison. Retained-version
+discovery also still reads version metadata. Further delta-only validation needs
+a verified backend completeness/preservation/readiness contract; a marker or
+changed-record sample is not a substitute. Dependency ingestion is outside scope.
+
 ## Local checks
 
 Runtime used: Node.js 24.15.0, npm 11.12.1. Dependencies are pinned in

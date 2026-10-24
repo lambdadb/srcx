@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Reduce incremental publication reads by comparing against a fully validated,
+  identity-matched local baseline when available, with immutable remote fallback
+  after local file loss. Reuse complete candidate validation within one invocation
+  after checking its Tag/Snapshot identity, but revalidate on publication retries.
+  Skip unchanged inventory-part uploads; preserve full candidate/hash/vector
+  checks, resumability and immutable version reads. Document remaining full-corpus
+  work and cover small updates to a larger corpus with local operation/byte tests.
+
 - Add `lookup --symbol` for exact indexed definition/declaration lookup with
   verified source chunks and pinned citations in one call. Support path/language
   filters and a bounded result limit, using existing indexes without embeddings

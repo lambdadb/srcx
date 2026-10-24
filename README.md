@@ -712,6 +712,22 @@ remove that specific lock directory. Do not delete `pending.json` to force a new
 commit over an uncertain workspace. Unexpected baselines fail closed; automatic
 recovery to a new workspace and resource cleanup are not implemented yet.
 
+Incremental publication can reuse a fully validated local baseline artifact's
+record hashes after matching its repository/configuration, commit, build and
+inventory/record hashes to the pinned remote baseline. Missing local files or a
+different cached build fall back to listing that immutable baseline; corrupted
+matching artifacts fail validation. Unchanged inventory parts also need no write.
+Every new candidate still receives full document/hash and managed-vector
+validation. A successful check is reused only within that invocation, after
+confirming the candidate Tag still names the same Snapshot. Publication-stage
+retries repeat full validation rather than trusting the journal.
+
+This reduces redundant remote reads, not import complexity to the changed-code
+size. Git tree enumeration, local full-artifact materialization/validation,
+inventory construction and at least one complete candidate read remain. Further
+reductions need a verified backend contract proving both mutation completeness
+and preservation of unchanged baseline data; the final marker alone is insufficient.
+
 Git tag synchronization observes local `refs/tags/*` only. Multiple Git tags for
 one commit create separate `rel-*` Aliases targeting the same published Tag.
 An unimported/moved target is pending; the previously pinned version remains usable
