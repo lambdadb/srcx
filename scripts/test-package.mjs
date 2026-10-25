@@ -150,7 +150,12 @@ try {
   }
   execFileSync(
     process.execPath,
-    ["--test", "test/cli.test.mjs", "test/skills-cli.test.mjs"],
+    [
+      "--test",
+      "test/cli.test.mjs",
+      "test/cli-artifacts.test.mjs",
+      "test/skills-cli.test.mjs",
+    ],
     {
       stdio: "inherit",
       env: { ...process.env, SRCX_TEST_CLI: bin },

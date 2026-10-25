@@ -2,6 +2,7 @@ import { mkdir, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { Blobs, inventory, resolveCommit, type Identity } from "./git.js";
 import { chunk, CHUNKER, tokens } from "./chunk.js";
+import { tokenCounter } from "./token-count.js";
 import {
   readMetadata,
   verifyMetadata,
@@ -272,6 +273,7 @@ export async function materialize(args: {
   const preset = args.preset ?? PRESET,
     configHash = hash(preset),
     prev = args.previous;
+  const countTokens = prev ? tokenCounter(tokens) : tokens;
   invariant(
     hash(preset.filePolicy) === hash(normalizeFilePolicy(preset.filePolicy)) &&
       hash(preset.analyzers) === hash(normalizeAnalyzers(preset.analyzers)) &&
@@ -287,7 +289,7 @@ export async function materialize(args: {
       prev.repoKey === args.identity.key && prev.configHash === configHash,
       "Previous build repository/config mismatch.",
     );
-    await validateBuild(prev);
+    await validateBuildWithTokens(prev, countTokens);
   }
   invariant(
     !preset.embedding ||
@@ -591,7 +593,7 @@ export async function materialize(args: {
     const descriptor =
       build.format === 3 ? await writeMetadata(build, prev) : build;
     await atomic(join(directory, "build.json"), descriptor);
-    await validateBuild(build);
+    await validateBuildWithTokens(build, countTokens);
   } catch (error) {
     if (build.format === 3)
       await rm(directory, { recursive: true, force: true });
@@ -600,6 +602,12 @@ export async function materialize(args: {
   return build;
 }
 export async function validateBuild(b: Build): Promise<void> {
+  await validateBuildWithTokens(b, tokens);
+}
+async function validateBuildWithTokens(
+  b: Build,
+  countTokens: (text: string) => number,
+): Promise<void> {
   invariant(
     typeof b.commitOid === "string" &&
       /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(b.commitOid) &&
@@ -725,7 +733,7 @@ export async function validateBuild(b: Build): Promise<void> {
           doc.endLine === lineAt(raw, z - 1) &&
           typeof doc.searchText === "string" &&
           doc.searchText.endsWith(slice.toString("utf8")) &&
-          doc.tokenCount === tokens(doc.searchText) &&
+          doc.tokenCount === countTokens(doc.searchText) &&
           Number(doc.tokenCount) <= CHUNKER.maxTokens,
         "Invalid chunk source/position/token binding.",
       );

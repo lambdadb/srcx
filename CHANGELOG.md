@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Reuse exact-text token counts within an incremental materialization's two
+  complete artifact validations. Bound retained keys by entry count and UTF-16
+  content, preserve admitted entries above capacity, and release the cache with
+  the invocation. Keep all source/hash/token/managed-input comparisons, standalone
+  validation, publication retries, artifact formats and storage defaults unchanged.
+  Split CLI contract/storage test files to preserve complete installed-package
+  coverage within the existing per-file timeout on shared CI runners.
+
+- Profile complete incremental segmented builds with separate uninstrumented
+  controls, phase probes and CPU samples. Document remaining full-validation,
+  record-retention and paged-metadata costs separately from the token-count reuse
+  implementation and its measured local reductions.
+
 - Add experimental `import --artifact-storage paged-segments` with local format-3
   inventory/hash pages in stable path buckets. Reuse unchanged metadata and
   records while preserving logical hashes/order, complete source and candidate
