@@ -979,6 +979,71 @@ removing additional write calls. A segmented immutable-artifact design would nee
 explicit integrity, availability and recovery rules before reusing validation
 across builds. No local or remote full-validation shortcut is introduced here.
 
+## Integrated experimental segmented builds
+
+The opt-in runtime now implements `import --artifact-storage segments`; JSONL is
+still the default. Production objects are streamed within the existing
+document/64 KiB buffer bounds,
+opened with native no-follow/nonblocking flags and checked as regular files, and
+fully validated on every build/import. The threat boundary remains importer-owned
+artifact directories and the existing single-host writer model. The directory
+hierarchy is not protected against hostile concurrent replacement by the same
+operating-system user. No object digest or local receipt replaces full source
+checks or complete immutable-candidate verification.
+
+An integrated local comparison runs the entire `materialize()` invocation on the
+same fixed 120/600/1,200-file TypeScript corpora, with one addition/modification/
+deletion and three warm repetitions per storage mode. Both modes use the same
+current builder and retain identical record/inventory hashes. A separate compiled
+`1e7fa47` JSONL control checks the original path too. Filesystem observers count
+actual completed record-write bytes and descriptor writes, including `build.json`.
+
+| Files | JSONL median (ms) | Segments median (ms) | JSONL total write bytes | Segments total write bytes | JSONL record bytes read | Segments record bytes read |
+| ----- | ----------------- | -------------------- | ----------------------- | -------------------------- | ----------------------- | -------------------------- |
+| 120   | 215.1             | 256.7                | 3,672,397               | 804,547                    | 8,834,926               | 5,889,886                  |
+| 600   | 857.8             | 1,083.0              | 18,340,719              | 3,805,029                  | 44,175,406              | 29,450,206                 |
+| 1,200 | 1,664.5           | 2,070.4              | 36,676,122              | 7,555,632                  | 88,351,006              | 58,900,606                 |
+
+Host: Node.js 24.15.0, Apple M5 Pro/macOS arm64; warm filesystem/parser state,
+without fsync. At 1,200 files, record payload writes fall from 29,450,206 to 48,890
+bytes, while the format-2 descriptor still writes about 7.51 MB. Total application
+writes fall about 79.4%; wall time rises about 24.4%. The extra retained-record
+copy pass is eliminated, but previous/new build validation still reads every
+record. The merged JSONL control's 1,200-file median is 1,623.6 ms, with the same
+record-byte totals. Timings are host-specific diagnostics, not a general speedup
+claim or LambdaDB/embedding performance measurement.
+
+For the 1,200-file update, the sum of `stat.blocks * 512` for newly introduced
+regular-file inodes falls from 36,679,680 to 7,557,120 bytes. Retained objects share
+existing inodes with the previous build. This excludes directory blocks and does
+not resolve filesystem compression, shared extents, snapshots or billed storage;
+it is an inode-allocation observation, not an exact physical-storage charge.
+
+Initial conversion from format 1 writes all 29,450,206 record bytes again and
+retains the full copy pass. A source-identical format-2 build writes zero record
+bytes, but still writes a roughly 7.50 MB descriptor, links all 1,200 objects and
+performs both full validations. First-build and conversion measurements are
+retained with the warm-run evidence. Real cross-filesystem behavior is not tested;
+an injected `EXDEV` test verifies exclusive copy fallback, while injected `EIO`
+fails and cleans up. Metadata is still proportional to the corpus.
+
+Focused regressions cover both conversion directions, relocation/deletion of the
+previous artifact, actual record/descriptor write counts on a fixed corpus,
+digest/record/source corruption, stale/duplicate/unsafe references, symlink
+rejection, large Unicode/CRLF records, early-reader closure, empty builds, unknown
+formats, argument validation, and partial-write/link cleanup. Managed small/large
+publication tests resume after old-artifact loss and retain immutable old reads.
+The installed-tarball suite also exercises segmented lexical/managed CLI retry,
+tracked imports, search and exact reads through a loopback SDK fixture.
+
+Validation passed on Node.js 24.15.0 and 22.23.4: 201 full-suite tests, nine
+installed-tarball CLI tests and typechecking on each runtime. Formatting, version
+consistency, diff checks and all five CI Python suites (17 tests) also passed.
+No live backend calls, source uploads, paid operations or package publication
+were performed for this implementation. Linux/Windows and real
+cross-volume/power-loss checks have not been run locally; native no-follow support
+is required for the experimental mode. The default JSONL path is unchanged.
+
 ## Local checks
 
 Runtime used: Node.js 24.15.0, npm 11.12.1. Dependencies are pinned in

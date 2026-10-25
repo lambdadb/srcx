@@ -209,6 +209,14 @@ cli
     ),
   )
   .option("--output <directory>", "New artifact directory")
+  .addOption(
+    new Option(
+      "--artifact-storage <storage>",
+      "Experimental local artifact storage",
+    )
+      .choices(["jsonl", "segments"])
+      .default("jsonl"),
+  )
   .option(
     "--previous <directory>",
     "Previous build artifact for a dry-run diff",
@@ -219,7 +227,7 @@ cli
     "Resume the same pending artifact after inspecting its journal",
   )
   .option("--timeout <seconds>", "Validation wait deadline", integer, 120)
-  .action(async (o) => {
+  .action(async (o, command) => {
     invariant(
       !o.embedding || (o.dryRun && o.path),
       "--embedding is only accepted with --dry-run --path; connected imports use the repository preset.",
@@ -241,6 +249,10 @@ cli
     invariant(
       !(o.artifact && (o.ref || o.path || o.output || o.previous)),
       "--artifact cannot be combined with --ref/--path/--output/--previous.",
+    );
+    invariant(
+      !o.artifact || command.getOptionValueSource("artifactStorage") !== "cli",
+      "--artifact-storage cannot be combined with --artifact; the artifact records its storage format.",
     );
     const buildLocal = async (
       source: Awaited<ReturnType<typeof identity>>,
@@ -271,6 +283,7 @@ cli
         resolvedCommit: commit,
         output: path,
         previous,
+        storage: o.artifactStorage,
         preset,
       });
     };
@@ -300,6 +313,7 @@ cli
       output({
         status: "locally-validated",
         artifact: b.directory,
+        artifactFormat: b.format,
         commitOid: b.commitOid,
         configHash: b.configHash,
         counts: b.counts,

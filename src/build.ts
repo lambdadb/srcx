@@ -1,9 +1,14 @@
-import { mkdir, open, rm } from "node:fs/promises";
-import { createReadStream } from "node:fs";
-import { createInterface } from "node:readline";
+import { mkdir, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { Blobs, inventory, resolveCommit, type Identity } from "./git.js";
 import { chunk, CHUNKER, tokens } from "./chunk.js";
+import {
+  ArtifactWriter,
+  artifactRecords,
+  validateStorage,
+  type ArtifactStorage,
+  type RecordPart,
+} from "./artifact.js";
 import {
   atomic,
   canonical,
@@ -184,7 +189,8 @@ export type InventoryItem = {
   skipped?: number;
 };
 export type Build = {
-  format: 1;
+  format: 1 | 2;
+  recordParts?: RecordPart[];
   directory: string;
   repoKey: string;
   configHash: string;
@@ -212,25 +218,18 @@ export type Embedder = {
   dimensions: number;
   embed: (text: string) => Promise<number[]>;
 };
-export async function* records(directory: string): AsyncGenerator<Doc> {
-  const input = createReadStream(join(directory, "records.jsonl"), {
-    encoding: "utf8",
-  });
-  const lines = createInterface({ input, crlfDelay: Infinity });
-  try {
-    for await (const line of lines) if (line) yield JSON.parse(line) as Doc;
-  } finally {
-    lines.close();
-    input.destroy();
-  }
+export async function* records(build: Build | string): AsyncGenerator<Doc> {
+  const b = typeof build === "string" ? await loadBuild(build) : build;
+  yield* artifactRecords(b);
 }
 export async function loadBuild(directory: string): Promise<Build> {
   const b = await json<Build>(join(directory, "build.json"));
   invariant(
-    b.format === 1 && b.configHash === hash(b.preset),
+    (b.format === 1 || b.format === 2) && b.configHash === hash(b.preset),
     "Invalid build configuration.",
   );
   b.directory = resolve(directory);
+  validateStorage(b);
   return b;
 }
 export async function materialize(args: {
@@ -239,10 +238,16 @@ export async function materialize(args: {
   resolvedCommit?: Awaited<ReturnType<typeof resolveCommit>>;
   output: string;
   previous?: Build;
+  storage?: ArtifactStorage;
   preset?: Preset;
   embedder?: Embedder;
   cache?: string;
 }): Promise<Build> {
+  const storage = args.storage ?? "jsonl";
+  invariant(
+    ["jsonl", "segments"].includes(storage),
+    "Artifact storage must be jsonl or segments.",
+  );
   const preset = args.preset ?? PRESET,
     configHash = hash(preset),
     prev = args.previous;
@@ -274,35 +279,16 @@ export async function materialize(args: {
     args.resolvedCommit ?? (await resolveCommit(args.identity.path, args.ref));
   const directory = resolve(args.output);
   await mkdir(directory, { recursive: false, mode: 0o700 });
-  const output = await open(join(directory, "records.jsonl"), "wx", 0o600);
-  const recordHashes: Record<string, string> = {};
+  let writer: ArtifactWriter;
+  try {
+    writer = await ArtifactWriter.create(directory, storage);
+  } catch (error) {
+    await rm(directory, { recursive: true, force: true });
+    throw error;
+  }
+  const recordHashes = writer.recordHashes;
   let writeError = false;
-  const pending: string[] = [];
-  let pendingBytes = 0;
-  const writeBufferBytes = 64 * 1024;
-  async function flush() {
-    if (!pending.length) return;
-    await output.write(pending.join(""));
-    pending.length = 0;
-    pendingBytes = 0;
-  }
-  async function emit(doc: Doc) {
-    const data = canonical(doc);
-    const bytes = Buffer.byteLength(data);
-    invariant(
-      bytes <= 4_800_000,
-      `Serialized document exceeds safe limit: ${doc.id}`,
-    );
-    invariant(!recordHashes[doc.id], "Duplicate document ID.");
-    // Hash the same canonical bytes written, without serializing the record twice.
-    recordHashes[doc.id] = hash(data);
-    if (pendingBytes + bytes + 1 > writeBufferBytes) await flush();
-    if (bytes + 1 >= writeBufferBytes) await output.write(data + "\n");
-    else {
-      pending.push(data + "\n");
-      pendingBytes += bytes + 1;
-    }
-  }
+  const emit = (doc: Doc) => writer.emit(doc);
   const items: InventoryItem[] = [];
   const blobs = new Blobs(args.identity.path);
   const old = new Map(prev?.inventory.map((e) => [e.pathBase64, e]) ?? []);
@@ -487,21 +473,34 @@ export async function materialize(args: {
         await emit(doc);
       }
     }
-    if (prev && reuse.size)
-      for await (const doc of records(prev.directory))
-        if (reuse.has(doc.id)) {
-          await emit(doc);
-          reuse.delete(doc.id);
+    if (prev && reuse.size) {
+      if (storage === "segments" && prev.format === 2) {
+        const files = new Map(prev.inventory.map((e) => [e.fileId, e]));
+        for (const part of prev.recordParts!) {
+          if (!reuse.has(part.fileId)) continue;
+          const ids = [part.fileId, ...files.get(part.fileId)!.chunkIds!];
+          await writer.retain(prev, part, ids);
+          for (const id of ids) reuse.delete(id);
         }
+      } else
+        for await (const doc of records(prev))
+          if (reuse.has(doc.id)) {
+            await emit(doc);
+            reuse.delete(doc.id);
+          }
+    }
     invariant(reuse.size === 0, "Previous artifact lacks retained records.");
-    await flush();
+    await writer.finish();
   } catch (e) {
     writeError = true;
     throw e;
   } finally {
     blobs.close();
-    await output.close();
-    if (writeError) await rm(directory, { recursive: true, force: true });
+    try {
+      await writer.close();
+    } finally {
+      if (writeError) await rm(directory, { recursive: true, force: true });
+    }
   }
   const changes: Build["changes"] = {
     added: [],
@@ -523,7 +522,8 @@ export async function materialize(args: {
   for (const e of old.values())
     if (!now.has(e.pathBase64)) changes.deleted.push(e.path);
   const build: Build = {
-    format: 1,
+    format: storage === "segments" ? 2 : 1,
+    ...(storage === "segments" ? { recordParts: writer.parts } : {}),
     directory,
     repoKey: args.identity.key,
     configHash,
@@ -587,6 +587,7 @@ export async function validateBuild(b: Build): Promise<void> {
       hash(b.inventory) === b.inventoryHash,
     "Build metadata hash mismatch.",
   );
+  validateStorage(b);
   const seen = new Set<string>();
   let activeFile: Doc | undefined;
   let end = 0,
@@ -609,7 +610,7 @@ export async function validateBuild(b: Build): Promise<void> {
       completedFiles.add(activeFile.id);
     }
   };
-  for await (const doc of records(b.directory)) {
+  for await (const doc of records(b)) {
     invariant(
       !seen.has(doc.id) && b.recordHashes[doc.id] === hash(doc),
       "Corrupted or unexpected artifact record.",

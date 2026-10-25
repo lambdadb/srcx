@@ -174,7 +174,7 @@ export async function validateCandidate(
     let query: Record<string, unknown> = {
       queryString: { query: "kind:chunk" },
     };
-    for await (const d of records(b.directory)) {
+    for await (const d of records(b)) {
       if (d.kind !== "chunk") continue;
       // Probe an indexed chunk ID: a valid source may contain only stop words
       // or punctuation, so text-query matches cannot establish readiness.
@@ -623,7 +623,7 @@ export async function publish(args: {
       await mutate("delete", ids, () => store.delete(j!.writer, ids));
     }
     async function* changed() {
-      for await (const d of records(b.directory))
+      for await (const d of records(b))
         if (oldHashes.get(d.id) !== hash(d)) yield d;
       for (const d of metadata.slice(0, -1))
         if (oldHashes.get(d.id) !== hash(d)) yield d;

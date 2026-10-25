@@ -24,22 +24,24 @@ const packageVersion = JSON.parse(
   await readFile("package.json", "utf8"),
 ).version;
 
-async function cliContract(t, preset) {
+async function cliContract(t, preset, storage = "jsonl") {
   const f = await fixture();
   t.after(f.cleanup);
   const managed = !!preset.embedding;
-  if (managed) {
+  if (managed || storage === "segments") {
     f.buildA = await materialize({
       identity: f.source,
       ref: f.a,
       output: join(f.root, "managed-a"),
       preset,
+      storage,
     });
     f.buildB = await materialize({
       identity: f.source,
       ref: f.b,
       output: join(f.root, "managed-b"),
       preset,
+      storage,
       previous: f.buildA,
     });
   }
@@ -443,7 +445,10 @@ async function cliContract(t, preset) {
     [...preset.analyzers].reverse().join(","),
     "--output",
     join(f.root, "cli-preview"),
+    "--artifact-storage",
+    storage,
   ]);
+  assert.equal(preview.artifactFormat, storage === "segments" ? 2 : 1);
   assert.equal(preview.commitOid, f.b);
   assert.equal(preview.uploaded, false);
   assert.equal(preview.counts.chunks, f.buildB.counts.chunks);
@@ -461,7 +466,15 @@ async function cliContract(t, preset) {
   // Exercise tracked imports through the actual CLI/SDK, also in the installed package.
   await atomic(join(state, "attachment.json"), f.source);
   git(f.path, "branch", "develop", f.a);
-  await runCli(["import", "--repo", "review", "--ref", "develop"]);
+  await runCli([
+    "import",
+    "--repo",
+    "review",
+    "--ref",
+    "develop",
+    "--artifact-storage",
+    storage,
+  ]);
   const writer = gitBranchName("refs/heads/develop");
   assert.equal(
     store.docs({ kind: "branch", name: writer }).get("__manifest__").commitOid,
@@ -469,7 +482,15 @@ async function cliContract(t, preset) {
   );
   const branchCount = store.work.size;
   git(f.path, "branch", "-f", "develop", f.b);
-  await runCli(["import", "--repo", "review", "--ref", "refs/heads/develop"]);
+  await runCli([
+    "import",
+    "--repo",
+    "review",
+    "--ref",
+    "refs/heads/develop",
+    "--artifact-storage",
+    storage,
+  ]);
   assert.equal(store.work.size, branchCount);
   assert.equal(
     store.docs({ kind: "branch", name: writer }).get("__manifest__").commitOid,
@@ -519,6 +540,10 @@ for (const preset of [PRESET, MANAGED_PRESET])
 
 test("CLI managed large imports, searches and pins reads with 3072-dimensional vectors", (t) =>
   cliContract(t, presetFor("text-embedding-3-large", ["english", "korean"])));
+
+for (const preset of [PRESET, MANAGED_PRESET])
+  test(`CLI segmented ${preset.embedding ? "managed" : "lexical"} artifacts resume and serve pinned reads`, (t) =>
+    cliContract(t, preset, "segments"));
 
 test("installed CLI resolves all added grammars and preserves source metadata", async (t) => {
   const f = await fixture();
