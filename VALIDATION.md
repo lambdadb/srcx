@@ -1044,6 +1044,106 @@ were performed for this implementation. Linux/Windows and real
 cross-volume/power-loss checks have not been run locally; native no-follow support
 is required for the experimental mode. The default JSONL path is unchanged.
 
+## Cumulative segmented history and recovery
+
+A follow-up at `77d871c` compares 50 successive commits in two fixed corpora:
+120 and 1,200 TypeScript files, with 24 functions per file. Version
+0 is the initial build; each of the next 49 commits modifies one file, deletes
+one original file and adds one new file, keeping the file count fixed. Each mode
+uses its own preceding artifact. JSONL/segments execution order alternates by
+commit. Both modes produce identical record/inventory hashes at every commit.
+
+These are **single instrumented history runs**, not repeated timing medians.
+The complete `materialize()` invocation is timed; filesystem observers count
+completed record writes, descriptor writes and logical record stream bytes.
+Recovery, retention checks and Git fixture preparation are excluded from these
+build totals. Host: Node.js 24.15.0, Apple M5 Pro/macOS arm64, one process with
+filesystem caches left intact and no fsync. The first JSONL build includes parser
+initialization; later builds reuse that state. Source bodies differ from the
+preceding single-update fixture, so compare modes within this experiment.
+
+| Files | JSONL cumulative writes (bytes) | Segments cumulative writes (bytes) | Write reduction | JSONL build total (s) | Segments build total (s) |
+| ----- | ------------------------------- | ---------------------------------- | --------------- | --------------------- | ------------------------ |
+| 120   | 178,788,089                     | 42,963,597                         | 76.0%           | 9.65                  | 11.80                    |
+| 1,200 | 1,784,802,339                   | 406,139,767                        | 77.2%           | 78.17                 | 99.71                    |
+
+The totals include the initial full build and all 49 updates. At 1,200 files,
+record payload writes fall from 1,423,502,835 to 30,798,963 bytes, while descriptors
+write 361,299,504 and 375,340,804 bytes respectively. Segments make 1,298 record
+write calls versus 21,850 for JSONL, but add 58,702 hardlinks. Logical record reads
+fall from 4,213,565,967 to 2,818,534,401 bytes; every previous/new artifact is still
+fully validated. Cumulative wall time is 27.5% higher for segments (22.3% at 120
+files). This supports lower cumulative writes, not faster builds.
+
+Retention observations sum `stat.blocks * 512` once per unique `(dev, ino)` over
+the retained regular files, including descriptors. Decimal MB below means
+1,000,000 bytes. This is not `du`, logical artifact size, peak usage, an exact
+physical extent count or billed storage; directory metadata, compression,
+shared extents and filesystem snapshots are outside the observation.
+
+| Files | Retention          | JSONL inode allocation (MB) | Segments inode allocation (MB) | Segments reduction |
+| ----- | ------------------ | --------------------------- | ------------------------------ | ------------------ |
+| 120   | All 50 versions    | 178.99                      | 43.24                          | 75.8%              |
+| 120   | Latest 10 versions | 35.80                       | 10.97                          | 69.4%              |
+| 1,200 | All 50 versions    | 1,785.46                    | 407.29                         | 77.2%              |
+| 1,200 | Latest 10 versions | 357.01                      | 105.01                         | 70.6%              |
+
+At 1,200 files, counting every artifact's logical references instead gives
+1,784,802,339 bytes for JSONL and 1,798,843,639 for segments: the saving comes
+from shared retained objects, not smaller logical records. With all 50 versions,
+segments use 1,348 unique regular-file inodes, versus 100 for JSONL. Removing
+versions 0–39 reduces these counts to 1,228 and 20. An unchanged object's link
+count falls from 50 to 10. Every surviving build passes full validation and
+returns the exact historical source after ancestor deletion; no remote version
+is deleted by local cleanup. Retention remains manual, with pending artifacts
+and their original journals preserved.
+
+Recovery uses a further commit, version 50, after deleting the latest segmented
+artifact (version 49). A cold segmented rebuild has no previous artifact; the
+checkpoint rebuild explicitly selects surviving version 48, two changes behind.
+There is no automatic checkpoint search.
+
+| Files | Recovery                       | Total writes (bytes) | Record writes (bytes) | Retained links | Build time (ms) |
+| ----- | ------------------------------ | -------------------- | --------------------- | -------------- | --------------- |
+| 120   | Cold                           | 3,601,624            | 2,849,398             | 0              | 303.7           |
+| 120   | Explicit version-48 checkpoint | 829,178              | 71,338                | 117            | 228.5           |
+| 1,200 | Cold                           | 35,974,629           | 28,471,318            | 0              | 2,791.8         |
+| 1,200 | Explicit version-48 checkpoint | 7,580,263            | 71,338                | 1,197          | 1,976.6         |
+
+Cold, checkpoint and independent cold JSONL controls have identical record and
+inventory hashes. The checkpoint path fully validates both artifacts and reads
+56,942,538 record bytes at 1,200 files; cold recovery reads 28,471,318 bytes for
+the new artifact. A missing cache does not grant permission to discard a pending
+tracked-branch journal: retry ownership still requires the original journal.
+
+`test/segmented-history.test.mjs` keeps maintained coverage small: seven versions
+of eight files, plus a separate non-adjacent-checkpoint recovery case. It verifies
+add/modify/delete inventories, ancestor removal, relocation of the pending
+artifact, immutable remote baseline fallback, refusal after journal loss, stale
+and incomplete candidates, full candidate revalidation on publication retry,
+waiting without replay, a lost publication ACK before branch bookkeeping,
+unchanged managed vectors without client-supplied vectors, and all historical
+exact reads. Each test owns its temporary directories and store; no process-wide
+filesystem mocks or private experiment paths enter the suite. The large histories
+and one-off observer remain local evidence, outside committed fixtures.
+Managed publication uses the existing synthetic-vector fault fixture, not a
+backend emulator or an embedding/retrieval quality model.
+
+Validation passed on Node.js 24.15.0 and 22.23.4: 203 full-suite tests, nine
+installed-tarball CLI tests and typechecking on each runtime. Formatting, version
+consistency, diff checks and all five CI Python suites (17 tests) also passed.
+The two new history tests also passed together in isolation.
+
+No runtime/default behavior changes in this follow-up. Git enumeration, full
+local integrity checks, descriptor construction/writes and complete candidate
+verification remain proportional to corpus size. Further local write reductions
+would need a separate descriptor/inventory design with equally explicit integrity
+and recovery rules. Reducing remote candidate validation still requires a verified
+backend completeness/preservation contract. This experiment measures neither
+LambdaDB latency/storage nor embedding performance and makes no source uploads
+or paid/live calls. Cross-volume fallback, power loss and hostile concurrent
+directory replacement were not exercised.
+
 ## Local checks
 
 Runtime used: Node.js 24.15.0, npm 11.12.1. Dependencies are pinned in

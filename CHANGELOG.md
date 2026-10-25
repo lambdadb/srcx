@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Evaluate experimental segmented artifacts across 50 successive local versions,
+  including cumulative writes, retained inode allocation, ancestor cleanup and
+  cold/explicit-checkpoint recovery. Add bounded multi-generation managed
+  publication regressions for cache/journal loss, stale or incomplete candidates,
+  retries in each phase and immutable historical reads. Document manual local
+  retention; keep runtime behavior and the JSONL default unchanged.
+
 - Add experimental `import --artifact-storage segments` for self-contained,
   digest-verified local format-2 artifacts. Reuse unchanged per-file objects with
   hardlinks and explicit copy fallback; retain format-1 reads and the JSONL default,
