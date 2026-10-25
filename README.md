@@ -172,6 +172,16 @@ artifact reader to support format 2. Linked files are not tamper-proof: full che
 detect shared-object corruption. Preserve the pending artifact and journal until
 publication completes.
 
+Local retention is manual: remove whole completed artifact directories, keeping
+any pending artifact and its original retry journal. Unchanged hardlinked objects
+remain available through surviving artifacts. Losing the latest local artifact
+requires a full local rebuild unless a surviving compatible checkpoint is
+explicitly selected with `--previous` during a dry-run build; checkpoint discovery
+is not automatic. Import that rebuilt artifact with `--artifact`.
+Local cleanup does not delete published versions or their immutable remote data.
+See [cumulative history and recovery measurements](VALIDATION.md#cumulative-segmented-history-and-recovery)
+for the storage/time tradeoff across 50 successive versions.
+
 Artifacts contain source code; keep them with the same access policy as the repo.
 Every tree entry is accounted for, including explicit exclusions for symlinks,
 submodules, LFS pointers, dependencies/build output, image assets (including SVG), binary/invalid UTF-8 data,
