@@ -1477,8 +1477,15 @@ Validation for the implementation passed on Node.js 24.15.0 and 22.23.4:
 `npm run typecheck`, `npm test` (229 executed tests) and `npm run test:package`
 (10 executed installed-tarball tests) on each runtime. Locked installation with
 `npm ci --ignore-scripts`, formatting, version consistency, all five CI Python
-suites (17 tests) and `git diff --check` also passed locally. No remote CI or
-live acceptance run was triggered.
+suites (17 tests) and `git diff --check` also passed locally before PR submission.
+Remote CI results are tracked in the PR; no live acceptance run was triggered.
+
+The first PR CI attempt passed Node 24 but cancelled the Node 22 CLI test file
+after its cumulative 120-second budget; all completed scenarios passed. CLI
+contract and storage scenarios now use separate test files with the same harness,
+assertions and existing timeout. Installed-package verification explicitly runs
+both files. This changes test isolation only; the measured production code is
+unchanged.
 
 ## Local checks
 

@@ -7,6 +7,8 @@
   content, preserve admitted entries above capacity, and release the cache with
   the invocation. Keep all source/hash/token/managed-input comparisons, standalone
   validation, publication retries, artifact formats and storage defaults unchanged.
+  Split CLI contract/storage test files to preserve complete installed-package
+  coverage within the existing per-file timeout on shared CI runners.
 
 - Profile complete incremental segmented builds with separate uninstrumented
   controls, phase probes and CPU samples. Document remaining full-validation,
