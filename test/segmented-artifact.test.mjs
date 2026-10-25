@@ -267,83 +267,88 @@ test("segment write failure removes incomplete output and preserves the previous
 });
 
 for (const preset of [MANAGED_PRESET, MANAGED_LARGE_PRESET])
-  test(`segmented managed publication resumes without the old artifact and preserves immutable reads (${preset.embedding.dimensions})`, async (t) => {
-    const { a, f, build } = await setup(t, preset);
-    const b = await build(f.b, a);
-    const binding = {
-      repoId: "repo",
-      indexId: "index",
-      repoKey: f.source.key,
-      configHash: a.configHash,
-    };
-    const store = new ManagedStore(preset.embedding.dimensions),
-      state = join(f.root, "publication");
-    await fs.mkdir(state);
-    const av = await publish({ store, state, binding, build: a, pollMs: 1 });
-    const handle = await directHandle(
-      store,
-      {
-        endpoint: "https://example.invalid",
-        project: "fixture",
-        apiKeyEnv: "unused",
-      },
-      binding,
-      av,
-      "code.ts",
-    );
-    store.failAfterWrite = true;
-    await assert.rejects(
-      publish({
+  for (const storage of ["segments", "paged-segments"])
+    test(`${storage} managed publication resumes without the old artifact and preserves immutable reads (${preset.embedding.dimensions})`, async (t) => {
+      const { a: original, f, build } = await setup(t, preset);
+      const a =
+        storage === "segments"
+          ? original
+          : await build(f.a, undefined, storage);
+      const b = await build(f.b, a, storage);
+      const binding = {
+        repoId: "repo",
+        indexId: "index",
+        repoKey: f.source.key,
+        configHash: a.configHash,
+      };
+      const store = new ManagedStore(preset.embedding.dimensions),
+        state = join(f.root, "publication");
+      await fs.mkdir(state);
+      const av = await publish({ store, state, binding, build: a, pollMs: 1 });
+      const handle = await directHandle(
+        store,
+        {
+          endpoint: "https://example.invalid",
+          project: "fixture",
+          apiKeyEnv: "unused",
+        },
+        binding,
+        av,
+        "code.ts",
+      );
+      store.failAfterWrite = true;
+      await assert.rejects(
+        publish({
+          store,
+          state,
+          binding,
+          build: b,
+          baseline: { version: av, build: a },
+          pollMs: 1,
+        }),
+        /unknown write/,
+      );
+      await fs.rm(a.directory, { recursive: true });
+      await assert.rejects(
+        publish({ store, state, binding, build: b, pollMs: 1 }),
+        /--resume/,
+      );
+      store.staleCandidates = 1;
+      store.corruptCandidates = 1;
+      const bv = await publish({
         store,
         state,
         binding,
-        build: b,
-        baseline: { version: av, build: a },
+        build: await loadBuild(b.directory),
+        resume: true,
         pollMs: 1,
-      }),
-      /unknown write/,
-    );
-    await fs.rm(a.directory, { recursive: true });
-    await assert.rejects(
-      publish({ store, state, binding, build: b, pollMs: 1 }),
-      /--resume/,
-    );
-    store.staleCandidates = 1;
-    store.corruptCandidates = 1;
-    const bv = await publish({
-      store,
-      state,
-      binding,
-      build: await loadBuild(b.directory),
-      resume: true,
-      pollMs: 1,
+      });
+      assert.equal((await published(store, binding)).length, 2);
+      assert.equal(bv.commitOid, f.b);
+      const read = await readHandle(
+        store,
+        {
+          endpoint: "https://example.invalid",
+          project: "fixture",
+          apiKeyEnv: "unused",
+        },
+        handle,
+        { fullFile: true },
+      );
+      assert.equal(read.sourceText, f.original);
+      assert.ok(
+        store.log
+          .filter((e) => e.op === "upsert")
+          .flatMap((e) => e.docs)
+          .every((d) => d.embedding === undefined),
+      );
+      const snap = store.docs({ kind: "tag", name: bv.tagName });
+      assert.ok(
+        [...snap.values()].some(
+          (d) => d.embedding?.length === preset.embedding.dimensions,
+        ),
+      );
     });
-    assert.equal((await published(store, binding)).length, 2);
-    assert.equal(bv.commitOid, f.b);
-    const read = await readHandle(
-      store,
-      {
-        endpoint: "https://example.invalid",
-        project: "fixture",
-        apiKeyEnv: "unused",
-      },
-      handle,
-      { fullFile: true },
-    );
-    assert.equal(read.sourceText, f.original);
-    assert.ok(
-      store.log
-        .filter((e) => e.op === "upsert")
-        .flatMap((e) => e.docs)
-        .every((d) => d.embedding === undefined),
-    );
-    const snap = store.docs({ kind: "tag", name: bv.tagName });
-    assert.ok(
-      [...snap.values()].some(
-        (d) => d.embedding?.length === preset.embedding.dimensions,
-      ),
-    );
-  });
 
 test("empty segmented builds retain the full empty-inventory validation path", async (t) => {
   const { f, build } = await setup(t);
@@ -531,7 +536,7 @@ test("CLI storage opt-in validates choices and cannot override an existing artif
     ),
     (e) => /Allowed choices|allowed choices/.test(e.stderr),
   );
-  for (const storage of ["jsonl", "segments"])
+  for (const storage of ["jsonl", "segments", "paged-segments"])
     await assert.rejects(
       run(
         process.execPath,

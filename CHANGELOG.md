@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Add experimental `import --artifact-storage paged-segments` with local format-3
+  inventory/hash pages in stable path buckets. Reuse unchanged metadata and
+  records while preserving logical hashes/order, complete source and candidate
+  validation, managed inputs, resumability and immutable reads. Keep JSONL and
+  format-2 segments unchanged. Distinguish missing page references from absent
+  roots so partial previous artifacts fail while immutable-baseline cache loss
+  can recover. Measure actual complete local builds separately from the earlier
+  serialization model; this does not promote a new default.
+
 - Evaluate experimental segmented artifacts across 50 successive local versions,
   including cumulative writes, retained inode allocation, ancestor cleanup and
   cold/explicit-checkpoint recovery. Add bounded multi-generation managed

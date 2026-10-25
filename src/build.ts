@@ -3,6 +3,12 @@ import { join, resolve } from "node:path";
 import { Blobs, inventory, resolveCommit, type Identity } from "./git.js";
 import { chunk, CHUNKER, tokens } from "./chunk.js";
 import {
+  readMetadata,
+  verifyMetadata,
+  writeMetadata,
+  type MetadataPart,
+} from "./metadata.js";
+import {
   ArtifactWriter,
   artifactRecords,
   validateStorage,
@@ -189,8 +195,13 @@ export type InventoryItem = {
   skipped?: number;
 };
 export type Build = {
-  format: 1 | 2;
+  format: 1 | 2 | 3;
   recordParts?: RecordPart[];
+  metadataLayout?: "sha256-path-buckets-v1";
+  prefixBits?: 8;
+  metadataParts?: MetadataPart[];
+  inventoryOrder?: string[];
+  recordOrder?: string[];
   directory: string;
   repoKey: string;
   configHash: string;
@@ -225,10 +236,20 @@ export async function* records(build: Build | string): AsyncGenerator<Doc> {
 export async function loadBuild(directory: string): Promise<Build> {
   const b = await json<Build>(join(directory, "build.json"));
   invariant(
-    (b.format === 1 || b.format === 2) && b.configHash === hash(b.preset),
+    (b.format === 1 || b.format === 2 || b.format === 3) &&
+      b.configHash === hash(b.preset),
     "Invalid build configuration.",
   );
   b.directory = resolve(directory);
+  if (b.format === 3) {
+    invariant(
+      b.inventory === undefined &&
+        b.recordHashes === undefined &&
+        b.recordParts === undefined,
+      "Paged artifact must not contain inline metadata.",
+    );
+    Object.assign(b, await readMetadata(b));
+  }
   validateStorage(b);
   return b;
 }
@@ -245,8 +266,8 @@ export async function materialize(args: {
 }): Promise<Build> {
   const storage = args.storage ?? "jsonl";
   invariant(
-    ["jsonl", "segments"].includes(storage),
-    "Artifact storage must be jsonl or segments.",
+    ["jsonl", "segments", "paged-segments"].includes(storage),
+    "Artifact storage must be jsonl, segments or paged-segments.",
   );
   const preset = args.preset ?? PRESET,
     configHash = hash(preset),
@@ -474,7 +495,7 @@ export async function materialize(args: {
       }
     }
     if (prev && reuse.size) {
-      if (storage === "segments" && prev.format === 2) {
+      if (storage !== "jsonl" && prev.format !== 1) {
         const files = new Map(prev.inventory.map((e) => [e.fileId, e]));
         for (const part of prev.recordParts!) {
           if (!reuse.has(part.fileId)) continue;
@@ -522,8 +543,8 @@ export async function materialize(args: {
   for (const e of old.values())
     if (!now.has(e.pathBase64)) changes.deleted.push(e.path);
   const build: Build = {
-    format: storage === "segments" ? 2 : 1,
-    ...(storage === "segments" ? { recordParts: writer.parts } : {}),
+    format: storage === "paged-segments" ? 3 : storage === "segments" ? 2 : 1,
+    ...(storage !== "jsonl" ? { recordParts: writer.parts } : {}),
     directory,
     repoKey: args.identity.key,
     configHash,
@@ -566,8 +587,16 @@ export async function materialize(args: {
       skipped: items.reduce((n, e) => n + (e.skipped ?? 0), 0),
     },
   };
-  await atomic(join(directory, "build.json"), build);
-  await validateBuild(build);
+  try {
+    const descriptor =
+      build.format === 3 ? await writeMetadata(build, prev) : build;
+    await atomic(join(directory, "build.json"), descriptor);
+    await validateBuild(build);
+  } catch (error) {
+    if (build.format === 3)
+      await rm(directory, { recursive: true, force: true });
+    throw error;
+  }
   return build;
 }
 export async function validateBuild(b: Build): Promise<void> {
@@ -588,6 +617,7 @@ export async function validateBuild(b: Build): Promise<void> {
     "Build metadata hash mismatch.",
   );
   validateStorage(b);
+  if (b.format === 3) await verifyMetadata(b);
   const seen = new Set<string>();
   let activeFile: Doc | undefined;
   let end = 0,

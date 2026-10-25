@@ -1144,6 +1144,140 @@ LambdaDB latency/storage nor embedding performance and makes no source uploads
 or paid/live calls. Cross-volume fallback, power loss and hostile concurrent
 directory replacement were not exercised.
 
+## Integrated paged metadata builds
+
+The additional opt-in `import --artifact-storage paged-segments` implements
+format 3. It preserves the format-2 record objects and moves repeated inventory,
+record-hash and record-part data into digest-verified path buckets. The default
+is still JSONL, and `segments` still writes format 2. Every full validation reads
+all metadata pages and records; hydration is not a validation receipt.
+
+This comparison uses 50 successive commits at each of 120 and 1,200 TypeScript
+files, with 24 functions per file. After the initial full build, every commit adds,
+modifies and deletes one file, keeping corpus size fixed. All three modes produce
+identical record/inventory hashes at every commit. Modes rotate order, and each
+build runs in a fresh instrumented Node.js 24.15.0 process on Apple M5 Pro/macOS
+arm64. The timed local flow includes loading the previous artifact and the full
+`materialize()` call, including both full validations; it excludes process/module
+startup and Git identity discovery. Parser initialization occurs per child and
+filesystem caches are left intact. These are single history runs, not repeated
+timing medians, and use a different timing protocol from the earlier warm
+in-process measurements. No other test/build load ran during the comparison.
+
+Observers count completed record writes, metadata page/root writes, logical
+reads and filesystem operations. The following totals include version 0 and all
+49 updates. Application write bytes exclude directory metadata and fsync.
+
+| Files | Storage        | Application writes (bytes) | Local build total (s) | CPU total (s) |
+| ----- | -------------- | -------------------------- | --------------------- | ------------- |
+| 120   | JSONL          | 178,788,789                | 13.20                 | 20.75         |
+| 120   | Segments       | 42,964,297                 | 15.17                 | 25.46         |
+| 120   | Paged segments | 8,687,885                  | 19.28                 | 29.80         |
+| 1,200 | JSONL          | 1,784,803,039              | 83.70                 | 101.73        |
+| 1,200 | Segments       | 406,140,467                | 105.67                | 125.57        |
+| 1,200 | Paged segments | 51,134,334                 | 118.29                | 138.89        |
+
+At 1,200 files, paged segments write 87.4% fewer application bytes than format-2
+segments and 97.1% fewer than JSONL. Their 30,798,963 record bytes are identical
+to format 2; metadata writes fall from 375,341,504 to 20,335,371 bytes (9,619,900
+root bytes and 10,715,471 page bytes). Wall time rises 11.9% versus segments and
+41.3% versus JSONL. At 120 files, the paged/segments wall-time increase is 27.1%.
+Lower writes do not imply faster builds or changed-code-only complexity.
+The earlier model's 96.9% estimate covered metadata-only updates with a compact
+root; these integrated totals include the initial artifact, actual root writer
+and record payloads.
+
+Extra validation/read costs are explicit. At 1,200 files, segments and paged
+segments both read 2,818,534,401 record bytes. Paged metadata adds 1,025,882,606
+page bytes and 9,427,522 root bytes, versus 367,834,452 root bytes for segments.
+Total logical artifact reads are about 3.85 GB for paged segments and 3.19 GB for
+segments (4.57 GB for JSONL). Loading a previous paged artifact hydrates metadata;
+validation rereads those pages and the new artifact's pages. No persistent
+receipt or sampling skips this work. The validator reuses the already checked
+inventory hash and compares ordered record-hash values directly to avoid
+additional whole-map canonicalization during hydrated-view comparison.
+
+Both segmented modes introduce 58,702 record links across the 49 updates. Paged
+metadata adds 12,316 page links, 399 page writes including the initial build,
+and 49,955 explicit page opens including validation/stat checks. Record-object
+opens are identical between the two segmented modes. Legacy `createReadStream`
+opens are internal to Node and are not included in the explicit FileHandle open
+counter; compare logical byte totals rather than that counter across JSONL.
+
+Retention observations count `stat.blocks * 512` once per unique `(dev, ino)`
+over regular artifact files. Decimal MB means 1,000,000 bytes. Directory blocks,
+compression, shared extents and filesystem snapshots are excluded; this is not
+an exact physical-storage or billing measurement.
+
+| Files | Storage        | All 50 versions (MB) | Latest 10 versions (MB) |
+| ----- | -------------- | -------------------- | ----------------------- |
+| 120   | JSONL          | 178.99               | 35.80                   |
+| 120   | Segments       | 43.24                | 10.97                   |
+| 120   | Paged segments | 9.30                 | 4.85                    |
+| 1,200 | JSONL          | 1,785.73             | 357.01                  |
+| 1,200 | Segments       | 407.29               | 105.01                  |
+| 1,200 | Paged segments | 53.16                | 40.09                   |
+
+At 1,200 files and 50 versions, paged artifacts use 1,747 unique regular-file
+inodes versus 1,348 for segments and 100 for JSONL. The sum of paged logical
+references is still about 1.78 GB; storage savings depend on retaining shared
+pages/records through hardlinks. Removing versions 0–39 leaves 1,508/1,228/20
+inodes respectively. Every surviving latest-10 artifact passes full validation
+and returns exact historical source after ancestor removal. Retention is manual;
+pending artifacts and original journals must be preserved.
+
+RSS and process file descriptor counts are sampled every 5 ms in each isolated build process,
+so short peaks may be missed. Maximum observed RSS at 1,200 files is 1,621.82 MB
+for JSONL, 1,635.24 MB for segments and 1,637.81 MB for paged segments; samples
+include parser/dependency memory and are not a heap budget or general bound.
+Sampled process FD maxima are 19/18/18. Event-counted explicitly opened artifact
+FileHandles peak at one in normal builds and all close; conversion from paged
+segments to JSONL peaks at two. Internal Node opens and other process resources
+are outside that explicit counter.
+
+The following one-off 1,200-file cases also include previous-descriptor loading.
+Conversions are source-identical version-49 builds. Recovery deletes the latest
+paged artifact, then builds version 50 cold or from explicitly selected version 48. Cold/checkpoint/JSONL controls have identical logical hashes and exact source.
+
+| Case                           | Application writes (bytes) | Local build time (ms) |
+| ------------------------------ | -------------------------- | --------------------- |
+| JSONL to paged                 | 35,591,620                 | 1,994.8               |
+| Segments to paged              | 7,120,354                  | 2,133.8               |
+| Paged to JSONL                 | 35,693,765                 | 1,923.1               |
+| Cold paged recovery            | 35,591,684                 | 2,928.7               |
+| Explicit version-48 checkpoint | 415,771                    | 2,304.6               |
+| Cold JSONL control             | 35,693,824                 | 2,541.5               |
+
+Injected `EXDEV` for every retained-object link exercises the actual exclusive
+copy fallback on the same filesystem. At 1,200 files it performs 1,448 copies
+with 35,286,073 logical source bytes, plus 309,291 application write bytes;
+their sum is 35,595,364 bytes, not a delta-only write path. Native copy bytes
+are a logical file-volume observation, not proof of physical writes or shared
+extents. Its local build time is 2,138.3 ms. Real cross-volume behavior and power
+loss were not exercised.
+
+Focused coverage includes completed-byte/open/link counts on a fixed 120-file
+corpus, full previous/new page and record reads, zero object/page writes for a
+source-identical commit, conversion between all formats, ordering and exclusions,
+empty/dense buckets, invalid-UTF-8 paths, missing roots versus missing referenced
+pages, malformed/corrupt/stale membership, symlinks/nonregular files/FIFOs,
+partial page/root writes and copy/failure cleanup. Shared managed small/large
+publication and seven-version history tests cover old-cache loss, pending
+relocation, missing journals, stale/incomplete candidates, retries in each phase,
+unchanged vectors without client vectors, and immutable historical reads. The
+installed-tarball suite exercises managed paged imports through a loopback SDK
+fixture. Synthetic vectors are fault fixtures, not backend or retrieval models.
+
+Validation passed on Node.js 24.15.0 and 22.23.4: 221 executed full-suite tests,
+10 installed-tarball tests and typechecking on each runtime. Formatting, version
+consistency, diff checks and all five CI Python suites (17 tests) also passed.
+
+Full Git enumeration, metadata grouping/serialization/hydration, source/token
+checks and complete immutable-candidate validation remain proportional to corpus
+size. There is no source upload, live backend/embedding measurement, paid call,
+default promotion or package publication. Further remote-validation reductions
+still need a verified completeness/preservation contract from the backend.
+
 ## Local checks
 
 Runtime used: Node.js 24.15.0, npm 11.12.1. Dependencies are pinned in
