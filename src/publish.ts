@@ -20,6 +20,7 @@ import {
   type Build,
 } from "./build.js";
 import { branch, tag, one, type CollectionStore } from "./remote.js";
+import { missingBaselineArtifact } from "./metadata.js";
 export type Binding = {
   repoId: string;
   indexId: string;
@@ -302,7 +303,7 @@ async function baselineHashes(
       try {
         local = await loadBuild(last.artifact);
       } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+        if (!missingBaselineArtifact(error)) throw error;
       }
     }
   }
@@ -327,7 +328,7 @@ async function baselineHashes(
         hashes.set(doc.id, hash(doc));
       return hashes;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      if (!missingBaselineArtifact(error)) throw error;
     }
   }
   // Retain recovery without local files, including explicit same-artifact retries.

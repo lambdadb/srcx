@@ -577,8 +577,9 @@ Runtime integration and compatibility:
   `build.json`. Unknown formats and missing format-2 descriptors/objects fail;
   they do not fall back to a stray
   `records.jsonl` merely because it exists.
-- `--artifact-storage jsonl|segments` selects storage for a new build and defaults
-  to `jsonl`, even when the previous artifact is segmented. Initial conversion
+- `--artifact-storage jsonl|segments` selects either original format for a new
+  build and defaults to `jsonl`, even when the previous artifact is segmented.
+  The additional `paged-segments` mode is described below. Initial conversion
   from format 1 requires the full retained-record pass. Existing `--artifact`
   imports use the recorded format and reject an explicit storage override.
   Preview JSON adds `artifactFormat` (1 or 2); the remaining logical fields and
@@ -602,6 +603,117 @@ storage or batched reads can be investigated later if per-file open/link overhea
 dominates; neither is silently assumed by this implementation. Skipping full remote
 candidate verification still requires the separate verified backend contract
 described in section 9. Dependency ingestion remains outside this work.
+
+### Experimental paged metadata
+
+`import --artifact-storage paged-segments` selects local format 3. JSONL remains
+the default and `segments` continues to write format 2. Format 3 uses the same
+record objects as format 2 and moves repeated inventory/record-hash metadata to
+digest-addressed pages. This does not change presets, logical hashes, the remote
+schema, publication ordering or candidate validation.
+
+The [50-version evaluation](https://github.com/lambdadb/srcx/pull/40) identified
+descriptors as 375,340,804 of 406,139,767 segmented application-write bytes.
+Pages target those retained metadata rewrites. The format-3 descriptor omits
+inline `inventory`, `recordHashes` and `recordParts`; internal consumers receive
+a fully hydrated Build whose physical format remains 3.
+
+```ts
+type MetadataPart = {
+  bucket: string; // Two lowercase hexadecimal characters, 00..ff.
+  digest: string; // SHA-256 of canonical UTF-8 page JSON plus one LF.
+  byteLength: number;
+  entryCount: number;
+};
+type PagedDescriptor = Omit<
+  Build,
+  "format" | "inventory" | "recordHashes" | "recordParts"
+> & {
+  format: 3;
+  metadataLayout: "sha256-path-buckets-v1";
+  prefixBits: 8;
+  metadataParts: MetadataPart[];
+  inventoryOrder: string[]; // Every pathBase64 in the writer's inventory order.
+  recordOrder: string[]; // Included file IDs in the writer's record-part order.
+};
+```
+
+Each `metadata/<digest>.json` page is `{format: 1, bucket, entries}`. The bucket
+is the first byte of SHA-256 over raw path bytes decoded from canonical
+`pathBase64`. Entries are sorted by `pathBase64` using code-unit comparison.
+An included entry stores `{entry, hashes, recordPart}`; `hashes` is the ordered
+array of `[id, hash]` pairs for `[fileId, ...chunkIds]`. Excluded entries store
+only `{entry}`, preserving all exclusion metadata and invalid-UTF-8 paths.
+
+The root keeps configuration/commit identity, counts, changes and obsolete IDs.
+It also keeps explicit inventory and record orders. Hydration restores inventory
+order, record-part order and record-hash insertion order, retaining operation
+order as well as both sorted logical hashes. The root still scales with paths/
+files; fixed buckets reduce write amplification but do not make all work scale
+with changed code. Dense buckets may rewrite more metadata. There is no automatic
+repartitioning or global object cache.
+
+Writer and integrity rules:
+
+1. Fully validate the previous Build before reusing records or metadata. Keep
+   the existing repository/configuration and Git blob/mode checks.
+2. Serialize canonical pages and reuse identical previous pages by exclusive
+   hardlink, with the existing unsupported/cross-volume copy fallback. Write
+   changed pages privately. Do not impose a new page-size/document limit on
+   previously valid inventory entries. Finish all objects before atomically
+   installing the root, then fully validate the new artifact. Metadata/root write
+   or final validation failure removes only that new format-3 attempt.
+3. Validate format/configuration before following references. Reject unknown
+   layouts, unsafe digests, duplicate or out-of-order buckets/paths, invalid
+   counts, wrong bucket assignment, duplicate record IDs, incomplete order arrays
+   and unexpected included/excluded metadata. Counts never direct allocation.
+4. Open pages through the same no-follow/nonblocking, regular-file and directory
+   checks as record objects. Read one page at a time, verify actual byte length
+   and digest, and reject invalid UTF-8. The existing importer-owned-directory/
+   single-host threat boundary applies; hostile concurrent directory replacement
+   and power-loss durability remain outside it.
+5. Every full `validateBuild()` rereads all metadata pages and checks agreement
+   with the hydrated Build, including record-hash insertion order. Hydration or
+   a previous validation is not a receipt. All existing record/source/range/token,
+   coverage and managed-input checks then run. Complete immutable-candidate
+   validation, marker ordering, Tag/Snapshot checks and retry revalidation remain.
+
+External metadata changes when a missing reference is encountered: `loadBuild()`
+can now find a missing page before logical validation. `MissingMetadataError`
+(`SRCX_MISSING_METADATA`, with the original `ENOENT` cause) distinguishes this
+from an absent `build.json`. Other errors retain their classification; corruption
+never becomes a missing-cache fallback.
+
+| Context                                        | Missing root                                                                             | Missing referenced page                                         |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Previous artifact selected for materialization | Existing cold-build path when no prior artifact can be loaded                            | Fail; do not silently ignore a partial previous artifact        |
+| Local publication baseline cache               | Existing immutable remote fallback when the journal/tracked writer identifies a baseline | Same fallback, after validating the immutable baseline identity |
+| Pending import/resume                          | Fail before corpus mutation and preserve the original journal                            | Same failure; never substitute a newer Git commit               |
+| Corrupt local baseline                         | Fail closed                                                                              | Fail closed; no missing-cache fallback                          |
+
+Format-1/2 readers and outputs remain supported, including conversion to/from
+format 3. A new format-3 build owns every referenced page and record object and
+survives previous-artifact deletion or relocation. An older CLI rejects format 3;
+tools must use `loadBuild()`/`records()` rather than expect inline metadata in its
+root. Existing `--artifact` imports use their recorded format and reject a storage
+override. Preview JSON reports `artifactFormat: 3` for the new opt-in only.
+
+`test/paged-metadata.test.mjs` covers conversion, exclusion/ordering round trips,
+empty/excluded-only builds, dense buckets, invalid paths, malformed/corrupt/missing
+metadata, symlinks/nonregular files, shared-page corruption, write cleanup,
+copy fallback and baseline recovery. Operation-count tests measure completed
+record/page/root writes, full reads and extra opens/links on a fixed corpus.
+The shared seven-version history and managed small/large publication regressions
+also run with paged metadata. Installed-package coverage exercises the new CLI
+mode through loopback publication, retries, tracked imports and exact pinned reads.
+
+The earlier serialization model is a design estimate, not a runtime performance
+claim. Integrated measurements in `VALIDATION.md` include loading the previous
+descriptor, full validation, all object/descriptor writes, conversion, retention,
+cold/checkpoint recovery and injected copy fallback. Sampled RSS/FD counts and
+explicit FileHandle closure are reported separately. No validation shortcut,
+default promotion or LambdaDB/embedding performance claim follows from lower
+local writes. Dependency ingestion remains outside this feature.
 
 ## 7. Code-search schema v1
 

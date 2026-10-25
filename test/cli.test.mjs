@@ -28,7 +28,7 @@ async function cliContract(t, preset, storage = "jsonl") {
   const f = await fixture();
   t.after(f.cleanup);
   const managed = !!preset.embedding;
-  if (managed || storage === "segments") {
+  if (managed || storage !== "jsonl") {
     f.buildA = await materialize({
       identity: f.source,
       ref: f.a,
@@ -448,7 +448,10 @@ async function cliContract(t, preset, storage = "jsonl") {
     "--artifact-storage",
     storage,
   ]);
-  assert.equal(preview.artifactFormat, storage === "segments" ? 2 : 1);
+  assert.equal(
+    preview.artifactFormat,
+    storage === "paged-segments" ? 3 : storage === "segments" ? 2 : 1,
+  );
   assert.equal(preview.commitOid, f.b);
   assert.equal(preview.uploaded, false);
   assert.equal(preview.counts.chunks, f.buildB.counts.chunks);
@@ -544,6 +547,9 @@ test("CLI managed large imports, searches and pins reads with 3072-dimensional v
 for (const preset of [PRESET, MANAGED_PRESET])
   test(`CLI segmented ${preset.embedding ? "managed" : "lexical"} artifacts resume and serve pinned reads`, (t) =>
     cliContract(t, preset, "segments"));
+
+test("CLI paged metadata resumes managed imports and serves pinned reads", (t) =>
+  cliContract(t, MANAGED_PRESET, "paged-segments"));
 
 test("installed CLI resolves all added grammars and preserves source metadata", async (t) => {
   const f = await fixture();

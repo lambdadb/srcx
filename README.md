@@ -164,7 +164,8 @@ nonblocking file-open support. Cross-filesystem/unsupported-link copies rewrite 
 retained bytes too. See [local build measurements](VALIDATION.md).
 
 The default is `--artifact-storage jsonl`; storage does not change the embedding
-preset or require a new Collection. Preview JSON includes `artifactFormat` (1 or 2).
+preset or require a new Collection. Preview JSON includes `artifactFormat`:
+1 for JSONL, 2 for segments, and 3 for the paged mode described below.
 Use `--artifact <directory>` to import/resume either format without a storage flag;
 an explicit `--artifact-storage` cannot override an existing artifact. Older CLIs
 accept only format 1, and tools that directly read `records.jsonl` need the shared
@@ -181,6 +182,21 @@ is not automatic. Import that rebuilt artifact with `--artifact`.
 Local cleanup does not delete published versions or their immutable remote data.
 See [cumulative history and recovery measurements](VALIDATION.md#cumulative-segmented-history-and-recovery)
 for the storage/time tradeoff across 50 successive versions.
+
+For an additional experimental metadata-write reduction, choose
+`--artifact-storage paged-segments` on a new build. Format 3 keeps the same record
+objects and reuses unchanged inventory/hash pages in `metadata/`. It still fully
+reads and validates all pages and records, adds metadata file operations, and may
+be slower. The default remains `jsonl`; `segments` still creates format 2.
+Format 3 requires this runtime or newer. Its `build.json` contains references
+instead of inline inventory/hashes; use the shared `loadBuild()`/`records()`
+reader in tooling. Preview JSON reports `artifactFormat: 3`. Conversion and manual
+retention preserve the same journal and immutable-read rules described above.
+A missing referenced page makes a selected previous/pending artifact incomplete;
+builds and pending imports fail instead of silently ignoring it. Publication can
+recover a missing published-baseline cache through its verified immutable remote
+baseline, while corrupt cache data still fails validation.
+See [paged metadata measurements](VALIDATION.md#integrated-paged-metadata-builds).
 
 Artifacts contain source code; keep them with the same access policy as the repo.
 Every tree entry is accounted for, including explicit exclusions for symlinks,

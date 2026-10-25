@@ -28,7 +28,7 @@ import {
 } from "../dist/publish.js";
 import { directHandle, readHandle } from "../dist/search.js";
 
-test("retained segmented history survives cache loss and multi-phase publication retries", async (t) => {
+async function retainedHistory(t, storage) {
   const root = await mkdtemp(join(tmpdir(), "srcx-segmented-history-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   const path = join(root, "repo"),
@@ -82,7 +82,7 @@ test("retained segmented history survives cache loss and multi-phase publication
     let b = await materialize({
       identity: repo,
       ref: "refs/heads/main",
-      storage: "segments",
+      storage,
       preset: MANAGED_PRESET,
       previous: builds.at(-1),
       output: join(root, `build-${n}`),
@@ -260,16 +260,16 @@ test("retained segmented history survives cache loss and multi-phase publication
   for (const id of [stable.fileId, ...stable.chunkIds])
     assert.equal(writes.filter((d) => d.id === id).length, 1);
   assert.ok(writes.every((d) => d.embedding === undefined));
-});
+}
 
-test("lost latest artifact rebuilds cold or from an explicit non-adjacent checkpoint", async (t) => {
+async function checkpointRecovery(t, storage) {
   const f = await fixture();
   t.after(f.cleanup);
   const build = (ref, name, previous) =>
     materialize({
       identity: f.source,
       ref,
-      storage: "segments",
+      storage,
       preset: MANAGED_PRESET,
       previous,
       output: join(f.root, name),
@@ -312,4 +312,11 @@ test("lost latest artifact rebuilds cold or from an explicit non-adjacent checkp
   assert.notEqual((await stat(object(a))).ino, (await stat(object(cold))).ino);
   await rm(a.directory, { recursive: true });
   await validateBuild(recovered);
-});
+}
+
+for (const storage of ["segments", "paged-segments"]) {
+  test(`${storage} history survives cache loss and multi-phase publication retries`, (t) =>
+    retainedHistory(t, storage));
+  test(`${storage} rebuilds cold or from a non-adjacent checkpoint after latest-artifact loss`, (t) =>
+    checkpointRecovery(t, storage));
+}

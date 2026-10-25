@@ -19,6 +19,7 @@ import {
 } from "./build.js";
 import { normalizeFilePolicy } from "./file-policy.js";
 import { invariant, optionalJson } from "./common.js";
+import { missingBaselineArtifact } from "./metadata.js";
 import { LambdaRemote } from "./remote.js";
 import {
   attachment,
@@ -214,7 +215,7 @@ cli
       "--artifact-storage <storage>",
       "Experimental local artifact storage",
     )
-      .choices(["jsonl", "segments"])
+      .choices(["jsonl", "segments", "paged-segments"])
       .default("jsonl"),
   )
   .option(
@@ -368,8 +369,7 @@ cli
                 build: await loadBuild(last.artifact),
               };
             } catch (error) {
-              if ((error as NodeJS.ErrnoException).code !== "ENOENT")
-                throw error;
+              if (!missingBaselineArtifact(error)) throw error;
             }
           }
         }

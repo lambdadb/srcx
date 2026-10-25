@@ -1,21 +1,19 @@
-import { constants, createReadStream } from "node:fs";
-import {
-  copyFile,
-  link,
-  lstat,
-  mkdir,
-  open,
-  realpath,
-  rename,
-  type FileHandle,
-} from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { mkdir, open, rename, type FileHandle } from "node:fs/promises";
 import { createHash, randomUUID, type Hash } from "node:crypto";
 import { createInterface } from "node:readline";
 import { join } from "node:path";
 import { canonical, hash, invariant, type Doc } from "./common.js";
 import type { Build } from "./build.js";
+import {
+  artifactDirectory,
+  artifactPath,
+  openArtifactFile,
+  requireSegmentSupport,
+  retainArtifactFile,
+} from "./artifact-io.js";
 
-export type ArtifactStorage = "jsonl" | "segments";
+export type ArtifactStorage = "jsonl" | "segments" | "paged-segments";
 export type RecordPart = {
   fileId: string;
   digest: string;
@@ -24,19 +22,14 @@ export type RecordPart = {
 };
 const bufferLimit = 64 * 1024;
 const documentLimit = 4_800_000;
-function requireSegmentSupport(): void {
-  invariant(
-    constants.O_NOFOLLOW && constants.O_NONBLOCK,
-    "Segmented artifacts require no-follow file-open support.",
-  );
-}
-const objectPath = (directory: string, digest: string) => {
-  invariant(/^[a-f0-9]{64}$/.test(digest), "Invalid artifact object digest.");
-  return join(directory, "objects", `${digest}.jsonl`);
-};
+const objectPath = (directory: string, digest: string) =>
+  artifactPath(directory, "objects", digest);
 
 export function validateStorage(b: Build): void {
-  invariant(b.format === 1 || b.format === 2, "Unsupported artifact format.");
+  invariant(
+    b.format === 1 || b.format === 2 || b.format === 3,
+    "Unsupported artifact format.",
+  );
   if (b.format === 1) return;
   const included = b.inventory.filter((e) => e.status === "included");
   const files = new Map(included.map((e) => [e.fileId, e]));
@@ -68,39 +61,6 @@ export function validateStorage(b: Build): void {
   }
 }
 
-async function objectDirectory(directory: string): Promise<void> {
-  requireSegmentSupport();
-  const path = join(directory, "objects");
-  const info = await lstat(path);
-  invariant(
-    info.isDirectory() &&
-      !info.isSymbolicLink() &&
-      (await realpath(path)) === join(await realpath(directory), "objects"),
-    "Artifact objects must be a local regular directory.",
-  );
-}
-async function openObject(
-  directory: string,
-  part: RecordPart,
-): Promise<FileHandle> {
-  requireSegmentSupport();
-  const file = await open(
-    objectPath(directory, part.digest),
-    constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
-  );
-  try {
-    const info = await file.stat();
-    invariant(
-      info.isFile() && info.size === part.byteLength,
-      "Artifact object is not a regular file of the expected size.",
-    );
-    return file;
-  } catch (error) {
-    await file.close();
-    throw error;
-  }
-}
-
 /** Digest verification completes when the iterator is exhausted; validateBuild always exhausts it. */
 export async function* artifactRecords(b: Build): AsyncGenerator<Doc> {
   if (b.format === 1) {
@@ -117,10 +77,10 @@ export async function* artifactRecords(b: Build): AsyncGenerator<Doc> {
     return;
   }
   validateStorage(b);
-  await objectDirectory(b.directory);
+  await artifactDirectory(b.directory, "objects");
   const files = new Map(b.inventory.map((e) => [e.fileId, e]));
   for (const part of b.recordParts!) {
-    const file = await openObject(b.directory, part);
+    const file = await openArtifactFile(b.directory, "objects", part);
     const input = file.createReadStream({
       autoClose: false,
       highWaterMark: bufferLimit,
@@ -240,7 +200,7 @@ export class ArtifactWriter {
     );
     invariant(!this.recordHashes[doc.id], "Duplicate document ID.");
     this.recordHashes[doc.id] = hash(data);
-    if (this.storage === "segments") {
+    if (this.storage !== "jsonl") {
       if (doc.kind === "file") {
         await this.finishPart();
         const temp = join(this.directory, "objects", `${randomUUID()}.tmp`);
@@ -271,22 +231,12 @@ export class ArtifactWriter {
     ids: readonly string[],
   ): Promise<void> {
     await this.finishPart();
-    await objectDirectory(previous.directory);
-    const file = await openObject(previous.directory, part);
+    await artifactDirectory(previous.directory, "objects");
+    const file = await openArtifactFile(previous.directory, "objects", part);
     await file.close();
     const source = objectPath(previous.directory, part.digest),
       target = objectPath(this.directory, part.digest);
-    try {
-      await link(source, target);
-    } catch (error) {
-      if (
-        !["EXDEV", "ENOTSUP", "EOPNOTSUPP", "ENOSYS"].includes(
-          (error as NodeJS.ErrnoException).code ?? "",
-        )
-      )
-        throw error;
-      await copyFile(source, target, constants.COPYFILE_EXCL);
-    }
+    await retainArtifactFile(source, target);
     for (const id of ids) {
       invariant(!this.recordHashes[id], "Duplicate document ID.");
       this.recordHashes[id] = previous.recordHashes[id]!;
