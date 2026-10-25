@@ -460,6 +460,149 @@ record and 20 chunk records; these can share upload requests with other files.
 Original text appears once in its file record, with exact source ranges in chunks.
 Search context can repeat in chunk search text without changing the quoted source.
 
+### Experimental segmented local artifacts
+
+Status: opt-in implementation. `import --artifact-storage segments` writes local
+format 2; the default remains format 1 and a single `records.jsonl`. Presets,
+remote schema, publication ordering and full validation are unchanged. See the
+storage-only prototype and integrated-build measurements in `VALIDATION.md`.
+
+The segmented layout uses one logical segment per included file: the exact
+file record followed by all of its chunks, in ordinal order. A new artifact owns
+all objects it needs. It may share physical storage through hardlinks, but never
+depends on a previous artifact's directory, a global cache, or the current Git
+checkout after construction. This targets retained-record rewrites; it does not
+make full validation proportional to the delta.
+
+The segmented descriptor extends the local storage version only:
+
+```ts
+type RecordPart = {
+  fileId: string;
+  digest: string; // SHA-256 of exact canonical UTF-8 JSONL, including newlines.
+  byteLength: number;
+  recordCount: number;
+};
+
+// Existing logical Build fields remain unchanged.
+// `directory` is resolved at load time, never used as an external object pointer.
+type SegmentedBuild = Omit<Build, "format"> & {
+  format: 2;
+  recordParts: RecordPart[];
+};
+```
+
+Objects live at `objects/<64-lowercase-hex-digest>.jsonl` beneath the artifact.
+Ordered references preserve the builder's existing changed-then-retained record
+order, with no excluded-file segments. Full inventory entries, `recordHashes`,
+counts and aggregate hashes remain in `build.json`. This keeps logical
+identity independent of physical layout: for the same repository/commit/config,
+changing only storage layout retains `buildId`, `configHash`, `recordsHash` and
+`inventoryHash`. Object digests add storage integrity checks; they do not replace
+record/source checks.
+
+Require exactly one part per included inventory file, no duplicate file references,
+and `recordCount === 1 + chunkIds.length` for that file. Each object must begin with
+its referenced file record and contain only that file's expected chunks. Byte and
+record counts must be positive safe integers, not allocation instructions from
+untrusted metadata.
+
+The writer and full validator follow these rules:
+
+1. Fully validate the previous artifact before reusing its records or hashes.
+   Keep the existing repository/configuration and Git blob/mode reuse conditions.
+   For a format-2 previous build, find retained objects from its validated file
+   inventory and part mapping; avoid the extra whole-record copy pass.
+2. Stream added/modified file groups to unique temporary objects, with the current
+   per-document size checks and bounded write buffer. Hash actual serialized
+   bytes, close each object and install it under its digest. Do not buffer an
+   entire file's chunk set in memory or impose an arbitrary new segment-size cap.
+3. Hardlink retained objects into the new artifact, using exclusive destination
+   creation. `EXDEV`, `ENOTSUP`, `EOPNOTSUPP` and `ENOSYS` use exclusive copy
+   fallback. Other I/O, missing-object or permission failures remain failures.
+   No destination reference may point back into the previous directory.
+4. Keep new output private to its attempt. Finish all objects before installing
+   the descriptor, then run complete validation against the new artifact. Object
+   write failures remove only that attempt's partial output. Interrupted output
+   is never accepted because a descriptor or marker exists. Atomic rename alone
+   is not an fsync or power-loss durability guarantee.
+5. On every full validation, check descriptor shape and logical membership,
+   recompute each referenced object's byte digest/count, and run all existing
+   uniqueness, record-hash, exact source/position/token and embedding-input checks.
+   A valid digest or matching count cannot establish that an old file belongs to
+   the new build. Retained records are not sampled or exempted.
+6. Reject arbitrary object paths, symlink objects/directories and special files.
+   Use digest-derived paths, `O_NOFOLLOW | O_NONBLOCK` file opens and post-open
+   regular-file/size checks, plus a local regular-directory check. The feature
+   requires native no-follow support; the local measurements use macOS. The existing
+   single-host model assumes importer-owned artifact directories; hostile
+   concurrent directory replacement by the same OS user is outside that model.
+   Keep one open record handle and bounded UTF-8 line decoding, retaining the
+   existing largest-document allowance. File mode, inode identity, mtime and a
+   previous validation receipt are not integrity proofs.
+
+The shared `records()` iterator verifies object digests when fully consumed, as
+`validateBuild()` always does. Partial consumers do not establish completeness;
+publication readiness probes follow full build validation. No persistent
+validation receipt skips object/record/source checks on restart.
+
+Hardlinks reduce copying but do not enforce immutability: a write to one shared
+inode can corrupt several local artifacts. Rehashing and complete source checks
+must detect this on every use. Read-only modes can be defense in depth only.
+Remote published Tags remain the authority for immutable version reads and do
+not depend on the survival or integrity of local hardlinks.
+
+| Condition | Required behavior |
+| --- | --- |
+| Previous directory deleted after the new build | New artifact remains self-contained and validates. |
+| Artifact copied or relocated | Resolve all references beneath the new directory; no original paths needed. |
+| Missing/corrupt object in the pending build | Fail before corpus mutation; retain the journal. Never substitute the current Git tip. |
+| Previous local build entirely absent | Preserve the existing cold-build/remote-baseline recovery paths. |
+| Missing object in an otherwise present previous build | Preserve the current missing-record validation failure; no silent reuse of metadata. |
+| Previous local cache unavailable during publication retry | Validate the intact pending artifact and use its journal's immutable remote baseline, as today. |
+| Corrupt matching local baseline cache | Preserve fail-closed validation rather than trusting its declared hashes. |
+| Cross-filesystem link failure | Explicit copy fallback writes retained bytes too; no delta-write claim for that path. |
+| Partial object/descriptor write or stale local receipt | Remain unpublished; reconstruct only from the exact original build identity or restore matching objects. |
+
+No global shared-object garbage collector is needed:
+deleting one artifact unlinks its own objects without invalidating other hardlinks.
+Do not prune local artifacts associated with an active journal or claim this
+implements remote version retention/cleanup.
+
+Runtime integration and compatibility:
+
+- The storage-format reader/descriptor validator retains legacy format-1 reads
+  and resumption. Internal readers accept the already loaded Build, avoiding
+  repeated parsing of a large descriptor. Directory-based callers load its
+  `build.json`. Unknown formats and missing format-2 descriptors/objects fail;
+  they do not fall back to a stray
+  `records.jsonl` merely because it exists.
+- `--artifact-storage jsonl|segments` selects storage for a new build and defaults
+  to `jsonl`, even when the previous artifact is segmented. Initial conversion
+  from format 1 requires the full retained-record pass. Existing `--artifact`
+  imports use the recorded format and reject an explicit storage override.
+  Preview JSON adds `artifactFormat` (1 or 2); the remaining logical fields and
+  exit codes are unchanged. Storage selection is not an embedding preset change.
+- `validateBuild`, previous-record reuse, publication readiness probes and
+  changed-record uploads use the shared reader. Full candidate validation,
+  final-marker ordering and managed-vector validation/hydration remain intact.
+- Default JSONL evaluation fixtures and frozen archive byte hashes remain format
+  1. Consumers reading `records.jsonl` directly must opt into the shared reader
+  before accepting format 2; they are not automatically migrated. Installed-package
+  lexical/managed CLI tests cover segmented resumption, loss of the previous local
+  artifact, tracked imports and immutable reads.
+
+Default promotion requires end-to-end measurements including descriptor bytes, initial
+conversion, full validation, cold recovery, cross-filesystem copies and bounded
+memory/open handles. The prototype reduces record payload writes but adds many
+file operations and shows slower validation. Integrated builds also trade speed
+for materially lower writes and additional allocated storage. This justifies an
+explicit experimental choice, while format 1 remains the default. Pack-based physical
+storage or batched reads can be investigated later if per-file open/link overhead
+dominates; neither is silently assumed by this implementation. Skipping full remote
+candidate verification still requires the separate verified backend contract
+described in section 9. Dependency ingestion remains outside this work.
+
 ## 7. Code-search schema v1
 
 The Collection uses one sparse document schema with `kind` distinguishing file,

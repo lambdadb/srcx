@@ -139,7 +139,39 @@ and tag names that collide require `refs/heads/...` or `refs/tags/...`. No autom
 fetch, history replay, or revision expressions are supported.
 
 Each artifact contains `build.json` (inventory, configuration, counts, hashes,
-change/deletion plan) and `records.jsonl` (exact file records and retrieval chunks).
+change/deletion plan) and, by default, `records.jsonl` (exact file records and
+retrieval chunks).
+
+For an experimental alternative that reduces retained-record rewrites, use
+`--artifact-storage segments` when creating a new build:
+
+```sh
+srcx import --path /path/to/repo --ref main --dry-run \
+  --artifact-storage segments --output /tmp/srcx-segmented-a
+srcx import --path /path/to/repo --ref next --dry-run \
+  --artifact-storage segments --previous /tmp/srcx-segmented-a \
+  --output /tmp/srcx-segmented-b
+```
+
+Format 2 stores `build.json` and digest-addressed JSONL objects under `objects/`.
+Unchanged objects can share filesystem storage through hardlinks, while each
+artifact remains usable after deleting the previous directory. Full local source
+and record/hash checks still run; publication retains complete candidate
+validation. Fewer bytes are written, but more
+file operations can make builds slower; descriptor construction and full checks
+still scale with corpus size. Segmented mode requires native no-follow and
+nonblocking file-open support. Cross-filesystem/unsupported-link copies rewrite the
+retained bytes too. See [local build measurements](VALIDATION.md).
+
+The default is `--artifact-storage jsonl`; storage does not change the embedding
+preset or require a new Collection. Preview JSON includes `artifactFormat` (1 or 2).
+Use `--artifact <directory>` to import/resume either format without a storage flag;
+an explicit `--artifact-storage` cannot override an existing artifact. Older CLIs
+accept only format 1, and tools that directly read `records.jsonl` need the shared
+artifact reader to support format 2. Linked files are not tamper-proof: full checks
+detect shared-object corruption. Preserve the pending artifact and journal until
+publication completes.
+
 Artifacts contain source code; keep them with the same access policy as the repo.
 Every tree entry is accounted for, including explicit exclusions for symlinks,
 submodules, LFS pointers, dependencies/build output, image assets (including SVG), binary/invalid UTF-8 data,

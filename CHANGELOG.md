@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Add experimental `import --artifact-storage segments` for self-contained,
+  digest-verified local format-2 artifacts. Reuse unchanged per-file objects with
+  hardlinks and explicit copy fallback; retain format-1 reads and the JSONL default,
+  complete source/hash/vector validation, resumable publication and immutable reads.
+  Preview JSON adds `artifactFormat`; existing artifacts reject a storage override.
+  Measure complete build time, writes and additional inode allocation separately
+  from the earlier storage-only prototype; this is not a default promotion.
+
 - Batch local artifact records in a bounded 64 KiB write buffer and hash their
   existing canonical representation instead of serializing each record twice.
   Preserve the artifact format, record order/hashes, document limits and full
