@@ -715,6 +715,24 @@ explicit FileHandle closure are reported separately. No validation shortcut,
 default promotion or LambdaDB/embedding performance claim follows from lower
 local writes. Dependency ingestion remains outside this feature.
 
+### Token-count reuse during local materialization
+
+An incremental `materialize()` shares exact-text token counts between its full
+previous/new artifact validators. The counter invokes the pinned tokenizer on
+misses and still compares every stored token count and token ceiling. All record,
+source, metadata, coverage and managed-input checks retain their existing order.
+It is not a validation receipt and does not skip artifact reads or hash checks.
+
+The invocation admits at most 32,768 keys and 16 MiB of UTF-16 key content. Keys
+are copied to avoid retaining larger sliced/rope inputs. Entry/engine overhead
+is additional; the character budget is not a total heap bound. On saturation,
+new inputs are calculated without admission, preserving earlier counts for the
+second sequential corpus pass instead of evicting them. Failures are not cached.
+Nothing is persisted or attached to the Build. Cold materialization and each
+standalone `validateBuild()` use the original tokenizer directly; retries and
+concurrent materializations have independent lifetimes. Publication validation
+and immutable-candidate completeness requirements are unchanged.
+
 ## 7. Code-search schema v1
 
 The Collection uses one sparse document schema with `kind` distinguishing file,

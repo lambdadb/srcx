@@ -1278,6 +1278,208 @@ size. There is no source upload, live backend/embedding measurement, paid call,
 default promotion or package publication. Further remote-validation reductions
 still need a verified completeness/preservation contract from the backend.
 
+## Repeated segmented-build profiles
+
+At revision `298d707`, a follow-up local profile separates the previous
+comparison's write savings from build time. It reuses the same fixed synthetic
+TypeScript corpus: 120 or 1,200 files, 24 functions per file, version 48 to 49
+adding/modifying/deleting one file. A second 1,200-file case creates a new Git
+commit without changing source. It compares format-2 segments and format-3 paged
+segments; it does not implement an optimization or change the default.
+
+All runs use fresh Node.js 24.15.0 processes on Apple M5 Pro/macOS arm64, with
+filesystem caches intact and no concurrent test/build load. The timed window is
+previous-artifact loading plus complete `materialize()`, including both full
+validations. Module startup, tokenizer initialization and Git identity discovery
+are outside the window; lazy parser initialization for changed source is inside.
+Seven repetitions per mode cover each changed corpus, and three per mode cover
+source-identical commits. Storage/run order alternates. These are local fixture
+measurements, not LambdaDB, embedding, network or physical-disk performance.
+
+The following timings use the original runtime without filesystem observers or
+phase probes. Ranges are observed minima/maxima, not confidence intervals.
+
+| Files | Change            | Repetitions per mode | Segments median (range), ms | Paged median (range), ms  |
+| ----- | ----------------- | -------------------- | --------------------------- | ------------------------- |
+| 120   | Add/modify/delete | 7                    | 292.3 (291.0–314.5)         | 370.8 (352.0–396.9)       |
+| 1,200 | Add/modify/delete | 7                    | 2,099.9 (2,029.9–2,192.0)   | 2,343.8 (2,313.2–2,391.5) |
+| 1,200 | Source identical  | 3                    | 2,063.4 (2,050.2–2,070.5)   | 2,323.2 (2,310.2–2,343.0) |
+
+The 1,200-file changed case takes 11.6% longer with paged metadata, consistent
+with the earlier history observation. Removing source changes barely changes
+the total: full-corpus work dominates this fixture.
+
+Separate phase runs instrument a local compiled copy, preserving every original
+validation statement. Their median difference from the original controls ranges
+from -3.2% to +1.7% across cases, including scheduling/cache noise; a negative
+difference does not establish negative instrumentation overhead. The table gives
+inclusive phase medians for the 1,200-file changed case. These phases are disjoint,
+but independently computed medians do not necessarily sum to the total.
+
+| Phase                                 | Segments (ms) | Paged (ms) |
+| ------------------------------------- | ------------- | ---------- |
+| Load previous descriptor and metadata | 12.7          | 59.6       |
+| Full previous-artifact validation     | 768.1         | 831.4      |
+| Git resolution/enumeration/chunking   | 80.7          | 79.7       |
+| Write/retain record objects           | 473.9         | 457.5      |
+| Aggregate inventory/record hashes     | 26.6          | 25.3       |
+| Construct/retain metadata pages       | 0             | 94.2       |
+| Write root descriptor                 | 12.2          | 0.8        |
+| Full new-artifact validation          | 730.7         | 790.4      |
+| Other build work                      | 15.3          | 15.1       |
+| Instrumented total                    | 2,131.1       | 2,365.4    |
+
+Both full validations account for approximately 69–70% of instrumented time.
+Record retention is another substantial common cost; its implementation is the
+same in both modes, so the small timing difference is not a paged-format gain.
+Paged metadata is read three times: previous hydration, previous validation and
+new validation. Those reads together take 156.4 ms, including 14.3 ms decoding
+UTF-8/parsing JSON and 67.7 ms remaining read/reassembly/check work after measured
+child spans. Hydrated-view comparison adds 25.9 ms outside those reads. Metadata
+construction includes 13.6 ms canonical serialization and 53.6 ms page linking;
+these nested spans must not be added again to the phase totals.
+
+Logical I/O per 1,200-file changed build remains substantial. Both modes read
+56,942,489 record bytes and write 47,565 record bytes. Segments read/write
+7,507,046/7,507,045 root bytes; paged segments read 20,795,126 page bytes plus
+192,373 root bytes and write 69,343 page bytes plus 192,371 root bytes. Paged
+metadata performs 759 page reads (three complete passes), 250 retained-page links
+and 1,009 explicit page opens including retention checks. Both modes open 3,600
+record objects and retain 1,198 through links. Explicit artifact FileHandles peak
+at one and all close. Counters observe API calls and logical bytes, not physical
+syscalls, disk latency, durable writes or billed storage. Summed promise-call
+durations may overlap and cannot be subtracted from wall time as disk time.
+
+Three additional original-runtime CPU profiles per storage mode use Node's local
+inspector at a requested 1 ms sampling interval. Samples with a `js-tiktoken`
+ancestor account for median weighted sample durations of 431.7 ms for segments
+and 448.1 ms for paged segments. Other full-validation stacks account for
+481.7/467.3 ms respectively. These are diagnostic main-thread sample attribution,
+not exact function timings or process CPU budgets; idle/GC/native/async work is
+separate, and profiler bookkeeping extends the sampled window beyond the timed
+build. No tokenizer initialization is included. Changed-source parsing/chunking
+does not dominate these profiles.
+
+That profile identified invocation-scoped, bounded exact-text token count reuse
+under the pinned tokenizer as a possible optimization. It must retain every
+source/hash/order and token-limit comparison; it would memoize a deterministic calculation, not
+trust an artifact's stored count. The two full validators process 57,600 chunk
+search texts in the changed case, with 28,848 unique texts. An arithmetic LRU
+simulation with a 32,768-entry limit has zero hits with 4 or 8 MiB character
+budgets, but 28,752 hits with 16 MiB (28,800 hits for source-identical input).
+The simulation charges two bytes per JS string code unit; Map/object/engine
+overhead is additional and it is not a heap bound. It neither implements a cache
+nor measures speedup. Eviction, oversize inputs, invocation lifetime, memory
+accounting and corrupt/stale artifacts need focused validation before adoption.
+The subsequent implementation uses admission without eviction, described below.
+
+All 74 builds retain complete validation. Every output is independently loaded
+and fully validated outside timing, checked against the archived golden logical
+hashes and exact modified-file Git bytes. Probe runs also assert complete old/new
+record reads and all three metadata passes. One-off scripts, raw reports, CPU
+profiles and runtime/script fingerprints remain local ignored diagnostic evidence;
+they are not maintained test fixtures. No LambdaDB or embedding operation ran.
+Full Git enumeration, metadata hydration/construction, record retention, complete local
+validation and immutable-candidate validation remain. Further remote shortcuts
+still require a verified backend completeness/preservation contract.
+
+For that profiling-only stage, `npm ci --ignore-scripts`,
+`npm run build`, `npm run format:check`, `npm run check:version`,
+`npm run typecheck`, `npm test` (221 executed tests), `npm run test:package`
+(10 executed tests), all five CI Python suites (17 tests) and `git diff --check`
+passed locally on Node.js 24.15.0. Node 22 was not rerun until the subsequent
+implementation stage below.
+
+## Bounded token-count reuse
+
+Incremental materialization now shares a token counter between its complete
+previous/new validators. It caches only pinned-tokenizer results keyed by exact
+text, with no ID/hash shortcut or stored-count trust. Every source, position,
+hash, token-count/ceiling and managed-input comparison still runs in its original
+order. Cold builds and standalone validation use the original tokenizer directly.
+Publication and retries do not inherit a prior materialization's cache.
+
+Admission stops at 32,768 entries or 16 MiB of UTF-16 key content. Existing
+entries remain available when new inputs cannot fit; this avoids the sequential
+LRU thrashing seen in the earlier arithmetic simulation. Oversized inputs are
+calculated without admission, and failures are not cached. Copied UTF-16 keys
+preserve exact Unicode, including lone surrogates, without retaining larger
+sliced/rope inputs. The limit covers key content, not total heap or engine/Map
+overhead. Nothing is persisted or added to an artifact.
+
+A follow-up comparison uses the unchanged runtime from `298d707` and the new
+runtime, in alternating fresh Node.js 24.15.0 processes on the same M5 Pro/macOS
+host. Both use `--expose-gc`; timing controls do not force GC or poll memory.
+The window includes previous loading and complete materialization, excludes
+module/tokenizer startup and identity discovery, includes lazy parsing, and leaves
+filesystem caches intact. No test/build load runs concurrently. The 120/1,200-file
+corpora and deltas match the preceding profile. A 2,400-file case adds 1,200 unique
+paths with 24 functions each to version 48, then adds/modifies/deletes one file;
+the modified file gains one additional chunk. This exceeds the cache entry bound.
+
+| Files | Change            | Repetitions per mode/runtime | Storage  | Before median (ms) | After median (ms) | Reduction |
+| ----- | ----------------- | ---------------------------- | -------- | ------------------ | ----------------- | --------- |
+| 120   | Add/modify/delete | 5                            | Segments | 290.3              | 262.1             | 9.7%      |
+| 120   | Add/modify/delete | 5                            | Paged    | 365.7              | 325.8             | 10.9%     |
+| 1,200 | Add/modify/delete | 7                            | Segments | 2,116.0            | 1,834.3           | 13.3%     |
+| 1,200 | Add/modify/delete | 7                            | Paged    | 2,372.9            | 2,102.8           | 11.4%     |
+| 1,200 | Source identical  | 3                            | Segments | 2,111.3            | 1,818.3           | 13.9%     |
+| 1,200 | Source identical  | 3                            | Paged    | 2,377.8            | 2,094.4           | 11.9%     |
+| 2,400 | Add/modify/delete | 3                            | Segments | 3,661.8            | 3,356.1           | 8.3%      |
+| 2,400 | Add/modify/delete | 3                            | Paged    | 4,026.8            | 3,758.2           | 6.7%      |
+
+At 1,200 files, observed before/after ranges are 2,084.8–2,129.8/1,828.9–1,881.8 ms
+for segments and 2,336.4–2,426.3/2,093.7–2,123.8 ms for paged segments. At 2,400
+files they are 3,576.0–3,676.5/3,346.6–3,411.7 and
+3,971.4–4,070.1/3,733.5–3,793.7 ms respectively. These are observed ranges, not
+confidence intervals or a general performance guarantee.
+
+Separate compiled-copy probes count actual tokenizer calls: 57,600 lookups become
+28,848 calculations and 28,752 hits at 1,200 files, with 8,861,228 charged key
+bytes. At 2,400 files, 115,201 lookups become 82,458 calculations and 32,743 hits;
+retained entries stop at 32,768 and charged key bytes at 9,582,078. Both storage
+modes produce the same counts. Larger or mostly changed corpora can have lower
+hit rates; saturation always falls back to the original calculation.
+
+Memory runs are separate from timing controls: three fresh processes per
+mode/runtime at each larger corpus, GC before/after the timed build and heap/RSS
+polling every 5 ms during it. The following are medians of sampled peaks in MiB
+(1,048,576 bytes). Sampling can miss short peaks, and GC/native/parser allocation
+affects these values; a smaller sampled RSS is not proof of memory savings.
+
+| Files | Storage  | Heap before/after (MiB) | RSS before/after (MiB) |
+| ----- | -------- | ----------------------- | ---------------------- |
+| 1,200 | Segments | 139.3 / 147.9           | 1,536.5 / 1,547.7      |
+| 1,200 | Paged    | 135.3 / 138.6           | 1,572.2 / 1,561.9      |
+| 2,400 | Segments | 183.0 / 202.4           | 1,546.5 / 1,584.1      |
+| 2,400 | Paged    | 179.1 / 181.4           | 1,573.0 / 1,579.3      |
+
+All 100 measured outputs pass independent full validation, matching control/golden
+logical hashes and exact modified-file Git bytes. Runtime and harness fingerprints,
+raw timing ranges, memory samples, probe counters and the earlier interrupted
+fixture attempt are retained as ignored local evidence. No large fixture or
+one-off generator is added to maintained tests. Focused tests cover actual
+tokenizer call reductions, both bounds and saturation, independent counters,
+Unicode/zero counts, oversized keys, encoder errors, incorrect stored counts,
+changed input under the same record identity, managed-input corruption, retry
+and prior-artifact removal. Existing operation-count/history tests continue to
+require full old/new artifact reads, stale-candidate rejection, resumability,
+cache-loss recovery and immutable reads.
+
+This reduces deterministic computation within complete local validation. Full
+Git enumeration, artifact/metadata reads and hash/source checks, object retention
+and remote candidate validation remain corpus-wide. It adds no further write-byte
+reduction, backend contract, default storage promotion or dependency ingestion.
+All numbers are synthetic local measurements; no LambdaDB, paid embedding or
+source upload operation ran.
+
+Validation for the implementation passed on Node.js 24.15.0 and 22.23.4:
+`npm run typecheck`, `npm test` (229 executed tests) and `npm run test:package`
+(10 executed installed-tarball tests) on each runtime. Locked installation with
+`npm ci --ignore-scripts`, formatting, version consistency, all five CI Python
+suites (17 tests) and `git diff --check` also passed locally. No remote CI or
+live acceptance run was triggered.
+
 ## Local checks
 
 Runtime used: Node.js 24.15.0, npm 11.12.1. Dependencies are pinned in
